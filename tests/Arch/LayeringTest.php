@@ -1,0 +1,68 @@
+<?php
+
+use Illuminate\Support\Facades\File;
+use Symfony\Component\Finder\SplFileInfo;
+
+/*
+|--------------------------------------------------------------------------
+| Layering rules (TECHNICAL_PLAN §2 and §16)
+|--------------------------------------------------------------------------
+*/
+
+arch('controllers do not touch the database or storage directly')
+    ->expect('App\Http\Controllers')
+    ->not->toUse([
+        'Illuminate\Support\Facades\DB',
+        'Illuminate\Support\Facades\Storage',
+    ]);
+
+arch('services do not read the request or render responses')
+    ->expect('App\Services')
+    ->not->toUse([
+        'request',
+        'Illuminate\Http\Request',
+        'Illuminate\Http\Response',
+        'Illuminate\Http\RedirectResponse',
+        'Inertia\Inertia',
+        'response',
+        'view',
+    ]);
+
+arch('models do not depend on services')
+    ->expect('App\Models')
+    ->not->toUse('App\Services');
+
+arch('form requests authorize through policies')
+    ->expect('App\Http\Requests')
+    ->classes()
+    ->toExtend('Illuminate\Foundation\Http\FormRequest')
+    ->toHaveMethod('authorize')
+    ->ignoring('App\Http\Requests\Admin\User\Concerns');
+
+arch('policies check permissions, never role names')
+    ->expect('App\Policies')
+    ->not->toUse(['hasRole', 'hasAnyRole', 'hasAllRoles', 'assignRole']);
+
+arch('policies check permissions through the Permission enum')
+    ->expect('App\Policies')
+    ->toUse('App\Enums\Permission');
+
+arch('no debugging helpers')
+    ->expect(['dd', 'dump', 'ray', 'var_dump', 'die'])
+    ->not->toBeUsed();
+
+arch('enums are backed enums')
+    ->expect('App\Enums')
+    ->toBeEnums();
+
+test('public resources never expose the car value', function () {
+    $directory = app_path('Http/Resources/Public');
+
+    $offenders = collect(is_dir($directory) ? File::allFiles($directory) : [])
+        ->filter(fn (SplFileInfo $file) => str_contains($file->getContents(), 'car_value'))
+        ->map(fn (SplFileInfo $file) => $file->getRelativePathname())
+        ->values()
+        ->all();
+
+    expect($offenders)->toBe([]);
+});

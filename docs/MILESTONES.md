@@ -5,10 +5,10 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 ## How to update this file
 
 1. **After every step:**
-   - Tick the step box.
-   - Set the milestone's status.
-   - Update the **Progress** column in the summary table.
-   - Add a row to the [Progress log](#progress-log).
+    - Tick the step box.
+    - Set the milestone's status.
+    - Update the **Progress** column in the summary table.
+    - Add a row to the [Progress log](#progress-log).
 2. **Status values:** `Not started` · `In progress` · `Blocked` · `Done`. If a milestone is Blocked, write the reason in the log.
 3. **Step state:** `[ ]` is open, `[x]` is done, and `[~]` is partially done or deferred. Explain any `[~]` in the log.
 4. **Every module step includes the standard checklist below.** Do not tick a step until all of it is true.
@@ -32,59 +32,59 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 
 ## Summary
 
-| # | Milestone | Status | Progress | Gate |
-| --- | --- | --- | --- | --- |
-| M0 | Project bootstrap and conventions | Not started | 0/10 | — |
-| M1 | Platform foundations (auth, IAM, settings, audit, admin shell) | Not started | 0/14 | — |
-| M2 | Media module (shared) | Not started | 0/16 | — |
-| M3 | Metadata fields | Not started | 0/7 | — |
-| M4 | Catalog (brands, car types, cars) | Not started | 0/12 | **G1** (with M5) |
-| M5 | Content CMS and seed pack | Not started | 0/14 | **G1** |
-| M6 | Pricing, currencies and FX | Not started | 0/16 | — |
-| M7 | Public site | Not started | 0/20 | **G2** |
-| M8 | Booking engine | Not started | 0/20 | — |
-| M9 | Payments | Not started | 0/10 | **G3** (with M6, M8) |
-| M10 | Notifications and voucher | Not started | 0/11 | — |
-| M11 | Operations desk | Not started | 0/12 | **G4** |
-| M12 | Hardening (security, performance, SEO, a11y) | Not started | 0/14 | — |
-| M13 | UAT and launch | Not started | 0/10 | **G5** |
-| P2 | Post-launch backlog | Not started | 0/8 | — |
+| #   | Milestone                                                      | Status      | Progress | Gate                 |
+| --- | -------------------------------------------------------------- | ----------- | -------- | -------------------- |
+| M0  | Project bootstrap and conventions                              | Done        | 9/10     | —                    |
+| M1  | Platform foundations (auth, IAM, settings, audit, admin shell) | Done        | 14/14    | —                    |
+| M2  | Media module (shared)                                          | Not started | 0/16     | —                    |
+| M3  | Metadata fields                                                | Not started | 0/7      | —                    |
+| M4  | Catalog (brands, car types, cars)                              | Not started | 0/12     | **G1** (with M5)     |
+| M5  | Content CMS and seed pack                                      | Not started | 0/14     | **G1**               |
+| M6  | Pricing, currencies and FX                                     | Not started | 0/16     | —                    |
+| M7  | Public site                                                    | Not started | 0/20     | **G2**               |
+| M8  | Booking engine                                                 | Not started | 0/20     | —                    |
+| M9  | Payments                                                       | Not started | 0/10     | **G3** (with M6, M8) |
+| M10 | Notifications and voucher                                      | Not started | 0/11     | —                    |
+| M11 | Operations desk                                                | Not started | 0/12     | **G4**               |
+| M12 | Hardening (security, performance, SEO, a11y)                   | Not started | 0/15     | —                    |
+| M13 | UAT and launch                                                 | Not started | 0/10     | **G5**               |
+| P2  | Post-launch backlog                                            | Not started | 0/8      | —                    |
 
 ---
 
 ## M0 — Project bootstrap and conventions
 
-Status: **Not started**
+Status: **Done**
 
-- [ ] M0.1 Create the Laravel 12 app from the React starter kit (Inertia 2, React 19, TS, Tailwind 4, shadcn, Wayfinder) and initialize the git repo.
-- [ ] M0.2 Set up Sail services: MySQL 8, Redis, Mailpit and MinIO, plus `.env.example` with every `MEDIA_*`, `FX_*` and `WHATSAPP_*` key.
-- [ ] M0.3 Install core packages: spatie/laravel-permission, spatie/laravel-settings, spatie/laravel-activitylog, intervention/image, barryvdh/laravel-dompdf, laravel/horizon, sentry/sentry-laravel.
-- [ ] M0.4 Set up quality tooling: Pint config, Larastan (level 6), ESLint and Prettier, `tsc --noEmit`, and composer and npm scripts (`lint`, `test`, `types`).
-- [ ] M0.5 Set up testing: Pest 3 with the arch plugin, Vitest, a Playwright scaffold, and a `tests/fixtures/` folder.
-- [ ] M0.6 Add the Pest arch tests that enforce the layering rules (TECHNICAL_PLAN §2, §16).
-- [ ] M0.7 Create the directory skeleton (`Services/*`, `Http/{Controllers,Requests,Resources}/{Admin,Public,Media}`, `Settings`, `Support`, `Enums`) and add `config/baines.php`.
-- [ ] M0.8 Set up the CI workflow in GitHub Actions: lint, static analysis, types, Pest, Vitest and build.
-- [ ] M0.9 Add Dockerfiles (php-fpm + nginx, SSR node, Horizon, scheduler) and the staging deploy pipeline.
-- [ ] M0.10 Write the README covering local setup, the conventions and how to add a module, with a link to this file.
+- [x] M0.1 Create the Laravel 12 app from the React starter kit (Inertia 2, React 19, TS, Tailwind 4, shadcn, Wayfinder) and initialize the git repo.
+- [x] M0.2 Set up Sail services: MySQL 8, Redis, Mailpit and MinIO, plus `.env.example` with every `MEDIA_*`, `FX_*` and `WHATSAPP_*` key.
+- [x] M0.3 Install core packages: spatie/laravel-permission, spatie/laravel-settings, spatie/laravel-activitylog, intervention/image, barryvdh/laravel-dompdf, laravel/horizon, sentry/sentry-laravel.
+- [x] M0.4 Set up quality tooling: Pint config, Larastan (level 6), ESLint and Prettier, `tsc --noEmit`, and composer and npm scripts (`lint`, `test`, `types`).
+- [x] M0.5 Set up testing: Pest 3 with the arch plugin, Vitest, a Playwright scaffold, and a `tests/fixtures/` folder.
+- [x] M0.6 Add the Pest arch tests that enforce the layering rules (TECHNICAL_PLAN §2, §16).
+- [x] M0.7 Create the directory skeleton (`Services/*`, `Http/{Controllers,Requests,Resources}/{Admin,Public,Media}`, `Settings`, `Support`, `Enums`) and add `config/baines.php`.
+- [x] M0.8 Set up the CI workflow in GitHub Actions: lint, static analysis, types, Pest, Vitest and build.
+- [~] M0.9 Add Dockerfiles (php-fpm + nginx, SSR node, Horizon, scheduler) and the staging deploy pipeline.
+- [x] M0.10 Write the README covering local setup, the conventions and how to add a module, with a link to this file.
 
 ## M1 — Platform foundations
 
-Status: **Not started** · PRD: §3 roles, A-7, §7 security
+Status: **Done** · PRD: §3 roles, A-7, §7 security
 
-- [ ] M1.1 Add the `PermissionRegistry`, with `*` and `!` pattern expansion, plus unit tests.
-- [ ] M1.2 Add the `permissions:sync` command (idempotent, `--prune`) and wire it into `DatabaseSeeder` and the deploy step.
-- [ ] M1.3 Seed the roles super-admin, operations and content-editor from config, and add the `Gate::before` bypass for super-admin.
-- [ ] M1.4 Add the route guard test that checks every `admin.*` route returns 403 for a user with no permissions.
-- [ ] M1.5 Staff auth: Fortify login, password reset and TOTP 2FA. Add the `EnsureTwoFactor` and `EnsureStaff` middleware and disable public registration.
-- [ ] M1.6 Users admin (CRUD, assign roles, extra permissions, deactivate), with permissions `users.*`.
-- [ ] M1.7 Roles admin, read-only view of the grants defined in config (`roles.view`).
-- [ ] M1.8 Settings infrastructure: base settings classes and migrations for General, Pricing, Booking, Fx, Notification, Home and Retention, with defaults from TECHNICAL_PLAN §9.
-- [ ] M1.9 Settings admin UI: one tabbed page with a FormRequest per group and permissions `settings.{group}.update`.
-- [ ] M1.10 Activity log: the `LogsActivity` setup convention and an admin viewer with filters (`activity.view`).
-- [ ] M1.11 Admin shell: layout, sidebar driven by permissions, flash toasts, confirm dialogs, and shared Inertia props (auth user, abilities, settings subset).
-- [ ] M1.12 Shared `Support` code: `Money` (minor units, rounding modes), `DateRange` and `HasSlug` / `Sortable` concerns, with unit tests.
-- [ ] M1.13 Shared admin React components: DataTable (server pagination, filters, sort), FormField set, slug input, rich text editor, sortable list.
-- [ ] M1.14 Security baseline: security headers middleware, named rate limiters, the Turnstile rule and session timeout.
+- [x] M1.1 Add the `PermissionRegistry`, with `*` and `!` pattern expansion, plus unit tests.
+- [x] M1.2 Add the `permissions:sync` command (idempotent, `--prune`) and wire it into `DatabaseSeeder` and the deploy step.
+- [x] M1.3 Seed the roles super-admin, operations and content-editor from config, and add the `Gate::before` bypass for super-admin.
+- [x] M1.4 Add the route guard test that checks every `admin.*` route returns 403 for a user with no permissions.
+- [x] M1.5 Staff auth: Fortify login, password reset and TOTP 2FA. Add the `EnsureTwoFactor` and `EnsureStaff` middleware and disable public registration.
+- [x] M1.6 Users admin (CRUD, assign roles, extra permissions, deactivate), with permissions `users.*`.
+- [x] M1.7 Roles admin: create, edit, delete roles and choose their permissions (`roles.view|create|update|delete`). The super admin role is locked. *(Changed from read-only, D15.)*
+- [x] M1.8 Settings infrastructure: base settings classes and migrations for General, Pricing, Booking, Fx, Notification, Home and Retention, with defaults from TECHNICAL_PLAN §9.
+- [x] M1.9 Settings admin UI: one tabbed page with a FormRequest per group and permissions `settings.{group}.update`.
+- [x] M1.10 Activity log: the `LogsActivity` setup convention and an admin viewer with filters (`activity.view`).
+- [x] M1.11 Admin shell: layout, sidebar driven by permissions, flash toasts, confirm dialogs, and shared Inertia props (auth user, abilities, settings subset).
+- [x] M1.12 Shared `Support` code: `Money` (minor units, rounding modes), `DateRange` and `HasSlug` / `Sortable` concerns, with unit tests.
+- [x] M1.13 Shared admin React components: DataTable (server pagination, filters, sort), FormField set, slug input, rich text editor, sortable list.
+- [x] M1.14 Security baseline: security headers middleware, named rate limiters, the Turnstile rule and session timeout.
 
 ## M2 — Media module (shared)
 
@@ -292,6 +292,7 @@ Status: **Not started** · PRD: §7 non-functional
 - [ ] M12.12 Load test of booking submit and the media upload path.
 - [ ] M12.13 Staff and renter privacy notice and consent text in place (Data Protection Act 2019).
 - [ ] M12.14 Runbook: deploy, rollback, rotate keys, restore, switch media disk.
+- [ ] M12.15 Dockerfiles (php-fpm + nginx, SSR node, Horizon, scheduler) and the staging deploy pipeline (moved from M0.9). **Pull forward before M5.13**: Gate G1 runs on staging.
 
 ## M13 — UAT and launch
 
@@ -327,6 +328,36 @@ Status: **Not started**
 
 Newest first. Add one row per completed step, status change, block or gate.
 
-| Date | Step | Change | Notes |
-| --- | --- | --- | --- |
-| 2026-10-17 | — | Plan created | TECHNICAL_PLAN.md and MILESTONES.md drafted from the PRD of 16 Oct 2026 |
+| Date       | Step | Change       | Notes                                                                   |
+| ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-17 | M1.6 | Changed | Account self-deletion restored on the profile page (client request). It goes through `UserService::deleteOwnAccount` (password required, activity logged), and the last active super admin is refused. Fixed ordering: sign out before deleting, or `Auth::logout()` re-saves the deleted user. 162 Pest tests green. |
+| 2026-10-17 | M1.5, M1.9, M1.14 | Changed | Gating fixes and configurable 2FA (D16): the `/settings/*` account pages now need `staff` + `admin.idle` (they had `auth` only); new global `EnsureActiveAccount` signs out deactivated accounts on any route; local-disk `serve` routes disabled; admin settings routes gated by `can:update-settings,group`. New `SecuritySettings::require_two_factor` (off by default) with a Security tab (`settings.security.update`). 159 Pest tests green. |
+| 2026-10-17 | M1.7 | Changed | Roles are now admin-managed data (D15): `App\Models\Role` (+ `description`, `is_system`), `RoleService` CRUD with activity logging, a locked super admin role, and refusal to delete roles that are still assigned. New permissions `roles.create|update|delete`. The `Role` enum is removed. Seeder creates operations and content-editor once as editable starting roles. 154 Pest tests green. |
+| 2026-10-17 | M1.1–M1.3 | Changed | Permissions moved from `config/permissions.php` to the `Permission` and `Role` enums (D14), with module helpers (`module()`, `forModule()`, `except()`, `grouped()`). Policies use `can(Permission::X)` and an arch test enforces it. The new `permissions:types` command generates `resources/js/types/permissions.ts`, so frontend `can()` is type-checked; a test fails if the file is stale. The pattern registry was removed. |
+| 2026-10-17 | M0 | Done | 9/10; M0.9 is deferred to M12.15. |
+| 2026-10-17 | M0.2 | Done (changed) | Sail removed at the client's request (D12). Local development uses `composer dev` on the host against the host MySQL, with database cache/queue/session and the log mailer. `.env.example` and the README are updated. Docker build cache pruned (5.3 GB freed). |
+| 2026-10-17 | M1 | Milestone done | All 14 steps complete. 149 Pest tests, 8 Vitest tests; Pint, Larastan 7, `vp check` and `tsc` green. The 2FA enrolment flow was covered by feature tests but not yet clicked through in a browser. |
+| 2026-10-17 | M1.14 | Done | SecurityHeaders (CSP baseline, HSTS in production), named limiters `booking-start`/`booking-step`/`media-upload`/`contact`, `Support\Rules\Turnstile` (implicit; always passes with Cloudflare's test secret outside production), `AdminIdleTimeout` (`baines.admin_idle_minutes`). |
+| 2026-10-17 | M1.13 | Done | `components/admin/`: DataTable (+ `useTableQuery`), form fields (Text, Textarea, Select, Switch, Money, Date), StringListField, SlugInput (`lib/slug.ts`), RichTextEditor (Tiptap 3), SortableList (dnd-kit), ConfirmDialog, PageHeader. Added `@tailwindcss/typography`. |
+| 2026-10-17 | M1.12 | Done | `Support\Money` (integer minor units, `percentBp` with `RoundingMode`; PRD example 66,350 → 16,588 / 49,762 tested), `Support\DateRange` (half-open), `HasSlug`, `Sortable`. |
+| 2026-10-17 | M1.11 | Done | The kit's AppLayout/AppSidebar is the admin shell, driven by `config/admin-nav.ts` and per-item permissions. Shared props: `auth.user` (AuthUserResource), `auth.permissions` (`['*']` for super admin), `name` from GeneralSettings. `JsonResource::withoutWrapping()` is on globally. |
+| 2026-10-17 | M1.10 | Done | `User` uses `LogsActivity` (name, email, is_staff, is_active only). Viewer at `/admin/activity` with filters and a diff drawer. Note: activitylog v5 stores model diffs in `attribute_changes`. |
+| 2026-10-17 | M1.9 | Done | Settings page `/admin/settings/{group}` with tabs filtered by `settings.{group}.update`. General, Notification and Retention forms ship now; the Pricing (M6.14), Booking (M8.8), Fx (M6.4) and Home (M5.3) tabs return 404 until their steps add a FormRequest in `SettingsGroup::requestClass()`. Saves log a before/after diff. |
+| 2026-10-17 | M1.8 | Done | 7 spatie settings classes with §9 defaults in `database/settings/`. Gotcha: spatie parses `@var` to choose casts and can't read array shapes, so shaped arrays use `@phpstan-var` only. |
+| 2026-10-17 | M1.7 | Done | Read-only roles index and detail pages from `RoleService` and the registry. |
+| 2026-10-17 | M1.6 | Done | Invite (StaffInvitation mail with a reset link; following it verifies the email), edit, roles and direct-permission sync, activate/deactivate, delete, resend invite. Rules on yourself and on the last super admin are enforced in `UserService` (super admins bypass policies) via `DomainException`, which renders as an error toast. |
+| 2026-10-17 | M1.5 | Done | Registration and passkeys removed (D13). `users.is_staff/is_active/last_login_at`. Inactive users can't sign in. Middleware `staff`, `2fa`, `admin.idle`; admin routes in `routes/admin.php` under `/admin`. Fortify home is `/admin`. |
+| 2026-10-17 | M1.4 | Done | `tests/Feature/Admin/RouteGuardTest.php` walks every `admin.*` route as a staff member with no permissions. `admin.dashboard` is the only route open to all staff. |
+| 2026-10-17 | M1.1–M1.3 | Done | `config/permissions.php`, `PermissionRegistry` (`*`, `module.*`, `!x`; reports patterns waiting for their module), `permissions:sync {--prune}` (idempotent; DatabaseSeeder runs it), `Gate::before` for `baines.super_admin_role`. Horizon is gated by `system.horizon`. |
+| 2026-10-17 | M0 | In progress | 8/10. M0.2 and M0.9 are partial (see their rows). |
+| 2026-10-17 | M0.10 | Done | README: Sail setup, commands, conventions, how to add a module. |
+| 2026-10-17 | M0.9 | Deferred | Moved to M12.15 (D12): local development only for now. It must be pulled forward before M5.13 / Gate G1. |
+| 2026-10-17 | M0.8 | Done | `.github/workflows/tests.yml` split into lint, static, test and build jobs on PHP 8.4. Not yet run on GitHub: no push has been made. |
+| 2026-10-17 | M0.7 | Done | Directory skeleton plus `config/baines.php` (super admin role name, booking reference format, token length, upload ceiling, admin idle minutes). |
+| 2026-10-17 | M0.6 | Done | `tests/Arch/LayeringTest.php`: controllers don't use DB/Storage; services don't touch request/response/Inertia; models don't use services; FormRequests have `authorize`; policies never check roles; no debug helpers; enums are enums; public resources never mention `car_value`. The kit's settings requests gained `authorize()`. |
+| 2026-10-17 | M0.5 | Done | Pest 4 (kit tests converted with drift), Vitest via `vp test` (`vite.config.ts` test block), Playwright scaffold (`playwright.config.ts`, `tests/e2e`), `tests/fixtures/`. Tests use in-memory SQLite and `withoutVite()`. |
+| 2026-10-17 | M0.4 | Done | Larastan stays at level 7. `vp check` (oxlint + oxfmt) replaces ESLint/Prettier (D11). Scripts: `composer lint|types|test|ci:check`, `npm run check|types:check|test|e2e`. `docs/**` excluded from oxfmt; the first `check:fix` reformatted these docs (whitespace only). |
+| 2026-10-17 | M0.3 | Done | permission v8, settings v3, activitylog v5, intervention/image v4, dompdf, Horizon, Sentry (exception handler registered), flysystem-aws-s3. All install on Laravel 13 (D10). |
+| 2026-10-17 | M0.2 | Partial | `compose.yaml` (MySQL 8.4, Redis, Mailpit, RustFS; Sail dropped MinIO) and a full `.env.example`. **Blocked locally:** the Sail app image build fails because Docker build containers can't resolve DNS (`archive.ubuntu.com`), and the disk is 99% full. Migrations and seeding were verified on a file SQLite instead. |
+| 2026-10-17 | M0.1 | Done | Starter kit features chosen (2FA, password confirmation, email verification). Chisel removed; project renamed `baines/baines-app`. |
+| 2026-10-17 | —    | Plan created | TECHNICAL_PLAN.md and MILESTONES.md drafted from the PRD of 16 Oct 2026 |

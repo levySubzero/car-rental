@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Services\Iam\UserService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,15 +45,18 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's profile.
+     * Delete the signed-in user's own account.
      */
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, UserService $users): RedirectResponse
     {
         $user = $request->user();
 
+        $users->ensureCanDeleteOwnAccount($user);
+
+        // Sign out first: logging out afterwards would save the deleted user again.
         Auth::logout();
 
-        $user->delete();
+        $users->deleteOwnAccount($user);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -39,6 +39,10 @@ export default defineConfig({
             ],
         },
     },
+    test: {
+        include: ['resources/js/**/*.test.{ts,tsx}'],
+        environment: 'node',
+    },
     lint: {
         ignorePatterns: [
             'vendor/**',
@@ -66,6 +70,8 @@ export default defineConfig({
         ignorePatterns: [
             '.github/**',
             'composer.json',
+            'docs/**',
+            'resources/js/types/permissions.ts',
             'resources/js/components/ui/*',
             'resources/views/mail/*',
         ],

@@ -1,4 +1,4 @@
-name: tests
+name: ci
 
 on:
   push:
@@ -9,30 +9,150 @@ on:
 permissions:
   contents: read
 
-jobs:
-  ci:
-    runs-on: ubuntu-latest
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+
+jobs:
+  lint:
+    name: Lint (Pint, vp check)
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
-          php-version: '8.3'
+          php-version: ${{ env.PHP_VERSION }}
           tools: composer:v2
           coverage: none
 
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-      - name: Setup Application
-        run: composer setup
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
 
-      - name: Run CI Checks
-        run: composer ci:check
+      - name: Prepare app
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan wayfinder:generate --with-form
+
+      - name: Pint
+        run: composer lint:check
+
+      - name: vp check (oxlint, oxfmt)
+        run: npm run check
+
+  static:
+    name: Static analysis (Larastan, tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+
+      - name: Prepare app
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan wayfinder:generate --with-form
+
+      - name: Larastan
+        run: composer types
+
+      - name: TypeScript
+        run: npm run types:check
+
+  test:
+    name: Tests (Pest, Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          extensions: imagick
+          coverage: none
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+
+      - name: Prepare app
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          npm run build
+
+      - name: Pest
+        run: composer test
+
+      - name: Vitest
+        run: npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+
+      - name: Build assets
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          npm run build

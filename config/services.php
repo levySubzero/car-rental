@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
+    'whatsapp' => [
+        'driver' => env('WHATSAPP_DRIVER', 'click_to_chat'),
+        'cloud_token' => env('WHATSAPP_CLOUD_TOKEN'),
+        'cloud_phone_number_id' => env('WHATSAPP_CLOUD_PHONE_NUMBER_ID'),
+    ],
+
+    'fx' => [
+        'provider' => env('FX_PROVIDER', 'manual'),
+        'api_key' => env('FX_API_KEY'),
+    ],
+
 ];

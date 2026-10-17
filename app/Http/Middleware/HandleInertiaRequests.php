@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\Shared\AuthUserResource;
+use App\Models\User;
+use App\Settings\GeneralSettings;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,13 +38,34 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        /** @var User|null $user */
+        $user = $request->user();
+
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => fn () => app(GeneralSettings::class)->company_name,
             'auth' => [
-                'user' => $request->user(),
+                'user' => fn () => $user ? AuthUserResource::make($user)->resolve($request) : null,
+                // Permission names drive what the UI shows. The server still authorizes every request.
+                'permissions' => fn () => $this->permissionsFor($user),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function permissionsFor(?User $user): array
+    {
+        if ($user === null || ! $user->canAccessAdmin()) {
+            return [];
+        }
+
+        if ($user->isSuperAdmin()) {
+            return ['*'];
+        }
+
+        return $user->getAllPermissions()->pluck('name')->values()->all();
     }
 }

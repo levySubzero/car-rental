@@ -42,3 +42,7 @@ yarn-error.log
 /boost.json
 /opencode.json
 /opencode.jsonc
+/test-results
+/playwright-report
+/playwright/.cache
+.env.backup-m0

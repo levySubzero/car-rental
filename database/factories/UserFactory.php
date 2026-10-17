@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -30,12 +31,40 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            /* @chisel-2fa */
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
-            /* @end-chisel-2fa */
+            'is_staff' => false,
+            'is_active' => true,
         ];
+    }
+
+    /**
+     * A staff member who can reach the admin: staff flag set and 2FA confirmed.
+     */
+    public function staff(): static
+    {
+        return $this->withTwoFactor()->state(fn (array $attributes) => [
+            'is_staff' => true,
+        ]);
+    }
+
+    /**
+     * A deactivated account.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
+    }
+
+    /**
+     * Give the user a role after creating it.
+     */
+    public function role(string $role): static
+    {
+        return $this->afterCreating(fn (User $user) => $user->assignRole(Role::findOrCreate($role, 'web')));
     }
 
     /**
@@ -53,12 +82,10 @@ class UserFactory extends Factory
      */
     public function withTwoFactor(): static
     {
-        /* @chisel-2fa */
         return $this->state(fn (array $attributes) => [
             'two_factor_secret' => encrypt('secret'),
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
         ]);
-        /* @end-chisel-2fa */
     }
 }

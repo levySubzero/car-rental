@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Never served over HTTP; private files are streamed by the Media module (M2).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

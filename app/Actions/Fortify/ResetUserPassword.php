@@ -24,6 +24,13 @@ class ResetUserPassword implements ResetsUserPasswords
 
         $user->forceFill([
             'password' => $input['password'],
-        ])->save();
+        ]);
+
+        // Staff are invited with a password reset link, so following it proves the address.
+        if (! $user->hasVerifiedEmail()) {
+            $user->email_verified_at = now();
+        }
+
+        $user->save();
     }
 }
