@@ -1,0 +1,631 @@
+# Baines Executives — Technical Plan
+
+Source: *Baines Executives — PRD, Architecture & Delivery Plan* (16 Oct 2026).
+Companion: [MILESTONES.md](MILESTONES.md) is the live progress tracker. Update it after every step.
+
+This plan replaces the PRD's architecture section (§8) where they disagree. The main changes from the PRD:
+
+- We use the classic Laravel layers: **Controllers → Form Requests → Services → Models**, with **API Resources** for output and **Policies** for authorization. We do not use Actions, spatie/laravel-data DTOs, or spatie/laravel-model-states.
+- **Media is its own shared feature.** One module owns uploads, storage, retrieval and download for every entity. Forms never post files. They post media UUIDs.
+- **Permissions are generated per module.** Each module adds its permissions to a registry as it is built, and a sync command writes them to the database.
+- **We make values configurable instead of waiting on client answers.** Every open question in PRD §10 becomes a setting, a table or a driver with a sensible default (see §9). The client can change these values later without a code change.
+- **Some models have a `metadata` JSON field.** Admin-defined metadata fields extend cars, brands, services and other models without migrations.
+
+---
+
+## 1. Stack
+
+| Concern | Choice | Notes |
+| --- | --- | --- |
+| Runtime | PHP 8.3+, Laravel 12 | |
+| Frontend | Inertia.js 2, React 19, TypeScript, Vite, Tailwind CSS 4 | Laravel React starter kit as the base |
+| UI kit | shadcn/ui (admin and shared primitives), Embla Carousel (gallery, marquee) | |
+| Typed routes | Laravel Wayfinder (ships with the starter kit) | Ziggy only if Wayfinder blocks us |
+| SSR | Inertia SSR Node sidecar, public routes only | |
+| Auth / 2FA | Laravel Fortify (starter kit) with TOTP 2FA, enforced for staff | |
+| Database | MySQL 8, InnoDB, utf8mb4 | SQLite in-memory for unit tests only |
+| Queue / cache / session | Redis, Laravel Horizon | |
+| Storage | Laravel filesystem disks; local or S3-compatible, chosen by env | Wrapped by our Media module, see §6 |
+| Images | intervention/image v3 (Imagick driver, so HEIC works) | Conversions and EXIF stripping |
+| Settings | spatie/laravel-settings | Typed settings classes per group |
+| Permissions | spatie/laravel-permission | Fed by our permission registry, see §5 |
+| Audit | spatie/laravel-activitylog | |
+| PDF | barryvdh/laravel-dompdf | No headless Chrome in the containers |
+| Bot protection | Cloudflare Turnstile (custom validation rule) | |
+| Testing | Pest 3 (unit, feature, arch), Vitest (TS quote port), Playwright (E2E booking) | |
+| Quality | Pint, Larastan (level 6+), ESLint, Prettier, `tsc --noEmit` | All run in CI |
+| Errors / uptime | Sentry (PHP + JS), uptime check on the booking endpoint | |
+
+---
+
+## 2. Layering rules
+
+Every feature follows the same path. These rules are enforced by Pest `arch()` tests (§16).
+
+```
+Route ──► Controller ──► FormRequest (authorize + validate)
+              │
+              ├──► Service (business logic, transactions, events)
+              │        └──► Models / other Services / Media service
+              │
+              └──► Resource (shape output) ──► Inertia::render / JSON
+Policy ◄── FormRequest::authorize() / $this->authorize() / route `can:` middleware
+```
+
+| Layer | Responsibility | Must not |
+| --- | --- | --- |
+| **Controller** | Receive a request, call one service method, return an Inertia response or a redirect. Stay thin, around 10 lines per action. | Query the database beyond route-model binding, hold business rules, or touch storage |
+| **FormRequest** | `authorize()` delegates to a policy. `rules()` validates the request, and `validated()` is the only input that reaches services. | Contain business logic |
+| **Service** | Business logic and orchestration. It owns DB transactions, raises domain exceptions and dispatches events or jobs. It receives plain arrays or models and returns models or value objects. | Read `request()`, return HTTP responses, or render views |
+| **Resource** | Shape output for Inertia props and JSON. Public and admin resources are separate classes. | Leak admin-only fields such as `car_value` or encrypted identifiers into public resources |
+| **Policy** | Map an ability to a permission string, with an ownership or state check where needed | Hard-code role names. Policies check permissions only. |
+| **Model** | Relations, casts, scopes, accessors | Contain workflow logic |
+| **Enum** | Statuses, types and bases, including their labels and transition maps | |
+| **Job / Listener** | Async side effects: conversions, notifications, FX pulls, purges | |
+
+Naming:
+
+- Controllers: `Admin\CarController`, `Public\FleetController`, `Media\MediaController`
+- Requests: `Admin\Car\StoreCarRequest`, `Admin\Car\UpdateCarRequest`
+- Resources: `Admin\CarResource`, `Public\CarCardResource`, `Public\CarDetailResource`
+- Services: `Catalog\CarService`, `Pricing\QuoteService`, `Booking\BookingService`
+- Policies: `CarPolicy`, auto-discovered
+
+Small immutable value objects, such as `Quote`, `Money` and `DateRange`, are allowed under `app/Support/*`. They are plain readonly classes, not a DTO framework.
+
+---
+
+## 3. Directory layout
+
+```
+app/
+  Console/Commands/          permissions:sync, fx:refresh, media:cleanup, media:migrate-disk,
+                             bookings:expire, kyc:purge
+  Enums/                     BookingStatus, PaymentMethodCode, PaymentStatus, IdType, ChargeBasis,
+                             MediaVisibility, DayCountingStrategy, Transmission, ...
+  Exceptions/Domain/         CarUnavailableException, DriverAgeException, InvalidTransitionException, ...
+  Http/
+    Controllers/
+      Admin/                 CarController, BrandController, CarTypeController, ServiceController,
+                             PageController, PolicyController, SettingsController, CurrencyController,
+                             FxRateController, ChargeController, DepositBandController, BookingController,
+                             PaymentSubmissionController, AvailabilityController, MetadataFieldController,
+                             UserController, RoleController, ActivityLogController
+      Public/                HomeController, FleetController, CarController, BrandController,
+                             CarTypeController, ServiceController, PolicyController, PageController,
+                             ContactController, CurrencyController, BookingController,
+                             BookingPaymentController
+      Media/                 MediaController   (the single upload/serve/download/delete endpoint)
+    Middleware/              ShareCurrency, EnsureStaff, ResolveBookingToken, EnsureTwoFactor
+    Requests/{Admin,Public,Media}/...
+    Resources/{Admin,Public,Shared}/...
+  Models/                    Brand, CarType, Car, Service, Page, PageSection, Policy, PolicyVersion,
+                             Currency, FxRate, Charge, DeliveryZone, DepositBand, CancellationTier,
+                             Booking, BookingDriver, BookingStatusHistory, AvailabilityHold, CarBlackout,
+                             PaymentMethod, PaymentSubmission, Media, MetadataField, ContactMessage, User
+  Models/Concerns/           HasMedia, HasMetadata, HasSlug, Sortable
+  Notifications/             BookingReceived, StaffNewBooking, PaymentSubmitted, BookingConfirmed,
+                             PaymentRejected
+  Notifications/Channels/    WhatsAppChannel (driver-based)
+  Policies/                  one per model + MediaPolicy
+  Services/
+    Catalog/                 BrandService, CarTypeService, CarService
+    Content/                 PageService, PolicyService, ServiceCatalogService
+    Media/                   MediaService, MediaCollectionRegistry, ImageProcessor, MediaUrlGenerator
+    Metadata/                MetadataService
+    Pricing/                 QuoteService, DayCounter/*, FxRateService, Fx/Providers/*, CurrencyService
+    Booking/                 BookingService, BookingStatusService, AvailabilityService,
+                             DriverEligibilityService, BookingReferenceGenerator
+    Payments/                PaymentSubmissionService, PaymentVerificationService
+    Notifications/           VoucherService, WhatsAppLinkBuilder, WhatsApp/Drivers/*
+    Iam/                     PermissionRegistry, PermissionSyncService
+  Settings/                  GeneralSettings, PricingSettings, BookingSettings, FxSettings,
+                             NotificationSettings, HomeSettings, RetentionSettings
+  Support/                   Money, Quote, DateRange, Rules/*
+config/
+  media.php                  disks and collection registry
+  permissions.php            module → abilities, role → grants
+  baines.php                 non-editable app constants (reference format, upload limits)
+database/
+  migrations/  factories/  seeders/ (CmsSeeder + JSON seed pack under database/seeders/data/)
+resources/js/
+  pages/{public,admin}/...   mirrors controllers
+  components/{ui,public,admin,media}/
+  lib/quote/                 TS port of QuoteService + day counters
+  lib/money.ts, lib/currency.ts, lib/whatsapp.ts
+  types/                     resource types (hand-maintained, one file per resource group)
+tests/
+  Unit/  Feature/{Admin,Public,Media,Booking,Payments}/  Arch/  fixtures/quotes.json
+  e2e/ (Playwright)
+```
+
+---
+
+## 4. Request shapes
+
+Admin CRUD routes are Inertia resource routes:
+
+```php
+Route::middleware(['auth', 'verified', 'staff', '2fa'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('cars', Admin\CarController::class);
+    Route::post('cars/{car}/toggle-availability', [Admin\CarController::class, 'toggleAvailability'])
+        ->name('cars.toggle-availability');
+    // ...
+});
+```
+
+A typical controller action:
+
+```php
+public function store(StoreCarRequest $request, CarService $cars): RedirectResponse
+{
+    $car = $cars->create($request->validated());
+
+    return to_route('admin.cars.edit', $car)->with('success', 'Car created.');
+}
+```
+
+A form request with media and metadata:
+
+```php
+public function authorize(): bool { return $this->user()->can('create', Car::class); }
+
+public function rules(): array
+{
+    return [
+        'name'            => ['required', 'string', 'max:120'],
+        'brand_id'        => ['required', 'exists:brands,id'],
+        'daily_rate'      => ['required', 'numeric', 'min:0'],            // major units in, minor units stored
+        'gallery'         => ['array', new MaxMediaForCollection('car.gallery')],
+        'gallery.*'       => ['uuid', new PendingOrOwnedMedia('car.gallery', $this->route('car'))],
+        'cover_media_id'  => ['nullable', 'uuid', 'in_array:gallery.*'],
+        'metadata'        => ['array'],
+        ...MetadataRules::for(Car::class, 'metadata'),                    // rules from metadata_fields
+    ];
+}
+```
+
+A service, with the transaction and media sync inside it:
+
+```php
+public function create(array $data): Car
+{
+    return DB::transaction(function () use ($data) {
+        $car = Car::create(Arr::except($data, ['gallery', 'cover_media_id']));
+        $this->media->sync($car, 'car.gallery', $data['gallery'] ?? [], cover: $data['cover_media_id'] ?? null);
+        activity()->performedOn($car)->log('created');
+
+        return $car;
+    });
+}
+```
+
+---
+
+## 5. Permissions (generated per module)
+
+**Convention:** permission names are `{module}.{ability}`, for example `cars.view`, `cars.create`, `cars.update`, `cars.delete`, `cars.view-value`, `bookings.verify-payment` and `media.view-private`.
+
+**Registry:** `config/permissions.php` is the single source of truth.
+
+```php
+return [
+    'modules' => [
+        'cars'     => ['view', 'create', 'update', 'delete', 'view-value', 'publish'],
+        'brands'   => ['view', 'create', 'update', 'delete'],
+        'bookings' => ['view', 'update', 'verify-payment', 'confirm', 'cancel', 'record-handover',
+                       'record-return', 'view-documents', 'resend-voucher'],
+        // each milestone adds its module here
+    ],
+    'roles' => [
+        'super-admin'    => ['*'],                           // also Gate::before bypass
+        'operations'     => ['bookings.*', 'payments.*', 'availability.*', 'media.view-private', 'cars.view'],
+        'content-editor' => ['cars.*', '!cars.view-value', 'brands.*', 'car-types.*', 'services.*',
+                             'pages.*', 'policies.*', 'media.upload'],
+    ],
+];
+```
+
+- `php artisan permissions:sync` is run by the deploy step and by `DatabaseSeeder`. It is idempotent: it upserts permissions, expands the `*` and `!` patterns, syncs role grants, and reports orphaned permissions without deleting them unless you pass `--prune`.
+- Policies only call `$user->can('cars.update')`. Role names never appear in code outside the registry.
+- Super admins can grant extra permissions to individual users in the admin UI. Role grants stay in config so they are reviewable in code.
+- **Guard test:** a feature test walks every `admin.*` route and asserts that a user with no permissions gets 403. If a new route lacks a policy, CI fails.
+- **Definition of done for any new module:** registry entry, policy, permission test, sync run.
+
+---
+
+## 6. Media module (shared by every entity)
+
+### 6.1 Principles
+
+1. **One controller and one set of endpoints** serve every feature: cars, brands, services, pages, booking KYC documents, payment proofs and vouchers.
+2. **Forms never upload files.** The `<MediaUploader>` component uploads each file to `POST /media` as soon as it is picked and receives a UUID. The form then submits the UUIDs, in order. Services call `MediaService::sync()` to attach, reorder or detach files.
+3. **Each media row records the disk it was written to.** Changing the env disk affects new uploads only, and existing files stay readable. `media:migrate-disk` moves files between disks.
+4. **Visibility belongs to the collection, not the request.** Public collections go to the public disk. Private collections (KYC, payment proofs, vouchers) always go to the private disk.
+
+### 6.2 Disk configuration
+
+`config/filesystems.php` defines `media-public-local`, `media-private-local`, `media-public-s3` and `media-private-s3`.
+
+`config/media.php`:
+
+```php
+'disks' => [
+    'public'  => env('MEDIA_PUBLIC_DISK', 'media-public-local'),   // switch to media-public-s3
+    'private' => env('MEDIA_PRIVATE_DISK', 'media-private-local'), // switch to media-private-s3
+],
+'signed_url_ttl' => env('MEDIA_SIGNED_URL_TTL', 5),               // minutes, private files
+'pending_ttl'    => env('MEDIA_PENDING_TTL', 1440),               // minutes before orphan cleanup
+'serve_public_via' => env('MEDIA_PUBLIC_SERVE', 'redirect'),      // redirect (CDN/disk URL) | stream
+'conversions' => [
+    'thumb' => ['w' => 320,  'format' => 'webp', 'q' => 75],
+    'card'  => ['w' => 800,  'format' => 'webp', 'q' => 80],
+    'full'  => ['w' => 1920, 'format' => 'webp', 'q' => 82],
+],
+'collections' => [
+    'car.gallery'       => ['model' => Car::class,     'visibility' => 'public',  'max_files' => 6,
+                            'mimes' => ['jpg','jpeg','png','webp','heic'], 'max_kb' => 8192,
+                            'conversions' => ['thumb','card','full'], 'upload' => ['permission' => 'cars.update']],
+    'brand.logo'        => ['model' => Brand::class,   'visibility' => 'public',  'max_files' => 1,
+                            'mimes' => ['svg','png','webp'], 'upload' => ['permission' => 'brands.update']],
+    'service.image'     => [...], 'page.section' => [...], 'site.hero' => [...],
+    'booking.id_front'  => ['model' => Booking::class, 'visibility' => 'private', 'max_files' => 1,
+                            'mimes' => ['jpg','jpeg','png','heic','pdf'], 'max_kb' => 8192,
+                            'strip_exif' => true, 'upload' => ['booking_token' => true]],
+    'booking.id_back' => [...], 'booking.passport' => [...], 'booking.kra_certificate' => [...],
+    'booking.licence' => [...], 'booking.payment_proof' => [...],
+    'booking.voucher'   => ['visibility' => 'private', 'upload' => ['system' => true]],
+],
+```
+
+Admins can lower `max_files`, `max_kb` and `mimes` per collection through `MediaSettings` overrides. The config values are hard ceilings.
+
+### 6.3 Table `media`
+
+| Column | Notes |
+| --- | --- |
+| id, uuid | The UUID is the only identifier exposed publicly |
+| mediable_type, mediable_id | Nullable while the file is pending |
+| collection | Registry key, e.g. `car.gallery` |
+| disk, path, conversions (JSON) | Physical location of the original and each conversion |
+| original_name, file_name, mime_type, extension, size_bytes, checksum_sha256 | `mime_type` is sniffed, never taken from the client |
+| width, height | Images only |
+| visibility | `public` or `private` (enum) |
+| status | `pending`, `attached`, `processing` or `failed` |
+| is_primary, sort_order | Cover image and gallery order |
+| metadata (JSON) | Alt text, caption, credit, page count for PDFs, `exif_stripped` |
+| uploaded_by_type, uploaded_by_id | A staff user or a booking (renter) |
+| expires_at | Set while pending; `media:cleanup` deletes rows that expire unattached |
+| timestamps, deleted_at | Soft-deleted files are purged by job |
+
+### 6.4 Endpoints, the only media routes in the app
+
+| Method and path | Purpose | Authorization |
+| --- | --- | --- |
+| `POST /media` | Upload one file (`file`, `collection`, optional `owner_type`/`owner_id`) and get back a `MediaResource` | Collection upload rule: a staff permission, or a valid booking token sent in the `X-Booking-Token` header |
+| `GET /media/{uuid}/{conversion?}` | Retrieve or render inline | Public: open, with a redirect to the disk or CDN URL and long cache headers. Private: authorized via `MediaPolicy::view`, served through a temporary signed URL (S3) or a signed stream (local), and logged. |
+| `GET /media/{uuid}/download` | Download with `Content-Disposition: attachment` | Same as above |
+| `PATCH /media/{uuid}` | Update alt text or caption metadata | Owner's update permission |
+| `DELETE /media/{uuid}` | Delete a pending file or detach one | Owner's update permission, or the uploader while pending |
+| `POST /media/reorder` | `{collection, owner, uuids[]}` | Owner's update permission |
+
+`MediaPolicy` resolves the owner model and delegates to that model's policy, so `view` on a booking document requires `bookings.view-documents`. Renters can only see their own pending or attached booking files, and only through their token.
+
+### 6.5 Services
+
+- `MediaCollectionRegistry`: reads the config and setting overrides, resolves a collection definition, and validates the model against it.
+- `MediaService`: `upload(UploadedFile, collection, uploader, ?owner)`, `sync(model, collection, uuids, cover)`, `attach`, `detach`, `reorder`, `delete`, `temporaryUrl(media, conversion)`, `stream(media)`.
+- `ImageProcessor`: re-encodes the image to strip EXIF, normalizes orientation, converts HEIC to JPEG, and generates conversions. It runs as the queued job `ProcessMediaJob`.
+- `MediaUrlGenerator`: the only place URLs are built, which keeps the CDN or disk switch in one spot.
+- The `HasMedia` model concern provides `media()`, `mediaIn('car.gallery')`, `primaryMedia('car.gallery')` and `getMediaCollections()`.
+
+### 6.6 Frontend
+
+- `<MediaUploader collection="car.gallery" value={uuids} onChange={...} max={6} sortable coverable />` handles drag-to-reorder, choosing a cover, progress, retry and client-side compression on mobile (browser-image-compression). It is used by every form that has files.
+- `<MediaImage media={m} conversion="card" />` renders responsive `srcset` from the resource's `urls`.
+- `<SecureDocumentViewer uuid=... />` (admin only) requests a fresh signed URL on open.
+
+---
+
+## 7. Metadata fields
+
+Use `metadata` for attributes the client may want to add without a migration. Use columns for anything the system filters, sorts or calculates on.
+
+- **Models with `metadata` (JSON, cast `AsArrayObject`):** `cars`, `brands`, `car_types`, `services`, `pages`, `bookings`, `booking_drivers`, `payment_submissions`, `media`.
+- **Table `metadata_fields`** (admin-managed through the CMS):
+
+  | Column | Notes |
+  | --- | --- |
+  | `entity` | e.g. `car` |
+  | `key` | Slug, unique per entity |
+  | `label` | Shown in forms and on the public site |
+  | `type` | `text`, `textarea`, `number`, `boolean`, `select`, `multiselect`, `date`, `url` |
+  | `options` (JSON) | Choices for select types |
+  | `rules` (JSON) | Extra validation, e.g. min or max |
+  | `unit` | e.g. `s`, `km/h`, `L/100km` |
+  | `is_required` | |
+  | `is_public` | Shown on the public site; hidden fields stay admin-only |
+  | `show_on_card` | Shown on fleet cards |
+  | `sort_order` | |
+
+- `MetadataService::rulesFor(entity)` feeds form requests. `MetadataService::publicView(model)` feeds public resources, which only ever expose fields marked `is_public`.
+- `<MetadataFields entity="car" />` renders the inputs dynamically in admin forms.
+- **Seeded car fields:** `fuel_type`, `colour`, `zero_to_hundred_s`, `top_speed_kmh`, `drive` (2WD/4WD/AWD), `luggage_bags` and `features` (multiselect: AC, Bluetooth, CarPlay, sunroof, …).
+- Unknown keys are stripped on save, so `metadata` only ever holds defined fields.
+
+---
+
+## 8. Data model
+
+All money columns are `bigint` in **minor units** (cents) with a `_minor` suffix. The currency is KES unless a column says otherwise.
+
+| Table | Key columns |
+| --- | --- |
+| **users** | id, name, email, password, two_factor_*, is_staff, is_active, last_login_at |
+| **brands** | id, name, slug, sort_order, show_in_marquee, is_active, metadata |
+| **car_types** | id, name, slug, description, sort_order, is_active, metadata |
+| **cars** | id, brand_id, car_type_id, name, slug, model_year, engine_type, engine_capacity_cc, transmission (enum), doors, seats, daily_rate_minor, car_value_minor, mileage_limit_km (nullable = use the default), damage_excess_minor + damage_excess_currency, is_featured, is_available, is_published, published_at, description, metadata, sort_order |
+| **car_blackouts** | car_id, starts_at, ends_at, reason (maintenance, private use) |
+| **services** | id, title, slug, summary, body, icon, cta_type (book, whatsapp, link), cta_value, sort_order, is_active, metadata |
+| **pages** | id, slug, title, meta_title, meta_description, og_media_id, is_system |
+| **page_sections** | page_id, key, type, content (JSON), sort_order, is_visible |
+| **policies** | id, slug, title, group, summary, show_on_home, sort_order |
+| **policy_versions** | policy_id, version, body (markdown), published_at (null = draft), created_by |
+| **policy_bundles** | id, version, published_at. A snapshot of every published version, which is what a renter accepts. |
+| **currencies** | code, name, symbol, decimals, is_active, sort_order, is_base |
+| **fx_rates** | currency_code, market_rate (decimal 14,6 KES per unit), margin_minor, effective_rate, source, fetched_at, is_override, override_by, override_until |
+| **charges** | code, name, description, basis (per_day, per_booking, per_km, info_only), amount_minor, currency_code, tax_inclusive, payable_at (reservation, handover, counter), is_optional, is_active, trigger (chauffeur, delivery, additional_driver, one_way, valeting, admin, full_protection, excess_km, null), sort_order |
+| **delivery_zones** | name, description, fee_minor (null = quoted by staff), is_default, is_active, sort_order |
+| **deposit_bands** | min_age, max_age, percent_bp (basis points of car value), label, is_active |
+| **cancellation_tiers** | hours_before_pickup, refund_percent_bp, label |
+| **payment_methods** | code, name, instructions (rich text), requires_transaction_message, requires_proof, is_active, sort_order, metadata (paybill, till, account, bank details, card link) |
+| **bookings** | id, reference, access_token_hash, car_id, status (enum), pickup_at, return_at, pickup_point, return_point, delivery_zone_id, delivery_address, chauffeur_required, additional_driver, flight_number, billable_days, display_currency, quote (JSON snapshot), fx (JSON snapshot), settings_snapshot (JSON), total_minor, reservation_minor, balance_minor, security_deposit_minor, policy_bundle_id, accepted_terms_at, accepted_terms_ip, current_step, expires_at, confirmed_at, handover_at, returned_at, metadata, timestamps |
+| **booking_drivers** | booking_id, is_main, surname, first_name, second_name, dob, email, phone, nationality, is_kenyan_resident, id_type (national_id, passport), id_number (encrypted), id_number_hash, kra_pin (encrypted), licence_number (encrypted), licence_expiry, licence_years_declared, metadata |
+| **booking_status_histories** | booking_id, from, to, actor_type, actor_id, reason, created_at |
+| **availability_holds** | car_id, booking_id, starts_at, ends_at, expires_at |
+| **payment_submissions** | booking_id, payment_method_code, amount_minor, currency_code, transaction_message, reference, status (pending, verified, rejected), verified_by, verified_at, rejection_reason, metadata |
+| **handover_records** | booking_id, type (handover, return), balance_received_minor, deposit_received_minor, deposit_refunded_minor, odometer_km, fuel_level, notes, recorded_by, recorded_at |
+| **contact_messages** | name, email, phone, message, car_id, preferred_dates, status, handled_by |
+| **metadata_fields** | see §7 |
+| **media** | see §6.3 |
+| **settings** | spatie settings |
+| **activity_log**, **permissions**, **roles**, … | package tables |
+
+Booking references use the format `BE-{YYYY}-{000123}`. The format string lives in `config/baines.php` and the counter is per year.
+
+---
+
+## 9. Configurability: open questions become settings
+
+We do not block on any of PRD §10. Each item ships with a setting or table and a working default that admins can change.
+
+| PRD Q | What we build | Default |
+| --- | --- | --- |
+| Q1 "UAD" currency | `currencies` table with an active toggle | KES, USD, GBP, EUR, AED active; AUD seeded but inactive |
+| Q2 Minimum age, 3% band | `deposit_bands` table. The age limits are derived from the bands, and an age outside every band blocks the booking. | 23–23 → 3%; 24–70 → 2% |
+| Q3 Day counting | `PricingSettings::day_counting` strategy: `calendar_inclusive`, `rolling_24h` (with grace minutes) or `daytime_blocks` (window start/end) | `calendar_inclusive`, window 07:00–19:00 |
+| Q4 Chauffeur basis | `charges` row `chauffeur` with basis and currency | per_day, USD 50, tax inclusive |
+| Q5 Mileage | `PricingSettings::default_mileage_km`, `unlimited_mileage_after_days` (nullable), per-car override, `excess_km` charge | 300 km, null (off), excess shown as "on request" until set |
+| Q6 KRA for foreigners | `BookingSettings::document_requirements` matrix by id_type × residency | Kenyan resident: ID front + back, KRA PIN + certificate, licence. Passport holder: passport, licence, KRA optional. |
+| Q7 Card at pick-up | `BookingSettings::deposit_payment_methods` | All active methods |
+| Q8 Marquee placement | `HomeSettings::marquee_position` (`below_hero` or `page_bottom`) | `page_bottom` |
+| Q9 Flight notice | `BookingSettings::flight_notice_days` | 2 |
+| Q10 Delivery fee | `delivery_zones` table | "Nairobi" KES 2,000 (default); "Outside Nairobi" quoted by staff |
+| Q11 FX source | `FxSettings::provider` driver (`manual`, `open_exchange_rates`, `exchangerate_api`), refresh frequency, margin, staleness alert | `manual` until an API key exists; margin KES 3; refresh hourly |
+| Q12 Damage excess | `cars.damage_excess_minor` and currency, shown on the detail page | null = hidden |
+| Q13 Other fees | `charges` rows with `info_only` basis and nullable amount | Shown as text only |
+| Q14 Cancellation tiers | `cancellation_tiers` table, rendered into the policy page and the voucher | Empty; the policy text is the only source until the client fills the tiers |
+| Q15 Safaris | `services` rows with `cta_type=whatsapp` | Seeded safari service |
+| Q16 Domain / mail | Env (`APP_URL`, `MAIL_FROM_*`) | — |
+
+Other settings groups:
+
+- **PricingSettings:** `reservation_percent_bp` (2500), `reservation_rounding` (`ceil_major`), `hold_minutes` (120), `draft_expiry_hours` (24), `turnaround_minutes` (0), `base_currency` (KES).
+- **BookingSettings:** `min_licence_years` (3), `licence_must_outlive_return` (true), `require_flight_number_for_airport` (false), `max_additional_drivers` (1).
+- **GeneralSettings:** company name, legal name, phones, WhatsApp number, email, address, map embed URL, coordinates, socials, opening hours, WhatsApp message templates (with `{car}`, `{dates}` and `{reference}` placeholders).
+- **NotificationSettings:** staff alert emails, staff WhatsApp number, channel toggles per event, voucher email subject and intro copy.
+- **RetentionSettings:** `kyc_retention_months` (12), `draft_retention_days` (7), `activity_log_retention_months` (24).
+- **HomeSettings:** hero media, headline, subline, CTA labels, featured car count, section order and visibility, trust-strip figures.
+
+**Snapshot rule:** at submit time the booking stores the quote, the FX rates *and* the pricing and booking settings that were used (`settings_snapshot`). Changing a setting never changes an existing booking.
+
+---
+
+## 10. Pricing and quote engine
+
+`Pricing\QuoteService::calculate(QuoteInput $in): Quote` is pure apart from the injected settings and repositories, and it is deterministic.
+
+The input:
+
+- car (daily rate, value, mileage)
+- pickup and return times
+- extras flags (chauffeur, delivery zone, additional driver)
+- driver date of birth
+- display currency
+
+The steps:
+
+1. `DayCounter` (the strategy chosen by setting) calculates the billable days.
+2. Rental = days × daily rate.
+3. Each active charge whose trigger is selected adds its amount. A foreign-currency charge is converted to KES at the **market** rate (PRD: chauffeur at the market rate). `per_day` multiplies by days.
+4. Total = rental + charges payable at reservation or handover. `info_only` and `counter` charges are listed but not summed.
+5. Reservation = round(total × reservation %, rounding mode). Balance = total − reservation.
+6. Age at pickup date selects the deposit band, and security deposit = band % × car value. If no band matches, the quote throws `DriverAgeException`.
+7. Display conversion: amount ÷ (market rate − margin), per active currency.
+
+The output, `Quote` (serializable to JSON for the snapshot):
+
+- line items
+- totals in minor units
+- days
+- band
+- the FX table used
+- the settings hash
+
+**TS parity:** `resources/js/lib/quote/` is a line-for-line port, including the day counters. Both implementations run against `tests/fixtures/quotes.json`, which holds at least 40 cases: the PRD worked example, age edges, day-counting edges, every rounding case and each currency. Pest and Vitest both run in CI, so drift fails the build. Gate G3 adds the client's 20 spreadsheet cases to the same fixture.
+
+**FX:** `FxRateService` pulls from the configured `FxRateProvider` driver every hour. It stores history, respects active overrides (`override_until`), and alerts staff when rates are older than `FxSettings::stale_after_hours`.
+
+---
+
+## 11. Booking engine
+
+### 11.1 Flow (PRD §8.4, mapped to our layers)
+
+| Step | Route | Controller → Service |
+| --- | --- | --- |
+| Booking page | `GET /fleet/{car:slug}/book` | `Public\BookingController@create` → props: `CarDetailResource`, pricing config, FX table, delivery zones, charges, document matrix |
+| Start draft | `POST /bookings` | `@store` (`StartBookingRequest`) → `BookingService::startDraft()`. Returns a plain token, stores only the hash, and redirects to `/bookings/{token}`. |
+| Save step | `PUT /bookings/{token}/steps/{step}` | `@updateStep` (one FormRequest per step) → `BookingService::saveStep()` |
+| Upload documents | `POST /media` with `X-Booking-Token` | Media module, `booking.*` collections |
+| Live quote | Client-side TS. Optional `POST /bookings/{token}/quote` for server preview. | `QuoteService` |
+| Submit | `POST /bookings/{token}/submit` | `SubmitBookingRequest` → `BookingService::submit()`: eligibility checks, required documents, `AvailabilityService::lockAndHold()` in a transaction with `lockForUpdate` on the car, quote recalculation, snapshot, Awaiting payment |
+| Payment | `POST /bookings/{token}/payments` | `BookingPaymentController@store` → `PaymentSubmissionService::submit()` |
+| Status page | `GET /bookings/{token}` | Renter's signed view of status, quote and payment instructions |
+
+### 11.2 Status machine
+
+`BookingStatus` enum with `transitions(): array` and `blocksAvailability(): bool`.
+
+```
+Draft ─► AwaitingPayment ─► PaymentSubmitted ─► Reserved ─► Active ─► Completed
+  │            │   └─► AwaitingCash ──────────────┘   │  └─► Cancelled / NoShow
+  └─► Expired  └─► Expired      PaymentRejected ◄─────┘ (from PaymentSubmitted)
+                                 ├─► PaymentSubmitted (retry)
+                                 └─► Cancelled
+```
+
+- All changes go through `BookingStatusService::transition($booking, $to, $actor, $reason)`. It validates against the map, writes `booking_status_histories` and the activity log, and dispatches `BookingStatusChanged`.
+- Listeners send notifications, create or release holds, and generate vouchers.
+- `bookings:expire` runs every 5 minutes. It expires drafts after `draft_expiry_hours` and awaiting-payment bookings after `hold_minutes`, and it releases their holds.
+
+### 11.3 Availability
+
+`AvailabilityService::isAvailable(car, range)` reports a conflict for any of:
+
+- unexpired holds
+- bookings whose status `blocksAvailability()`
+- `car_blackouts`
+- the turnaround buffer
+
+Submission re-checks availability under a row lock. The admin calendar uses the same service.
+
+### 11.4 Eligibility (`DriverEligibilityService`)
+
+- Age at pickup falls within a deposit band.
+- Licence expiry is after return when `licence_must_outlive_return` is on.
+- `licence_years_declared` is at least `min_licence_years`.
+- The document matrix is satisfied for the driver's id_type and residency.
+- Flight notice days apply when a flight number is given (warning only).
+
+---
+
+## 12. Payments
+
+- Payment method instructions and account details live in `payment_methods` (rich text + metadata). They are only revealed after the renter chooses a method (PRD P-1).
+- `PaymentSubmissionService::submit()` handles the transaction message and an optional proof UUID (`booking.payment_proof`). It moves the booking to Payment submitted, or to Awaiting cash for the cash method.
+- `PaymentVerificationService::verify(submission, reference, amount, actor)` records a verified payment and moves the booking to Reserved. The Reserved listener firm-blocks the dates and queues the voucher. `reject(submission, reason)` moves the booking to Payment rejected and notifies the renter.
+- If the amount is less than the reservation, verification needs the `payments.accept-partial` permission and a note.
+- **Phase 2 hook:** `PaymentGateway` interface (M-Pesa Daraja, Pesapal) writing to the same `payment_submissions`, auto-verified.
+
+---
+
+## 13. Notifications and voucher
+
+| Event | Renter | Staff |
+| --- | --- | --- |
+| Booking submitted | `BookingReceived` (mail, with status link) | `StaffNewBooking` (mail + WhatsApp) |
+| Payment submitted | — | `PaymentSubmitted` (mail + WhatsApp) |
+| Reserved | `BookingConfirmed` (mail, voucher PDF attached; WhatsApp) | — |
+| Payment rejected | `PaymentRejected` (mail, with reason and retry link) | — |
+
+- `VoucherService` renders the voucher with dompdf from a Blade view. Fields follow PRD P-6 and the values come from the **snapshot**. The PDF is stored as `booking.voucher` media and regenerated on resend.
+- **WhatsApp channel drivers** (config `services.whatsapp.driver`):
+  - `click_to_chat` (v1): builds a `wa.me` link with prefilled text, logs it, and shows staff a "Send on WhatsApp" button.
+  - `cloud_api` (v1.1): approved templates.
+- All notifications are queued, all are logged to the activity log, and every one can be toggled in `NotificationSettings`.
+
+---
+
+## 14. Public site
+
+- `ShareCurrency` middleware reads the `currency` cookie, which is validated against active currencies. It shares the selected currency and the effective FX table as Inertia props. `CurrencyController@update` sets the cookie.
+- Prices are always sent in KES minor units and converted on the client by `lib/money.ts` with the shared rates. The server-side resources also expose a `display` price for SSR, so there is no flash on first render.
+- Brand pages (`/car-brands/{brand}`) and type pages (`/car-types/{type}`) reuse `FleetController@index` with a preset filter. `/fleet` takes query filters: brand, type, transmission, seats, sort.
+- SEO:
+  - per-page meta from `pages`
+  - `sitemap.xml` from published cars, brands, types, services and policies
+  - JSON-LD (`AutoRental`, `Car`, `LocalBusiness`)
+  - canonical URLs
+- `lib/whatsapp.ts` and `WhatsAppLinkBuilder` (PHP) share the template strings from settings.
+
+---
+
+## 15. Security and data protection
+
+- KYC files live on private disk collections only. They are served through signed short-lived URLs, and every view is logged (`media.viewed`).
+- `id_number`, `kra_pin` and `licence_number` use encrypted casts, with a hash column for lookup.
+- Renter access uses a 64-character random token. Only its SHA-256 hash is stored. Links can be rotated by staff.
+- Rate limiters are named limiters:
+  - `booking-start`: 10 per hour per IP
+  - `booking-step`
+  - `media-upload`: 30 per hour per token
+  - `contact`: 5 per hour
+- Turnstile protects the booking start and contact forms.
+- Staff accounts must have 2FA enabled before reaching `/admin` (`EnsureTwoFactor`). Admin sessions time out after inactivity.
+- Uploads are checked by MIME sniffing (`finfo`) against the collection whitelist, re-encoded, size-capped, and stored with randomized file names.
+- `kyc:purge` runs daily. It deletes KYC media `kyc_retention_months` after completion unless `metadata.legal_hold` is set, and logs each purge.
+- Security headers (CSP, HSTS, frame-ancestors) are set by middleware.
+
+---
+
+## 16. Testing strategy
+
+| Layer | Tests |
+| --- | --- |
+| **Arch (Pest `arch()`)** | Controllers do not use `DB` or `Storage`. Services do not use `request()`. Public resources never reference `car_value_minor`. Models do not depend on services. Every Form Request implements `authorize`. |
+| **Unit** | QuoteService against fixtures, day counters, eligibility, status transitions map, MediaCollectionRegistry, permission pattern expansion, Money rounding |
+| **Feature** | For each admin controller: guest redirect, 403 without permission, validation, happy path. Media: upload to every collection type, private access denied or allowed, disk switch via `Storage::fake`. Booking: full flow, double-booking race (two submits, one lock), expiry job. |
+| **Parity** | Vitest runs the same `quotes.json` fixture |
+| **E2E (Playwright)** | Renter books with documents → staff verifies → voucher mail captured (Mailpit) |
+| **Coverage target** | 90% on `app/Services/Pricing`, `Booking` and `Media`; 70% overall |
+
+---
+
+## 17. Environments and delivery
+
+| Environment | Notes |
+| --- | --- |
+| Local | Laravel Sail (MySQL, Redis, Mailpit, MinIO), `MEDIA_*_DISK=*-local` by default; MinIO is used to exercise S3 |
+| Staging | Same images as production, S3 disks, seeded via `CmsSeeder` |
+| Production | Docker images: php-fpm + nginx, SSR node, Horizon, scheduler. Single VPS, or the existing k3s/Argo CD setup. |
+| CI (GitHub Actions) | Pint, Larastan, ESLint, tsc, Pest, Vitest, build, Playwright (on main and release), image push, deploy staging → manual promote |
+
+Scheduler:
+
+| Command | Frequency |
+| --- | --- |
+| `fx:refresh` | hourly |
+| `bookings:expire` | every 5 minutes |
+| `media:cleanup` | hourly |
+| `kyc:purge` | daily |
+| `activitylog:clean` | weekly |
+| backups | daily |
+
+---
+
+## 18. Engineering decisions log
+
+| # | Decision | Reason |
+| --- | --- | --- |
+| D1 | Classic layers (controllers, form requests, services, resources, policies) instead of Actions/DTOs | Team convention; easier onboarding |
+| D2 | Our own Media module instead of spatie/medialibrary | We need one upload endpoint, UUID-referenced forms, token-authorized renter uploads, a per-row disk and a collection registry |
+| D3 | Enum-driven status map plus `BookingStatusService` instead of model-states | Fits D1; the transitions stay in one readable enum |
+| D4 | Permission registry in config plus a sync command | Permissions are generated per module, reviewable in PRs, and testable |
+| D5 | Open business questions become settings or tables | Unblocks delivery; the client tunes values after launch |
+| D6 | Money in KES minor units, FX as decimal(14,6) | Exact arithmetic; matches PRD §7 |
+| D7 | dompdf for the voucher | No Chrome in the containers |
+| D8 | Snapshot the quote, FX and settings per booking | PRD Q-4; disputes are settled from stored data |
+| D9 | `metadata` JSON governed by `metadata_fields` | Extensible specs without migrations, and still validated |
+
+New decisions are appended here with a date.
