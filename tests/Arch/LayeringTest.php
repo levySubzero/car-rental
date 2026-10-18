@@ -16,6 +16,12 @@ arch('controllers do not touch the database or storage directly')
         'Illuminate\Support\Facades\Storage',
     ]);
 
+arch('only the media module touches storage')
+    ->expect('Illuminate\Support\Facades\Storage')
+    ->toOnlyBeUsedIn([
+        'App\Services\Media',
+    ]);
+
 arch('services do not read the request or render responses')
     ->expect('App\Services')
     ->not->toUse([

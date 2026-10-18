@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\EnsureTwoFactor;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ResolveMediaUploader;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->prefix('admin')
                 ->name('admin.')
                 ->group(base_path('routes/admin.php'));
+
+            Route::middleware(['web', 'media.uploader'])
+                ->group(base_path('routes/media.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -34,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => EnsureStaff::class,
             '2fa' => EnsureTwoFactor::class,
             'admin.idle' => AdminIdleTimeout::class,
+            'media.uploader' => ResolveMediaUploader::class,
         ]);
 
         $middleware->web(append: [

@@ -3,10 +3,14 @@
 namespace App\Providers;
 
 use App\Enums\SettingsGroup;
+use App\Models\Media;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Media\Contracts\TokenUploaderResolver;
+use App\Services\Media\CurrentUploader;
 use App\Services\Media\ImageDriver;
 use App\Services\Media\MediaCollectionRegistry;
+use App\Services\Media\NullTokenUploaderResolver;
 use App\Settings\MediaSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -28,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ImageDriver::class);
+        $this->app->scoped(CurrentUploader::class);
+
+        // M8 binds the booking implementation.
+        $this->app->bind(TokenUploaderResolver::class, NullTokenUploaderResolver::class);
 
         // Not a singleton: admins can change the overrides mid-request (settings save).
         $this->app->bind(MediaCollectionRegistry::class, fn ($app) => new MediaCollectionRegistry(
@@ -58,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'user' => User::class,
             'role' => Role::class,
+            'media' => Media::class,
         ]);
     }
 

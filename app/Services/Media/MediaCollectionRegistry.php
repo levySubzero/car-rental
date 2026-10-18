@@ -92,7 +92,7 @@ class MediaCollectionRegistry
         $collection = $this->get($key);
 
         if ($owner?->getMorphClass() !== $collection->owner) {
-            throw MediaException::wrongOwner($key);
+            throw MediaException::wrongOwner();
         }
 
         return $collection;

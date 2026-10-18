@@ -281,7 +281,9 @@ enum Permission: string
 ],
 ```
 
-Admins can lower `max_files`, `max_kb` and `mimes` per collection through `MediaSettings` overrides. The config values are hard ceilings.
+The block above is the target set. Each collection is registered by the milestone that builds its owner (D16): M2 ships only `site.hero`, then `car.gallery` and `brand.logo` arrive in M4, `service.image` and `page.section` in M5, `booking.*` in M8 and `booking.voucher` in M10. Owners are named by morph alias (`'owner' => 'car'`, D17), and `upload` can also be `['token' => true]` for renter uploads.
+
+Admins can lower `max_files`, `max_kb` and `mimes` per collection on the Uploads settings tab (`MediaSettings`, `settings.media.update`). The config values are hard ceilings, and `max_kb` never exceeds `baines.uploads.max_kb_ceiling`. HEIC is dropped from every collection when the image driver can't decode it (D19).
 
 ### 6.3 Table `media`
 
@@ -294,7 +296,8 @@ Admins can lower `max_files`, `max_kb` and `mimes` per collection through `Media
 | original_name, file_name, mime_type, extension, size_bytes, checksum_sha256 | `mime_type` is sniffed, never taken from the client                    |
 | width, height                                                               | Images only                                                            |
 | visibility                                                                  | `public` or `private` (enum)                                           |
-| status                                                                      | `pending`, `attached`, `processing` or `failed`                        |
+| status                                                                      | `pending` or `attached` (`MediaStatus`)                                |
+| processing                                                                  | `queued`, `done`, `failed` or `skipped` (`MediaProcessing`, D18)       |
 | is_primary, sort_order                                                      | Cover image and gallery order                                          |
 | metadata (JSON)                                                             | Alt text, caption, credit, page count for PDFs, `exif_stripped`        |
 | uploaded_by_type, uploaded_by_id                                            | A staff user or a booking (renter)                                     |
@@ -305,28 +308,33 @@ Admins can lower `max_files`, `max_kb` and `mimes` per collection through `Media
 
 | Method and path                   | Purpose                                                                                                 | Authorization                                                                                                                                                                                                |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `POST /media`                     | Upload one file (`file`, `collection`, optional `owner_type`/`owner_id`) and get back a `MediaResource` | Collection upload rule: a staff permission, or a valid booking token sent in the `X-Booking-Token` header                                                                                                    |
+| `POST /media`                     | Upload one file (`file`, `collection`) and get back a `MediaResource`. The file stays pending and owner-less until the form's service calls `sync()` | Collection upload rule: a staff permission, or a valid booking token sent in the `X-Booking-Token` header                                                                                                    |
 | `GET /media/{uuid}/{conversion?}` | Retrieve or render inline                                                                               | Public: open, with a redirect to the disk or CDN URL and long cache headers. Private: authorized via `MediaPolicy::view`, served through a temporary signed URL (S3) or a signed stream (local), and logged. |
 | `GET /media/{uuid}/download`      | Download with `Content-Disposition: attachment`                                                         | Same as above                                                                                                                                                                                                |
 | `PATCH /media/{uuid}`             | Update alt text or caption metadata                                                                     | Owner's update permission                                                                                                                                                                                    |
 | `DELETE /media/{uuid}`            | Delete a pending file or detach one                                                                     | Owner's update permission, or the uploader while pending                                                                                                                                                     |
-| `POST /media/reorder`             | `{collection, owner, uuids[]}`                                                                          | Owner's update permission                                                                                                                                                                                    |
+| `POST /media/reorder`             | `{collection, owner_type, owner_id, uuids[]}`                                                           | Owner's update permission                                                                                                                                                                                    |
+| `GET /media/s/{uuid}/{conversion?}` | Target of temporary signed URLs on local disks                                                        | The signature (`signed` middleware); issued only after an authorized, logged `GET /media/{uuid}`                                                                                                             |
 
-`MediaPolicy` resolves the owner model and delegates to that model's policy, so `view` on a booking document requires `bookings.view-documents`. Renters can only see their own pending or attached booking files, and only through their token.
+`MediaPolicy` resolves the owner model and delegates to that model's policy: `update` to manage files, and `viewMedia` (falling back to `view`) to open private ones, so `BookingPolicy::viewMedia` can require `bookings.view-documents`. Renters can only see their own pending or attached booking files, and only through their token.
+
+The media routes have no `auth` middleware, because renters use them. `ResolveMediaUploader` fills the request-scoped `CurrentUploader`: an `X-Booking-Token` header resolves through the `TokenUploaderResolver` contract (a null driver until M8 binds the booking lookup), and a session user only counts as staff if they would pass `EnsureStaff` and `EnsureTwoFactor`. All media checks run through `CurrentUploader::allows()` (`Gate::forUser` the qualified staff member), so the super admin bypass also needs a qualifying session. System collections are refused in `StoreMediaRequest` too, because `Gate::before` would let a super admin past the policy. `MediaRouteGuardTest` covers every `media.*` route, since the admin route guard only walks `admin.*`.
 
 ### 6.5 Services
 
 - `MediaCollectionRegistry`: reads the config and setting overrides, resolves a collection definition, and validates the model against it.
-- `MediaService`: `upload(UploadedFile, collection, uploader, ?owner)`, `sync(model, collection, uuids, cover)`, `attach`, `detach`, `reorder`, `delete`, `temporaryUrl(media, conversion)`, `stream(media)`.
-- `ImageProcessor`: re-encodes the image to strip EXIF, normalizes orientation, converts HEIC to JPEG, and generates conversions. It runs as the queued job `ProcessMediaJob`.
+- `MediaService`: `upload(UploadedFile, collection, uploader)`, `sync(?owner, collection, uuids, cover, actor)` (a null owner syncs a standalone collection; `claim()` is the shorthand), `attach`, `reorder`, `delete`, `updateMetadata`, `open(media, conversion)` for streaming, and `logAccess`. The MIME type is sniffed with `finfo`, and the stored extension comes from it.
+- `ImageProcessor` (via `ImageDriver`, Imagick or GD): during the upload request it re-encodes the original to strip EXIF and GPS, apply the orientation and convert HEIC to JPEG (D19). The queued `ProcessMediaJob` then writes the WebP conversions, never upscaling; a failure falls back to the original.
+- `MediaMaintenanceService`: `cleanup()` for `media:cleanup` and `migrateDisk()` for `media:migrate-disk` (per-row copy, checksum check, refuses to cross visibilities).
 - `MediaUrlGenerator`: the only place URLs are built, which keeps the CDN or disk switch in one spot.
-- The `HasMedia` model concern provides `media()`, `mediaIn('car.gallery')`, `primaryMedia('car.gallery')` and `getMediaCollections()`.
+- The `HasMedia` model concern provides `media()`, `mediaIn('car.gallery')` and `primaryMedia('car.gallery')`, and soft-deletes the files with their owner. A model's collections come from `MediaCollectionRegistry::forOwner()`, because models may not use services.
+- Validation rules: `MaxMediaForCollection` and `PendingOrOwnedMedia` (in `App\Support\Rules`).
 
 ### 6.6 Frontend
 
-- `<MediaUploader collection="car.gallery" value={uuids} onChange={...} max={6} sortable coverable />` handles drag-to-reorder, choosing a cover, progress, retry and client-side compression on mobile (browser-image-compression). It is used by every form that has files.
+- `<MediaUploader limits={...} value={items} onChange={...} sortable coverable cover={...} onCoverChange={...} />` handles drag-to-reorder, choosing a cover, per-file progress and retry (one Inertia `useHttp` per file), `X-Booking-Token` and client-side compression (browser-image-compression). `limits` is the collection's `MediaCollection::toArray()`. It is used by every form that has files.
 - `<MediaImage media={m} conversion="card" />` renders responsive `srcset` from the resource's `urls`.
-- `<SecureDocumentViewer uuid=... />` (admin only) requests a fresh signed URL on open.
+- `<SecureDocumentViewer media={m} />` (admin only) requests the file again on each open, so every view is authorized and logged. PDFs open in a new tab, because the CSP's `frame-src` doesn't allow framing them (revisit in M12.3).
 
 ---
 

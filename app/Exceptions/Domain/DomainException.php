@@ -17,12 +17,26 @@ abstract class DomainException extends RuntimeException
     public function render(Request $request): RedirectResponse|JsonResponse
     {
         if ($request->expectsJson() && ! $request->inertia()) {
-            return response()->json(['message' => $this->getMessage()], 422);
+            $field = $this->errorField();
+
+            return response()->json(array_filter([
+                'message' => $this->getMessage(),
+                // Shaped like a validation error, so useHttp shows it on the field.
+                'errors' => $field !== null ? [$field => [$this->getMessage()]] : null,
+            ]), 422);
         }
 
         Inertia::flash('toast', ['type' => 'error', 'message' => $this->getMessage()]);
 
         return back();
+    }
+
+    /**
+     * The input field a JSON client should show the message on, if any.
+     */
+    protected function errorField(): ?string
+    {
+        return null;
     }
 
     /**

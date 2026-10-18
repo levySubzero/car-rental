@@ -29,11 +29,14 @@ composer install
 cp .env.example .env          # set DB_PASSWORD
 php artisan key:generate
 php artisan migrate --seed    # also runs permissions:sync
+php artisan storage:link      # serves public media from /media-files
 npm install
 composer dev                  # server on :8000, queue worker, logs and Vite
 ```
 
 Sign in at http://localhost:8000/login as `admin@baines.test` / `password`. 2FA is optional unless you turn it on under Settings → Security. Locally there are also `ops@baines.test` and `editor@baines.test`.
+
+**Images.** Uploads are re-encoded with Imagick when the PHP extension is installed, otherwise GD. GD can't read HEIC (iPhone photos), so HEIC uploads are refused until you install `php-imagick` with libheif. Set `MEDIA_IMAGE_DRIVER` to force one driver.
 
 **S3.** Media uses local disks by default. To test the S3 path, point the `AWS_*` variables at a bucket and set `MEDIA_PUBLIC_DISK=media-public-s3` and `MEDIA_PRIVATE_DISK=media-private-s3`.
 
@@ -75,8 +78,9 @@ Route → Controller → FormRequest (authorize via policy + validate)
 1. Add the module's cases to `app/Enums/Permission.php`, run `php artisan permissions:sync` and `php artisan permissions:types`, and commit the regenerated `resources/js/types/permissions.ts`. Roles are data: grant the new permissions to roles in the admin (Roles page).
 2. Write the migration and model (`metadata` JSON where the plan says so), plus a factory.
 3. Add a policy whose methods check `$user->can(Permission::…)`.
-4. Add the FormRequests, the service (under `app/Services/{Domain}`) and admin and public resources.
-5. Add the controller, routes (in `routes/admin.php` for admin) and Inertia pages (in `resources/js/pages/admin/...`).
-6. Add a sidebar entry with its `permission` in `resources/js/config/admin-nav.ts`.
-7. Write Pest feature tests for guest, 403, validation and the happy path. The route guard test catches a missing policy.
-8. Make sure `composer ci:check` is green, then tick the step in `docs/MILESTONES.md` and add a log row.
+4. If the module stores files, register its collections in `config/media.php` (owner = the model's morph alias), add the alias to `configureMorphMap()` in `AppServiceProvider`, and `use HasMedia` on the model. Forms validate uuids with `MaxMediaForCollection` and `PendingOrOwnedMedia`, and the service calls `MediaService::sync()` (TECHNICAL_PLAN §6).
+5. Add the FormRequests, the service (under `app/Services/{Domain}`) and admin and public resources.
+6. Add the controller, routes (in `routes/admin.php` for admin) and Inertia pages (in `resources/js/pages/admin/...`).
+7. Add a sidebar entry with its `permission` in `resources/js/config/admin-nav.ts`.
+8. Write Pest feature tests for guest, 403, validation and the happy path. The route guard test catches a missing policy.
+9. Make sure `composer ci:check` is green, then tick the step in `docs/MILESTONES.md` and add a log row.

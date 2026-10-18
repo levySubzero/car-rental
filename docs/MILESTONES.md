@@ -36,7 +36,7 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | --- | -------------------------------------------------------------- | ----------- | -------- | -------------------- |
 | M0  | Project bootstrap and conventions                              | Done        | 9/10     | —                    |
 | M1  | Platform foundations (auth, IAM, settings, audit, admin shell) | Done        | 14/14    | —                    |
-| M2  | Media module (shared)                                          | In progress | 3/16     | —                    |
+| M2  | Media module (shared)                                          | Done        | 16/16    | —                    |
 | M3  | Metadata fields                                                | Not started | 0/7      | —                    |
 | M4  | Catalog (brands, car types, cars)                              | Not started | 0/12     | **G1** (with M5)     |
 | M5  | Content CMS and seed pack                                      | Not started | 0/14     | **G1**               |
@@ -88,24 +88,24 @@ Status: **Done** · PRD: §3 roles, A-7, §7 security
 
 ## M2 — Media module (shared)
 
-Status: **In progress** · PRD: A-1, B-4–B-6, P-2, §7 documents and uploads
+Status: **Done** · PRD: A-1, B-4–B-6, P-2, §7 documents and uploads
 
 - [x] M2.1 Write `config/media.php`: the public and private disks from env, conversions, TTLs and the collection registry skeleton.
-- [~] M2.2 Define the filesystem disks `media-{public,private}-{local,s3}` and verify the switch works with an env change only.
+- [x] M2.2 Define the filesystem disks `media-{public,private}-{local,s3}` and verify the switch works with an env change only.
 - [x] M2.3 Add the `media` migration and model, the `MediaVisibility` and `MediaStatus` enums, and the `HasMedia` concern.
 - [x] M2.4 Add `MediaCollectionRegistry` (config plus admin-setting overrides, with hard ceilings), with unit tests.
-- [ ] M2.5 `MediaService::upload`: MIME sniffing, whitelist check, randomized path, checksum, pending status and expiry.
-- [ ] M2.6 `ImageProcessor` and `ProcessMediaJob`: EXIF strip and re-encode, orientation fix, HEIC→JPEG, WebP conversions.
-- [ ] M2.7 `MediaService` sync, attach, detach, reorder, delete and cover handling, plus the `MaxMediaForCollection` and `PendingOrOwnedMedia` rules.
-- [ ] M2.8 Add `MediaUrlGenerator`: public redirect or stream, private temporary URLs (S3) and signed stream route (local).
-- [ ] M2.9 Add `MediaPolicy`, which delegates to the owner policy and supports booking-token uploaders. Permissions `media.upload` and `media.view-private`.
-- [ ] M2.10 Add `MediaController` with the single endpoint set: `POST /media`, `GET /media/{uuid}/{conversion?}`, `GET /media/{uuid}/download`, `PATCH /media/{uuid}`, `DELETE /media/{uuid}` and `POST /media/reorder`.
-- [ ] M2.11 Add `MediaResource` (uuid, urls per conversion, name, size, mime, dimensions, alt) and the TS type.
-- [ ] M2.12 Log every private-media view and download to the activity log.
-- [ ] M2.13 Add the `media:cleanup` command (expired pending files, soft-deleted purge) and schedule it.
-- [ ] M2.14 Add the `media:migrate-disk {from} {to} --collection=` command, with a dry-run flag.
-- [ ] M2.15 React components: `<MediaUploader>` (progress, retry, drag-reorder, cover, client compression, `X-Booking-Token` support), `<MediaImage>` and `<SecureDocumentViewer>`.
-- [ ] M2.16 Tests: upload per collection type, rejected MIME and size, private access denied or allowed, token uploads, disk switch with `Storage::fake`, cleanup.
+- [x] M2.5 `MediaService::upload`: MIME sniffing, whitelist check, randomized path, checksum, pending status and expiry.
+- [x] M2.6 `ImageProcessor` and `ProcessMediaJob`: EXIF strip and re-encode, orientation fix, HEIC→JPEG, WebP conversions.
+- [x] M2.7 `MediaService` sync, attach, detach, reorder, delete and cover handling, plus the `MaxMediaForCollection` and `PendingOrOwnedMedia` rules.
+- [x] M2.8 Add `MediaUrlGenerator`: public redirect or stream, private temporary URLs (S3) and signed stream route (local).
+- [x] M2.9 Add `MediaPolicy`, which delegates to the owner policy and supports booking-token uploaders. Permissions `media.upload` and `media.view-private`.
+- [x] M2.10 Add `MediaController` with the single endpoint set: `POST /media`, `GET /media/{uuid}/{conversion?}`, `GET /media/{uuid}/download`, `PATCH /media/{uuid}`, `DELETE /media/{uuid}` and `POST /media/reorder`.
+- [x] M2.11 Add `MediaResource` (uuid, urls per conversion, name, size, mime, dimensions, alt) and the TS type.
+- [x] M2.12 Log every private-media view and download to the activity log.
+- [x] M2.13 Add the `media:cleanup` command (expired pending files, soft-deleted purge) and schedule it.
+- [x] M2.14 Add the `media:migrate-disk {from} {to} --collection=` command, with a dry-run flag.
+- [x] M2.15 React components: `<MediaUploader>` (progress, retry, drag-reorder, cover, client compression, `X-Booking-Token` support), `<MediaImage>` and `<SecureDocumentViewer>`.
+- [x] M2.16 Tests: upload per collection type, rejected MIME and size, private access denied or allowed, token uploads, disk switch with `Storage::fake`, cleanup.
 
 ## M3 — Metadata fields
 
@@ -330,6 +330,14 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-18 | M2 | Milestone done | All 16 steps. 245 Pest tests (1 skipped: HEIC needs Imagick, which this machine lacks; CI's test job has it), 17 Vitest tests; Pint, Larastan 7, `vp check`, `tsc` and `vp build` green. Not yet clicked through in a browser: no form hosts the uploader until M4.9. |
+| 2026-10-18 | M2.16 | Done | `tests/Feature/Media/*` (upload, sync, endpoints, token uploads, route guard, cleanup and disk migration) plus the registry unit test. Fixtures are built at runtime (GD plus a spliced EXIF/GPS block) instead of committed binaries; the test-only owner is `Tests\Support\Gadget`. New arch rule: only `App\Services\Media` uses `Storage`. |
+| 2026-10-18 | M2.15 | Done | `components/media/`: `MediaUploader` (dnd-kit grid, cover, drop zone, client checks), `UploadTile` (one `useHttp` per file: progress, retry, `X-Booking-Token`), `MediaImage` (srcset), `SecureDocumentViewer` (PDFs open in a new tab; CSP `frame-src`, see M12.3). Added `browser-image-compression` with npm; `pnpm-lock.yaml` is now stale. |
+| 2026-10-18 | M2.13–M2.14 | Done | `MediaMaintenanceService` behind `media:cleanup` (scheduled hourly, the first scheduler entry) and `media:migrate-disk` (`--collection`, `--dry-run`, `--keep-source`, checksum-verified, refuses public↔private). |
+| 2026-10-18 | M2.8–M2.12 | Done | `MediaUrlGenerator`, `routes/media.php` (web + `media.uploader`, no auth) with a `media.signed` stream route for local disks, `MediaController`, three FormRequests, `MediaResource` and TS types. Private views and downloads are logged. `POST /media` takes no owner hint: pending files are owner-less until `sync()`. Domain exceptions can now name a JSON error field, so `MediaException` shows on the uploader's file field. |
+| 2026-10-18 | M2.7, M2.9 | Done | `sync()` (null owner = standalone; `claim()`), `attach`, `reorder`, `delete`, `updateMetadata`, plus the `MaxMediaForCollection` and `PendingOrOwnedMedia` rules. `MediaPolicy` delegates to the owner's `update` and `viewMedia`/`view`. `ResolveMediaUploader` and `CurrentUploader` only treat a session as staff if it would pass `EnsureStaff` and `EnsureTwoFactor`, and checks run via `Gate::forUser` so the super admin bypass can't skip 2FA. The `TokenUploaderResolver` null driver is bound for M8. |
+| 2026-10-18 | M2.5–M2.6 | Done | `MediaService::upload` (finfo sniffing, extension from MIME, randomized per-uuid directory, checksum, pending + expiry), `ImageProcessor` and `ImageDriver` (Imagick or GD; EXIF/GPS stripped and orientation applied before storing), `ProcessMediaJob` (WebP conversions, no upscaling, failures fall back to the original). `media` added to the morph map: it's an activity-log subject. |
+| 2026-10-18 | M2.2 | Done | The env-only disk switch is verified by `StorageMaintenanceTest`: new uploads go to the new disk, and existing rows stay readable from theirs. |
 | 2026-10-17 | M2.4 | Done | `MediaCollectionRegistry` (bound in `AppServiceProvider`, not a singleton) resolves `App\Support\Media\MediaCollection` value objects. `MediaSettings::collection_overrides` can only tighten the config ceilings, and HEIC is dropped when the image driver can't decode it (this machine has GD only). The new Uploads settings tab (`settings.media.update`) stores only values below a ceiling. Unit and feature tests added. |
 | 2026-10-17 | M2.3 | Done | `media` migration (status and processing split, D18), `Media` model and factory, `MediaVisibility`/`MediaStatus`/`MediaProcessing`, and the `HasMedia` concern. `getMediaCollections()` was left off the trait because models may not use services; use `MediaCollectionRegistry::forOwner()`. `Relation::enforceMorphMap` (user, role) is on (D17). |
 | 2026-10-17 | M2.2 | Partial | Disks `media-{public,private}-{local,s3}` are defined, plus a `public/media-files` link. The env-only switch gets verified by the disk-switch test once uploads exist (Slice B/E). |

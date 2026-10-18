@@ -150,6 +150,22 @@ class Media extends Model
     }
 
     /**
+     * Whether this file may be saved into $owner's collection (a null owner: a standalone
+     * collection): a pending upload by $actor (any uploader when null), or a file
+     * already attached there.
+     */
+    public function isAttachableTo(?Model $owner, ?Model $actor): bool
+    {
+        if ($this->isPending()) {
+            return $actor === null || $this->wasUploadedBy($actor);
+        }
+
+        return $owner === null
+            ? $this->mediable_type === null && $this->status === MediaStatus::Attached
+            : $this->belongsToOwner($owner);
+    }
+
+    /**
      * Whether this file is attached to $model.
      */
     public function belongsToOwner(?Model $model): bool
