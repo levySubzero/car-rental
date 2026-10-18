@@ -39,6 +39,11 @@ enum Permission: string
     case SettingsHomeUpdate = 'settings.home.update';
     case SettingsRetentionUpdate = 'settings.retention.update';
     case SettingsSecurityUpdate = 'settings.security.update';
+    case SettingsMediaUpdate = 'settings.media.update';
+
+    // Media: uploading also needs the collection's own permission (config/media.php)
+    case MediaUpload = 'media.upload';
+    case MediaViewPrivate = 'media.view-private';
 
     // Activity log
     case ActivityView = 'activity.view';

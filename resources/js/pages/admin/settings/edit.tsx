@@ -3,6 +3,8 @@ import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsCon
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
 import type { GeneralSettings } from '@/components/admin/settings/general-settings-form';
 import { GeneralSettingsForm } from '@/components/admin/settings/general-settings-form';
+import type { MediaSettingsContext } from '@/components/admin/settings/media-settings-form';
+import { MediaSettingsForm } from '@/components/admin/settings/media-settings-form';
 import type { NotificationSettings } from '@/components/admin/settings/notification-settings-form';
 import { NotificationSettingsForm } from '@/components/admin/settings/notification-settings-form';
 import type { RetentionSettings } from '@/components/admin/settings/retention-settings-form';
@@ -16,10 +18,12 @@ export default function EditSettings({
     group,
     tabs,
     values,
+    context,
 }: {
     group: string;
     tabs: SettingsTab[];
     values: Record<string, unknown>;
+    context: Record<string, unknown>;
 }) {
     const current = tabs.find((tab) => tab.key === group);
 
@@ -72,6 +76,12 @@ export default function EditSettings({
                         <SecuritySettingsForm
                             key={group}
                             values={values as SecuritySettings}
+                        />
+                    )}
+                    {group === 'media' && (
+                        <MediaSettingsForm
+                            key={group}
+                            context={context as MediaSettingsContext}
                         />
                     )}
                     {group === 'retention' && (

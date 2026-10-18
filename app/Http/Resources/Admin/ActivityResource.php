@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Admin;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Spatie\Activitylog\Models\Activity;
@@ -23,7 +24,7 @@ class ActivityResource extends JsonResource
             'event' => $this->event,
             'description' => $this->description,
             'subject' => $this->subject_type ? [
-                'type' => class_basename($this->subject_type),
+                'type' => class_basename(Relation::getMorphedModel($this->subject_type) ?? $this->subject_type),
                 'id' => $this->subject_id,
                 'label' => $this->labelFor($this->subject),
             ] : null,

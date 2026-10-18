@@ -20,6 +20,9 @@ export const permissions = [
     'settings.home.update',
     'settings.retention.update',
     'settings.security.update',
+    'settings.media.update',
+    'media.upload',
+    'media.view-private',
     'activity.view',
     'system.horizon',
 ] as const;

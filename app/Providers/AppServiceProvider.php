@@ -3,9 +3,14 @@
 namespace App\Providers;
 
 use App\Enums\SettingsGroup;
+use App\Models\Role;
 use App\Models\User;
+use App\Services\Media\ImageDriver;
+use App\Services\Media\MediaCollectionRegistry;
+use App\Settings\MediaSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Date;
@@ -22,7 +27,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(ImageDriver::class);
+
+        // Not a singleton: admins can change the overrides mid-request (settings save).
+        $this->app->bind(MediaCollectionRegistry::class, fn ($app) => new MediaCollectionRegistry(
+            definitions: (array) config('media.collections'),
+            overrides: $app->make(MediaSettings::class)->collection_overrides,
+            unsupportedExtensions: $app->make(ImageDriver::class)->supports('heic') ? [] : ['heic'],
+            kbCeiling: (int) config('baines.uploads.max_kb_ceiling'),
+        ));
     }
 
     /**
@@ -31,8 +44,21 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureMorphMap();
         $this->configureAuthorization();
         $this->configureRateLimiting();
+    }
+
+    /**
+     * Polymorphic columns store these aliases, never class names (D17). Media collections name
+     * their owner by alias, and the uploader sends it as owner_type. Each module adds its models.
+     */
+    protected function configureMorphMap(): void
+    {
+        Relation::enforceMorphMap([
+            'user' => User::class,
+            'role' => Role::class,
+        ]);
     }
 
     /**

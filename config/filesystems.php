@@ -61,6 +61,57 @@ return [
             'report' => false,
         ],
 
+        /*
+        | Media module disks (config/media.php picks one public and one private).
+        | Only the Media module reads or writes these.
+        */
+
+        'media-public-local' => [
+            'driver' => 'local',
+            'root' => storage_path('app/media-public'),
+            // Not /media: that prefix belongs to the media routes.
+            'url' => rtrim((string) env('APP_URL', 'http://localhost'), '/').'/media-files',
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => false,
+        ],
+
+        'media-private-local' => [
+            'driver' => 'local',
+            'root' => storage_path('app/media-private'),
+            'serve' => false,
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
+        'media-public-s3' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => false,
+        ],
+
+        'media-private-s3' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_PRIVATE_BUCKET'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*
@@ -76,6 +127,7 @@ return [
 
     'links' => [
         public_path('storage') => storage_path('app/public'),
+        public_path('media-files') => storage_path('app/media-public'),
     ],
 
 ];

@@ -36,7 +36,7 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | --- | -------------------------------------------------------------- | ----------- | -------- | -------------------- |
 | M0  | Project bootstrap and conventions                              | Done        | 9/10     | —                    |
 | M1  | Platform foundations (auth, IAM, settings, audit, admin shell) | Done        | 14/14    | —                    |
-| M2  | Media module (shared)                                          | Not started | 0/16     | —                    |
+| M2  | Media module (shared)                                          | In progress | 3/16     | —                    |
 | M3  | Metadata fields                                                | Not started | 0/7      | —                    |
 | M4  | Catalog (brands, car types, cars)                              | Not started | 0/12     | **G1** (with M5)     |
 | M5  | Content CMS and seed pack                                      | Not started | 0/14     | **G1**               |
@@ -88,12 +88,12 @@ Status: **Done** · PRD: §3 roles, A-7, §7 security
 
 ## M2 — Media module (shared)
 
-Status: **Not started** · PRD: A-1, B-4–B-6, P-2, §7 documents and uploads
+Status: **In progress** · PRD: A-1, B-4–B-6, P-2, §7 documents and uploads
 
-- [ ] M2.1 Write `config/media.php`: the public and private disks from env, conversions, TTLs and the collection registry skeleton.
-- [ ] M2.2 Define the filesystem disks `media-{public,private}-{local,s3}` and verify the switch works with an env change only.
-- [ ] M2.3 Add the `media` migration and model, the `MediaVisibility` and `MediaStatus` enums, and the `HasMedia` concern.
-- [ ] M2.4 Add `MediaCollectionRegistry` (config plus admin-setting overrides, with hard ceilings), with unit tests.
+- [x] M2.1 Write `config/media.php`: the public and private disks from env, conversions, TTLs and the collection registry skeleton.
+- [~] M2.2 Define the filesystem disks `media-{public,private}-{local,s3}` and verify the switch works with an env change only.
+- [x] M2.3 Add the `media` migration and model, the `MediaVisibility` and `MediaStatus` enums, and the `HasMedia` concern.
+- [x] M2.4 Add `MediaCollectionRegistry` (config plus admin-setting overrides, with hard ceilings), with unit tests.
 - [ ] M2.5 `MediaService::upload`: MIME sniffing, whitelist check, randomized path, checksum, pending status and expiry.
 - [ ] M2.6 `ImageProcessor` and `ProcessMediaJob`: EXIF strip and re-encode, orientation fix, HEIC→JPEG, WebP conversions.
 - [ ] M2.7 `MediaService` sync, attach, detach, reorder, delete and cover handling, plus the `MaxMediaForCollection` and `PendingOrOwnedMedia` rules.
@@ -330,6 +330,11 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-17 | M2.4 | Done | `MediaCollectionRegistry` (bound in `AppServiceProvider`, not a singleton) resolves `App\Support\Media\MediaCollection` value objects. `MediaSettings::collection_overrides` can only tighten the config ceilings, and HEIC is dropped when the image driver can't decode it (this machine has GD only). The new Uploads settings tab (`settings.media.update`) stores only values below a ceiling. Unit and feature tests added. |
+| 2026-10-17 | M2.3 | Done | `media` migration (status and processing split, D18), `Media` model and factory, `MediaVisibility`/`MediaStatus`/`MediaProcessing`, and the `HasMedia` concern. `getMediaCollections()` was left off the trait because models may not use services; use `MediaCollectionRegistry::forOwner()`. `Relation::enforceMorphMap` (user, role) is on (D17). |
+| 2026-10-17 | M2.2 | Partial | Disks `media-{public,private}-{local,s3}` are defined, plus a `public/media-files` link. The env-only switch gets verified by the disk-switch test once uploads exist (Slice B/E). |
+| 2026-10-17 | M2.1 | Done | `config/media.php` holds disks, TTLs, conversions, the MIME map and the collection registry. Only `site.hero` is registered; each module registers its own collections (D16). Permissions `media.upload`, `media.view-private` and `settings.media.update` added. |
+| 2026-10-17 | M2 | In progress | Plan approved: slices A (foundations) → F (React). Decisions D16–D19. |
 | 2026-10-17 | M1.6 | Changed | Account self-deletion restored on the profile page (client request). It goes through `UserService::deleteOwnAccount` (password required, activity logged), and the last active super admin is refused. Fixed ordering: sign out before deleting, or `Auth::logout()` re-saves the deleted user. 162 Pest tests green. |
 | 2026-10-17 | M1.5, M1.9, M1.14 | Changed | Gating fixes and configurable 2FA (D16): the `/settings/*` account pages now need `staff` + `admin.idle` (they had `auth` only); new global `EnsureActiveAccount` signs out deactivated accounts on any route; local-disk `serve` routes disabled; admin settings routes gated by `can:update-settings,group`. New `SecuritySettings::require_two_factor` (off by default) with a Security tab (`settings.security.update`). 159 Pest tests green. |
 | 2026-10-17 | M1.7 | Changed | Roles are now admin-managed data (D15): `App\Models\Role` (+ `description`, `is_system`), `RoleService` CRUD with activity logging, a locked super admin role, and refusal to delete roles that are still assigned. New permissions `roles.create|update|delete`. The `Role` enum is removed. Seeder creates operations and content-editor once as editable starting roles. 154 Pest tests green. |

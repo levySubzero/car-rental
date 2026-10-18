@@ -4,6 +4,8 @@ namespace App\Services\Settings;
 
 use App\Enums\SettingsGroup;
 use App\Models\User;
+use App\Services\Media\MediaCollectionRegistry;
+use App\Support\Media\MediaCollection;
 use BackedEnum;
 use Spatie\LaravelSettings\Settings;
 
@@ -25,6 +27,25 @@ class SettingsService
             fn ($value) => $value instanceof BackedEnum ? $value->value : $value,
             $this->for($group)->toArray(),
         );
+    }
+
+    /**
+     * Extra read-only data a tab needs besides its values.
+     *
+     * @return array<string, mixed>
+     */
+    public function context(SettingsGroup $group): array
+    {
+        return match ($group) {
+            // The uploads tab edits each collection within its configured ceiling.
+            SettingsGroup::Media => [
+                'collections' => array_values(array_map(fn (MediaCollection $ceiling) => [
+                    ...$ceiling->toArray(),
+                    'effective' => $this->registry()->get($ceiling->key)->toArray(),
+                ], $this->registry()->ceilings())),
+            ],
+            default => [],
+        };
     }
 
     /**
@@ -54,5 +75,10 @@ class SettingsService
         }
 
         return $settings;
+    }
+
+    private function registry(): MediaCollectionRegistry
+    {
+        return app(MediaCollectionRegistry::class);
     }
 }

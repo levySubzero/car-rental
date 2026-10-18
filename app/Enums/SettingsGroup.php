@@ -3,6 +3,7 @@
 namespace App\Enums;
 
 use App\Http\Requests\Admin\Settings\UpdateGeneralSettingsRequest;
+use App\Http\Requests\Admin\Settings\UpdateMediaSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateNotificationSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateRetentionSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateSecuritySettingsRequest;
@@ -11,6 +12,7 @@ use App\Settings\BookingSettings;
 use App\Settings\FxSettings;
 use App\Settings\GeneralSettings;
 use App\Settings\HomeSettings;
+use App\Settings\MediaSettings;
 use App\Settings\NotificationSettings;
 use App\Settings\PricingSettings;
 use App\Settings\RetentionSettings;
@@ -30,6 +32,7 @@ enum SettingsGroup: string
     case Home = 'home';
     case Retention = 'retention';
     case Security = 'security';
+    case Media = 'media';
 
     public function label(): string
     {
@@ -42,6 +45,7 @@ enum SettingsGroup: string
             self::Home => 'Home page',
             self::Retention => 'Data retention',
             self::Security => 'Security',
+            self::Media => 'Uploads',
         };
     }
 
@@ -59,6 +63,7 @@ enum SettingsGroup: string
             self::Home => HomeSettings::class,
             self::Retention => RetentionSettings::class,
             self::Security => SecuritySettings::class,
+            self::Media => MediaSettings::class,
         };
     }
 
@@ -73,6 +78,7 @@ enum SettingsGroup: string
             self::Home => Permission::SettingsHomeUpdate,
             self::Retention => Permission::SettingsRetentionUpdate,
             self::Security => Permission::SettingsSecurityUpdate,
+            self::Media => Permission::SettingsMediaUpdate,
         };
     }
 
@@ -89,6 +95,7 @@ enum SettingsGroup: string
             self::Notification => UpdateNotificationSettingsRequest::class,
             self::Retention => UpdateRetentionSettingsRequest::class,
             self::Security => UpdateSecuritySettingsRequest::class,
+            self::Media => UpdateMediaSettingsRequest::class,
             default => null,
         };
     }

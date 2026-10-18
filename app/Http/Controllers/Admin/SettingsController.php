@@ -32,6 +32,7 @@ class SettingsController extends Controller
             'group' => $group->value,
             'tabs' => $this->tabsFor($request->user()),
             'values' => $this->settings->values($group),
+            'context' => $this->settings->context($group),
         ]);
     }
 
