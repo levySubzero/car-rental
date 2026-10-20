@@ -30,6 +30,27 @@ enum Permission: string
     case RolesUpdate = 'roles.update';
     case RolesDelete = 'roles.delete';
 
+    // Catalog
+    case BrandsView = 'brands.view';
+    case BrandsCreate = 'brands.create';
+    case BrandsUpdate = 'brands.update';
+    case BrandsDelete = 'brands.delete';
+
+    case CarTypesView = 'car-types.view';
+    case CarTypesCreate = 'car-types.create';
+    case CarTypesUpdate = 'car-types.update';
+    case CarTypesDelete = 'car-types.delete';
+
+    case CarsView = 'cars.view';
+    case CarsCreate = 'cars.create';
+    case CarsUpdate = 'cars.update';
+    case CarsDelete = 'cars.delete';
+    case CarsViewValue = 'cars.view-value';
+    case CarsPublish = 'cars.publish';
+
+    // Availability: maintenance blackouts now, the calendar in M11
+    case AvailabilityManage = 'availability.manage';
+
     // Settings: one update permission per settings group (SettingsGroup)
     case SettingsGeneralUpdate = 'settings.general.update';
     case SettingsPricingUpdate = 'settings.pricing.update';

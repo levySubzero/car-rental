@@ -9,16 +9,16 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
     - Set the milestone's status.
     - Update the **Progress** column in the summary table.
     - Add a row to the [Progress log](#progress-log).
-2. **Status values:** `Not started` · `In progress` · `Blocked` · `Done`. If a milestone is Blocked, write the reason in the log.
+2. **Status values:** `Not started` · `In progress` · `Blocked` · `Done` · `Dropped`. If a milestone is Blocked, write the reason in the log.
 3. **Step state:** `[ ]` is open, `[x]` is done, and `[~]` is partially done or deferred. Explain any `[~]` in the log.
 4. **Every module step includes the standard checklist below.** Do not tick a step until all of it is true.
 5. **Scope changes:** new steps get the next free ID inside the milestone, for example `M3.12`. Never renumber existing steps.
 
 **Standard definition of done for a module step:**
 
-- Migration and model, with `metadata` where the plan says so
+- Migration and model, with a `metadata` column only where the table needs informal extras (D20)
 - Factory
-- Permissions added to `config/permissions.php`, then `permissions:sync` run
+- Permission cases added to `App\Enums\Permission`, then `permissions:sync` and `permissions:types` run
 - Policy
 - Form Requests
 - Service
@@ -26,7 +26,7 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 - Controller and routes
 - Inertia page(s)
 - Pest feature tests covering guest, 403, validation and happy path
-- Pint, Larastan, ESLint and tsc all green
+- Pint, Larastan, `vp check` and tsc all green
 
 ---
 
@@ -37,8 +37,8 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | M0  | Project bootstrap and conventions                              | Done        | 9/10     | —                    |
 | M1  | Platform foundations (auth, IAM, settings, audit, admin shell) | Done        | 14/14    | —                    |
 | M2  | Media module (shared)                                          | Done        | 16/16    | —                    |
-| M3  | Metadata fields                                                | Not started | 0/7      | —                    |
-| M4  | Catalog (brands, car types, cars)                              | Not started | 0/12     | **G1** (with M5)     |
+| M3  | Metadata fields                                                | Dropped     | —        | —                    |
+| M4  | Catalog (brands, car types, cars)                              | Done        | 12/12    | **G1** (with M5)     |
 | M5  | Content CMS and seed pack                                      | Not started | 0/14     | **G1**               |
 | M6  | Pricing, currencies and FX                                     | Not started | 0/16     | —                    |
 | M7  | Public site                                                    | Not started | 0/20     | **G2**               |
@@ -109,38 +109,38 @@ Status: **Done** · PRD: A-1, B-4–B-6, P-2, §7 documents and uploads
 
 ## M3 — Metadata fields
 
-Status: **Not started**
+Status: **Dropped** (D20). `metadata` is a plain JSON column for informal extras, so there is no field-definition engine to build. What remained folded into M4: the `cars.metadata` column, its key/value validation and the admin editor.
 
-- [ ] M3.1 Add the `metadata_fields` migration and model, and the `MetadataFieldType` enum.
-- [ ] M3.2 Add the `HasMetadata` concern (`AsArrayObject` cast, unknown keys stripped on save).
-- [ ] M3.3 Add `MetadataService`: `rulesFor(entity)`, `publicView(model)` and `cardView(model)`.
-- [ ] M3.4 Metadata fields admin (CRUD per entity, reorder), with permissions `metadata-fields.*`.
-- [ ] M3.5 Add the `<MetadataFields entity=...>` dynamic form renderer and a display component.
-- [ ] M3.6 Seed the default car metadata fields: fuel_type, colour, zero_to_hundred_s, top_speed_kmh, drive, luggage_bags, features.
-- [ ] M3.7 Tests: validation from definitions, public versus hidden exposure, stripping of unknown keys.
+- [~] M3.1 Add the `metadata_fields` migration and model, and the `MetadataFieldType` enum. *Not needed (D20).*
+- [~] M3.2 Add the `HasMetadata` concern (`AsArrayObject` cast, unknown keys stripped on save). *Not needed: each model casts its own column.*
+- [~] M3.3 Add `MetadataService`: `rulesFor(entity)`, `publicView(model)` and `cardView(model)`. *Not needed: `MetadataKeys` rule in M4.7.*
+- [~] M3.4 Metadata fields admin (CRUD per entity, reorder), with permissions `metadata-fields.*`. *Not needed.*
+- [~] M3.5 Add the `<MetadataFields entity=...>` dynamic form renderer and a display component. *Replaced by `<KeyValueField>` in M4.9.*
+- [~] M3.6 Seed the default car metadata fields. *`fuel_type` and `colour` became columns (M4.4); the rest are informal keys.*
+- [~] M3.7 Tests: validation from definitions, public versus hidden exposure, stripping of unknown keys. *Covered by M4.12.*
 
 ## M4 — Catalog
 
-Status: **Not started** · PRD: A-1, A-2, F-1–F-5
+Status: **Done** · PRD: A-1, A-2, F-1–F-5
 
-- [ ] M4.1 Brands: migration, model and metadata, `brand.logo` media, permissions `brands.*`, service, requests, resources, controller and pages.
-- [ ] M4.2 Brand marquee ordering and the `show_in_marquee` toggle in the admin list (drag sort).
-- [ ] M4.3 Car types: full module (`car-types.*`).
-- [ ] M4.4 Cars: migration and model, covering all spec columns, money in minor units, `mileage_limit_km` nullable, damage excess, publish flags and metadata.
-- [ ] M4.5 Car permissions `cars.view|create|update|delete|view-value|publish`, and `CarPolicy`.
-- [ ] M4.6 `CarService`: create and update with gallery sync, publish and unpublish, toggle availability and toggle featured.
-- [ ] M4.7 Car form requests, including gallery UUIDs (max from the collection), cover, metadata rules and major→minor money conversion.
-- [ ] M4.8 Car resources: `Admin\CarResource` (value only with `cars.view-value`), `Public\CarCardResource` and `Public\CarDetailResource`.
-- [ ] M4.9 Car admin pages: list (filters, availability and featured toggles) and an edit form with tabs for specs, pricing, gallery and metadata.
-- [ ] M4.10 Car blackouts (maintenance periods): CRUD nested under the car (`availability.manage`).
-- [ ] M4.11 Factories plus a demo seeder with sample cars for staging.
-- [ ] M4.12 Tests: car value never present in public resources, the 6-photo cap, permission matrix per role.
+- [x] M4.1 Brands: migration and model, `brand.logo` media, permissions `brands.*`, service, requests, resources, controller and pages. *(No `metadata` column, D20.)*
+- [x] M4.2 Brand marquee ordering and the `show_in_marquee` toggle in the admin list (drag sort).
+- [x] M4.3 Car types: full module (`car-types.*`), with drag ordering.
+- [x] M4.4 Cars: migration and model, covering all spec columns plus `fuel_type` and `colour`, money in minor units, `mileage_limit_km` nullable, damage excess, publish flags and an informal `metadata` column.
+- [x] M4.5 Car permissions `cars.view|create|update|delete|view-value|publish`, `availability.manage`, and `CarPolicy`.
+- [x] M4.6 `CarService`: create and update with gallery sync, publish and unpublish, toggle availability and toggle featured.
+- [x] M4.7 Car form requests, including gallery UUIDs (max from the collection), cover, `metadata` key/value validation and major→minor money conversion.
+- [x] M4.8 Car resources: `Admin\CarResource` (value only with `cars.view-value`), `Public\CarCardResource` and `Public\CarDetailResource`.
+- [x] M4.9 Car admin pages: list (filters, availability and featured toggles) and an edit form with tabs for specs, pricing, photos, extra info and blackouts.
+- [x] M4.10 Car blackouts (maintenance periods): nested under the car (`availability.manage`).
+- [x] M4.11 Factories plus a demo seeder with sample cars for local and staging.
+- [x] M4.12 Tests: car value never present in public resources, the 6-photo cap, permission matrix per role.
 
 ## M5 — Content CMS and seed pack
 
 Status: **Not started** · PRD: A-2, H-5, O-1, §11 · **Gate G1:** the client adds a car with 6 photos and edits a policy on staging.
 
-- [ ] M5.1 Services module (`services.*`): cta_type (book, whatsapp, link), image media, metadata.
+- [ ] M5.1 Services module (`services.*`): cta_type (book, whatsapp, link), image media, and a `metadata` column only if needed (D20).
 - [ ] M5.2 Pages and page sections (`pages.*`): section types hero, rich_text, cards, stats, cta and faq, plus a section editor with reorder and visibility.
 - [ ] M5.3 Home page sections bound to `HomeSettings` (hero media, CTAs, featured count, `marquee_position`, trust figures).
 - [ ] M5.4 Policies and versions (`policies.*`, `policies.publish`): draft, publish, diff against the previous version, and the `show_on_home` summary.
@@ -187,10 +187,10 @@ Status: **Not started** · PRD: G-1–G-6, H-1–H-5, F-1–F-5, O-1, §6 design
 - [ ] M7.5 Home: hero (image or video, overlay, slow zoom) with Rent a Car and Enquire CTAs.
 - [ ] M7.6 Home sections in configurable order: About, Featured Fleet, Car Types rows, Services, Policy highlights, Requirements 01–03, Why Choose Us 01–04, Trust strip, Contact CTA.
 - [ ] M7.7 Brand marquee (Embla auto-scroll, pause on hover, lazy logos, each logo links to the filtered fleet), positioned by `HomeSettings::marquee_position`.
-- [ ] M7.8 Car card component: cover, brand badge, name, price per day in the selected currency, specs, `show_on_card` metadata, mileage, and View, Book and WhatsApp buttons.
+- [ ] M7.8 Car card component: cover, brand badge, name, price per day in the selected currency, specs (any `cars.metadata` key shown here is added to `CarCardResource` explicitly, D20), mileage, and View, Book and WhatsApp buttons.
 - [ ] M7.9 Fleet page: filters for brand, type, transmission and seats, a price sort, query-string state and pagination.
 - [ ] M7.10 Brand and car type listing pages, plus filtered views reusing the fleet page.
-- [ ] M7.11 Car detail: gallery with lightbox and swipe (6 photos, keyboard accessible), info block (F-4), public metadata, damage excess, and a Book this unit CTA.
+- [ ] M7.11 Car detail: gallery with lightbox and swipe (6 photos, keyboard accessible), info block (F-4), damage excess, and a Book this unit CTA.
 - [ ] M7.12 Services page, including safaris with WhatsApp enquiry.
 - [ ] M7.13 About and Privacy pages, rendered from `pages`.
 - [ ] M7.14 Rental Policy page: grouped sections, an in-page index, cancellation tiers and the fees table.
@@ -330,6 +330,12 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-20 | M4.4, M4.9 | Changed | Engine capacity is `engine_capacity_litres` (decimal 3,1, e.g. 2.5) instead of cc; the cars migration was edited in place, so local databases need `migrate:fresh --seed`. `DataTable` gained an optional grid view (`grid` + `viewKey`; phones default to it, the choice is remembered per list) used by cars, brands and users. Light/dark/system toggle in the top bar. |
+| 2026-10-18 | M4 | Milestone done | All 12 steps. 292 Pest tests (1 skipped, HEIC), 23 Vitest tests; Pint, Larastan 7, `vp check`, `tsc` and `vp build` green. `migrate:fresh --seed` (local env) seeds the demo catalogue, and a second run adds nothing. Not yet clicked through in a browser. |
+| 2026-10-18 | M4.10–M4.12 | Done | `car_blackouts` with `CarBlackoutService` (overlaps refused, back-to-back allowed; booking clashes come with M8), nested scoped routes, a Blackouts tab that sends ISO instants. Factories and `DemoCatalogSeeder` (8 brands, 6 types, 12 draft cars). Seeded starting roles get catalog permissions on first creation only: content-editor gets brands, car types, cars (not the value) and `media.upload`; operations gets `cars.view` and `availability.manage`. `RouteGuardTest` samples can now depend on earlier parameters (nested routes). |
+| 2026-10-18 | M4.4–M4.9 | Done | Cars soft-delete, and `HasSlug` now counts soft-deleted rows so a slug is never reused. `SaveCarRequest::carData()` converts amounts with `Money::fromMajor` and only reads `car_value` from staff with `cars.view-value`. The car value is excluded from the activity log. `Money::format()` and a `display` key in its JSON. Admin routes bind by slug. The form has tabs for specs, pricing, photos (`<MediaUploader>`), extra info (`<KeyValueField>`) and blackouts. Publishing needs a cover photo. Public resources list fields explicitly and never include `metadata`. |
+| 2026-10-18 | M4.1–M4.3 | Done | Brands (`brand.logo`, PNG/WebP only), marquee drag order and an inline switch, car types with drag order. Brands and types are refused deletion while any car, deleted or not, uses them. `Sortable` and `HasSlug` were used by models for the first time, so the phpstan `trait.unused` ignore was removed. |
+| 2026-10-18 | M3 | Dropped | Client decision (D20): `metadata` is a misc JSON column, not an admin-defined schema. `fuel_type` and `colour` became car columns; other specs are informal `cars.metadata` keys. |
 | 2026-10-18 | M2 | Milestone done | All 16 steps. 245 Pest tests (1 skipped: HEIC needs Imagick, which this machine lacks; CI's test job has it), 17 Vitest tests; Pint, Larastan 7, `vp check`, `tsc` and `vp build` green. Not yet clicked through in a browser: no form hosts the uploader until M4.9. |
 | 2026-10-18 | M2.16 | Done | `tests/Feature/Media/*` (upload, sync, endpoints, token uploads, route guard, cleanup and disk migration) plus the registry unit test. Fixtures are built at runtime (GD plus a spliced EXIF/GPS block) instead of committed binaries; the test-only owner is `Tests\Support\Gadget`. New arch rule: only `App\Services\Media` uses `Storage`. |
 | 2026-10-18 | M2.15 | Done | `components/media/`: `MediaUploader` (dnd-kit grid, cover, drop zone, client checks), `UploadTile` (one `useHttp` per file: progress, retry, `X-Booking-Token`), `MediaImage` (srcset), `SecureDocumentViewer` (PDFs open in a new tab; CSP `frame-src`, see M12.3). Added `browser-image-compression` with npm; `pnpm-lock.yaml` is now stale. |

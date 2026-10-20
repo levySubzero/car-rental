@@ -3,6 +3,7 @@
 namespace App\Models\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 
 /**
@@ -69,7 +70,9 @@ trait HasSlug
 
     protected function slugExists(string $slug): bool
     {
+        // Soft-deleted rows still hold their slug in the unique index.
         return static::query()
+            ->withoutGlobalScope(SoftDeletingScope::class)
             ->where($this->slugColumn(), $slug)
             ->when($this->exists, fn ($query) => $query->whereKeyNot($this->getKey()))
             ->exists();

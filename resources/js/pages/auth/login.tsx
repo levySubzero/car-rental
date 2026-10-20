@@ -1,4 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
+import type { DevUser } from '@/components/dev-login';
+import { DevLogin } from '@/components/dev-login';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -13,12 +15,15 @@ import { request } from '@/routes/password';
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    devUsers?: DevUser[] | null;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({ status, canResetPassword, devUsers }: Props) {
     return (
         <>
             <Head title="Log in" />
+
+            {devUsers && devUsers.length > 0 && <DevLogin users={devUsers} />}
 
             <Form
                 {...store.form()}

@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Enums\SettingsGroup;
+use App\Models\Brand;
+use App\Models\Car;
+use App\Models\CarBlackout;
+use App\Models\CarType;
 use App\Models\Media;
 use App\Models\Role;
 use App\Models\User;
@@ -67,6 +71,10 @@ class AppServiceProvider extends ServiceProvider
             'user' => User::class,
             'role' => Role::class,
             'media' => Media::class,
+            'brand' => Brand::class,
+            'car_type' => CarType::class,
+            'car' => Car::class,
+            'car_blackout' => CarBlackout::class,
         ]);
     }
 

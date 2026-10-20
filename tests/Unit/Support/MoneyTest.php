@@ -70,6 +70,12 @@ it('refuses to mix currencies', function () {
     Money::fromMajor(1)->add(Money::fromMajor(1, 'USD'));
 })->throws(InvalidArgumentException::class);
 
-it('serialises to minor, currency and major', function () {
-    expect(json_encode(new Money(150)))->toBe('{"minor":150,"currency":"KES","major":"1.50"}');
+it('serialises to minor, currency, major and display', function () {
+    expect(json_encode(new Money(150)))->toBe('{"minor":150,"currency":"KES","major":"1.50","display":"KES 1.50"}');
+});
+
+it('formats for display, showing cents only when there are any', function () {
+    expect(Money::fromMajor(15_000)->format())->toBe('KES 15,000')
+        ->and(Money::fromMajor('16587.5')->format())->toBe('KES 16,587.50')
+        ->and((new Money(-5_000, 'USD'))->format())->toBe('USD -50');
 });

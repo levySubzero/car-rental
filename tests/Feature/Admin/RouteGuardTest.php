@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Brand;
+use App\Models\Car;
+use App\Models\CarBlackout;
+use App\Models\CarType;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Routing\Route as RoutingRoute;
@@ -31,17 +35,27 @@ function sampleParameters(RoutingRoute $route): array
         'user' => fn () => User::factory()->staff()->create()->id,
         'role' => fn () => Role::findOrCreate('sample-role', 'web')->id,
         'group' => fn () => 'general',
+        'brand' => fn () => Brand::factory()->create()->slug,
+        'car_type' => fn () => CarType::factory()->create()->slug,
+        'car' => fn () => Car::factory()->create()->slug,
+        // Scoped to the {car} sampled before it.
+        'blackout' => fn (array $resolved) => CarBlackout::factory()
+            ->for(Car::query()->where('slug', $resolved['car'])->sole())
+            ->create()->id,
     ];
 
-    return collect($route->parameterNames())
-        ->mapWithKeys(function (string $name) use ($samples, $route) {
-            if (! isset($samples[$name])) {
-                throw new RuntimeException("Add a sample value for {{$name}} on route [{$route->getName()}] in RouteGuardTest.");
-            }
+    $resolved = [];
 
-            return [$name => $samples[$name]()];
-        })
-        ->all();
+    foreach ($route->parameterNames() as $name) {
+        if (! isset($samples[$name])) {
+            throw new RuntimeException("Add a sample value for {{$name}} on route [{$route->getName()}] in RouteGuardTest.");
+        }
+
+        // Each sample may use the parameters resolved before it (nested routes).
+        $resolved[$name] = $samples[$name]($resolved);
+    }
+
+    return $resolved;
 }
 
 it('refuses staff without permissions on every admin route', function () {

@@ -39,21 +39,27 @@ class SecurityHeaders
     private function contentSecurityPolicy(): string
     {
         $script = ["'self'", 'https://challenges.cloudflare.com'];
+        $style = ["'self'", "'unsafe-inline'", 'https://fonts.bunny.net'];
+        $font = ["'self'", 'data:', 'https://fonts.bunny.net'];
+        $img = ["'self'", 'data:', 'blob:', 'https:'];
         $connect = ["'self'", 'https://*.sentry.io'];
 
-        // The Vite dev server injects inline scripts and serves from another origin.
+        // The Vite dev server injects inline scripts and serves every asset from another origin.
         if ($this->vite->isRunningHot()) {
             $origin = trim((string) file_get_contents($this->vite->hotFile()));
             $script = [...$script, "'unsafe-inline'", $origin];
+            $style = [...$style, $origin];
+            $font = [...$font, $origin];
+            $img = [...$img, $origin];
             $connect = [...$connect, $origin, preg_replace('/^http/', 'ws', $origin)];
         }
 
         $directives = [
             'default-src' => ["'self'"],
             'script-src' => $script,
-            'style-src' => ["'self'", "'unsafe-inline'", 'https://fonts.bunny.net'],
-            'font-src' => ["'self'", 'data:', 'https://fonts.bunny.net'],
-            'img-src' => ["'self'", 'data:', 'blob:', 'https:'],
+            'style-src' => $style,
+            'font-src' => $font,
+            'img-src' => $img,
             'media-src' => ["'self'", 'blob:', 'https:'],
             'connect-src' => $connect,
             'frame-src' => ['https://challenges.cloudflare.com', 'https://www.google.com'],

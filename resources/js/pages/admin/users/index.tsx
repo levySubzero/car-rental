@@ -5,6 +5,7 @@ import type { Column } from '@/components/admin/data-table';
 import { DataTable, useTableQuery } from '@/components/admin/data-table';
 import { NativeSelect } from '@/components/admin/form-field';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
+import { UserCard } from '@/components/admin/users/user-card';
 import { UserStatus } from '@/components/admin/users/user-status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -100,6 +101,8 @@ export default function UsersIndex({
                     columns={columns}
                     filters={filters}
                     rowKey={(user) => user.id}
+                    viewKey="users"
+                    grid={(user) => <UserCard user={user} />}
                     searchPlaceholder="Search name or email"
                     toolbar={
                         <>

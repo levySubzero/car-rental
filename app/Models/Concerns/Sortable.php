@@ -49,11 +49,11 @@ trait Sortable
      */
     public static function reorder(array $ids): void
     {
-        $instance = new static;
+        $instance = static::query()->getModel();
         $column = $instance->sortColumn();
 
         DB::transaction(function () use ($ids, $instance, $column): void {
-            foreach (array_values($ids) as $position => $id) {
+            foreach ($ids as $position => $id) {
                 static::query()->whereKey($id)->update([$column => $position + 1]);
             }
 

@@ -1,8 +1,16 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react';
+import {
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
+    LayoutGrid,
+    List,
+    Search,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { NativeSelect } from '@/components/admin/form-field';
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -12,6 +20,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useViewMode } from '@/hooks/use-view-mode';
 import { cn } from '@/lib/utils';
 import type { Paginated } from '@/types';
 
@@ -53,6 +63,9 @@ export function useTableQuery(filters: Filters) {
 /**
  * Server-driven table: sorting, filtering and pagination all round-trip through
  * the query string, so the server stays the source of truth.
+ *
+ * Pass `grid` (a card per row) and `viewKey` to offer a grid view as well. Phones
+ * start on the grid; the choice is remembered per `viewKey`.
  */
 export function DataTable<T>({
     data,
@@ -62,6 +75,8 @@ export function DataTable<T>({
     searchPlaceholder,
     toolbar,
     empty = 'Nothing to show yet.',
+    grid,
+    viewKey,
 }: {
     data: Paginated<T>;
     columns: Column<T>[];
@@ -72,8 +87,14 @@ export function DataTable<T>({
     // Extra filter controls shown next to the search box.
     toolbar?: ReactNode;
     empty?: ReactNode;
+    // Renders one row as a card for the grid view.
+    grid?: (row: T) => ReactNode;
+    // Remembers the chosen view, e.g. "cars".
+    viewKey?: string;
 }) {
     const apply = useTableQuery(filters);
+    const [storedView, setView] = useViewMode(viewKey ?? 'default');
+    const view = grid ? storedView : 'table';
     const sort = filters.sort as string | undefined;
     const direction = filters.direction === 'desc' ? 'desc' : 'asc';
 
@@ -85,8 +106,8 @@ export function DataTable<T>({
 
     return (
         <div className="space-y-4">
-            {(searchPlaceholder || toolbar) && (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {(searchPlaceholder || toolbar || grid) && (
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                     {searchPlaceholder && (
                         <SearchInput
                             initial={(filters.search as string) ?? ''}
@@ -95,69 +116,168 @@ export function DataTable<T>({
                         />
                     )}
                     {toolbar}
+                    {grid && (
+                        <div className="flex items-center gap-2 sm:ml-auto">
+                            {view === 'grid' && (
+                                <GridSort
+                                    columns={columns}
+                                    sort={sort}
+                                    direction={direction}
+                                    onChange={(changes) => apply(changes)}
+                                />
+                            )}
+                            <ToggleGroup
+                                type="single"
+                                variant="outline"
+                                value={view}
+                                onValueChange={(value) =>
+                                    value && setView(value as 'table' | 'grid')
+                                }
+                                aria-label="View"
+                                className="shrink-0"
+                            >
+                                <ToggleGroupItem
+                                    value="table"
+                                    aria-label="Table view"
+                                >
+                                    <List />
+                                </ToggleGroupItem>
+                                <ToggleGroupItem
+                                    value="grid"
+                                    aria-label="Grid view"
+                                >
+                                    <LayoutGrid />
+                                </ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
+                    )}
                 </div>
             )}
 
-            <div className="overflow-hidden rounded-lg border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            {columns.map((column) => (
-                                <TableHead
-                                    key={column.key}
-                                    className={column.className}
-                                >
-                                    {column.sortKey ? (
-                                        <button
-                                            type="button"
-                                            className="inline-flex items-center gap-1 hover:text-foreground"
-                                            onClick={() =>
-                                                toggleSort(column.sortKey!)
-                                            }
-                                        >
-                                            {column.header}
-                                            <SortIcon
-                                                active={sort === column.sortKey}
-                                                direction={direction}
-                                            />
-                                        </button>
-                                    ) : (
-                                        column.header
-                                    )}
-                                </TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {data.data.length === 0 ? (
+            {view === 'grid' && grid ? (
+                data.data.length === 0 ? (
+                    <div className="flex h-24 items-center justify-center rounded-lg border text-sm text-muted-foreground">
+                        {empty}
+                    </div>
+                ) : (
+                    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                        {data.data.map((row) => (
+                            <li key={rowKey(row)} className="min-w-0">
+                                {grid(row)}
+                            </li>
+                        ))}
+                    </ul>
+                )
+            ) : (
+                <div className="overflow-hidden rounded-lg border">
+                    <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className="h-24 text-center text-muted-foreground"
-                                >
-                                    {empty}
-                                </TableCell>
+                                {columns.map((column) => (
+                                    <TableHead
+                                        key={column.key}
+                                        className={column.className}
+                                    >
+                                        {column.sortKey ? (
+                                            <button
+                                                type="button"
+                                                className="inline-flex items-center gap-1 hover:text-foreground"
+                                                onClick={() =>
+                                                    toggleSort(column.sortKey!)
+                                                }
+                                            >
+                                                {column.header}
+                                                <SortIcon
+                                                    active={
+                                                        sort === column.sortKey
+                                                    }
+                                                    direction={direction}
+                                                />
+                                            </button>
+                                        ) : (
+                                            column.header
+                                        )}
+                                    </TableHead>
+                                ))}
                             </TableRow>
-                        ) : (
-                            data.data.map((row) => (
-                                <TableRow key={rowKey(row)}>
-                                    {columns.map((column) => (
-                                        <TableCell
-                                            key={column.key}
-                                            className={column.className}
-                                        >
-                                            {column.cell(row)}
-                                        </TableCell>
-                                    ))}
+                        </TableHeader>
+                        <TableBody>
+                            {data.data.length === 0 ? (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center text-muted-foreground"
+                                    >
+                                        {empty}
+                                    </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            ) : (
+                                data.data.map((row) => (
+                                    <TableRow key={rowKey(row)}>
+                                        {columns.map((column) => (
+                                            <TableCell
+                                                key={column.key}
+                                                className={column.className}
+                                            >
+                                                {column.cell(row)}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
 
             <DataTablePagination meta={data.meta} />
         </div>
+    );
+}
+
+/**
+ * Sorting for the grid view, which has no column headers to click.
+ */
+function GridSort<T>({
+    columns,
+    sort,
+    direction,
+    onChange,
+}: {
+    columns: Column<T>[];
+    sort: string | undefined;
+    direction: 'asc' | 'desc';
+    onChange: (changes: Filters) => void;
+}) {
+    const options = columns
+        .filter((column) => column.sortKey)
+        .flatMap((column) => {
+            const label =
+                typeof column.header === 'string' ? column.header : column.key;
+
+            return [
+                { value: `${column.sortKey}:asc`, label: `${label} ↑` },
+                { value: `${column.sortKey}:desc`, label: `${label} ↓` },
+            ];
+        });
+
+    if (options.length === 0) {
+        return null;
+    }
+
+    return (
+        <NativeSelect
+            aria-label="Sort by"
+            className="w-full sm:w-44"
+            value={sort ? `${sort}:${direction}` : ''}
+            placeholder="Default order"
+            options={options}
+            onChange={(event) => {
+                const [key, dir] = event.target.value.split(':');
+
+                onChange({ sort: key || null, direction: dir || null });
+            }}
+        />
     );
 }
 

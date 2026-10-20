@@ -76,6 +76,18 @@ final readonly class Money implements JsonSerializable
         return ($this->minor < 0 ? '-' : '').$string;
     }
 
+    /**
+     * For display: "KES 15,000" or "KES 16,587.50". Cents are shown only when there are any.
+     */
+    public function format(): string
+    {
+        $absolute = abs($this->minor);
+        $decimals = $absolute % $this->unit() === 0 ? 0 : $this->decimals;
+        $number = number_format($absolute / $this->unit(), $decimals, '.', ',');
+
+        return $this->currency.' '.($this->minor < 0 ? '-' : '').$number;
+    }
+
     public function add(self $other): self
     {
         $this->assertSameCurrency($other);
@@ -127,7 +139,7 @@ final readonly class Money implements JsonSerializable
     }
 
     /**
-     * @return array{minor: int, currency: string, major: string}
+     * @return array{minor: int, currency: string, major: string, display: string}
      */
     public function jsonSerialize(): array
     {
@@ -135,6 +147,7 @@ final readonly class Money implements JsonSerializable
             'minor' => $this->minor,
             'currency' => $this->currency,
             'major' => $this->toMajorString(),
+            'display' => $this->format(),
         ];
     }
 

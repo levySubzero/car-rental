@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -16,10 +17,17 @@ class DatabaseSeeder extends Seeder
     {
         Artisan::call('permissions:sync');
 
-        // Starting roles from PRD §3. They are ordinary roles: admins can rename, edit or delete them.
-        // Their permissions are added as the modules they need are built (bookings, cars, ...).
-        $this->role('operations', 'Booking desk: bookings, payments, handover and return.');
-        $this->role('content-editor', 'Marketing: cars, photos, brands, services, policies and home page.');
+        // Starting roles from PRD §3. They are ordinary roles: admins can rename, edit or delete them,
+        // so permissions are only given when a role is first created. Each module adds its own.
+        $this->role('operations', 'Booking desk: bookings, payments, handover and return.', [
+            Permission::CarsView,
+            Permission::AvailabilityManage,
+        ]);
+        $this->role('content-editor', 'Marketing: cars, photos, brands, services, policies and home page.', [
+            ...Permission::forModule('brands', 'car-types'),
+            ...Permission::except(Permission::forModule('cars'), Permission::CarsViewValue),
+            Permission::MediaUpload,
+        ]);
 
         $this->staff('Baines Admin', 'admin@baines.test', config('baines.super_admin_role'));
 
@@ -27,14 +35,25 @@ class DatabaseSeeder extends Seeder
             $this->staff('Operations Desk', 'ops@baines.test', 'operations');
             $this->staff('Content Editor', 'editor@baines.test', 'content-editor');
         }
+
+        if (app()->environment(['local', 'staging'])) {
+            $this->call(DemoCatalogSeeder::class);
+        }
     }
 
-    private function role(string $name, string $description): void
+    /**
+     * @param  list<Permission>  $permissions
+     */
+    private function role(string $name, string $description, array $permissions = []): void
     {
-        Role::query()->firstOrCreate(
+        $role = Role::query()->firstOrCreate(
             ['name' => $name, 'guard_name' => 'web'],
             ['description' => $description],
         );
+
+        if ($role->wasRecentlyCreated) {
+            $role->givePermissionTo($permissions);
+        }
     }
 
     private function staff(string $name, string $email, string $role): void

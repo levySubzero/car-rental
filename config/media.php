@@ -76,6 +76,29 @@ return [
             'upload' => ['permission' => 'settings.home.update'],
         ],
 
+        // Catalog (M4). SVG logos would need sanitising, so logos are raster for now (D21).
+        'brand.logo' => [
+            'label' => 'Brand logo',
+            'owner' => 'brand',
+            'visibility' => 'public',
+            'max_files' => 1,
+            'max_kb' => 2048,
+            'mimes' => ['png', 'webp'],
+            'conversions' => ['thumb', 'card'],
+            'upload' => ['permission' => 'brands.update'],
+        ],
+
+        'car.gallery' => [
+            'label' => 'Car photos',
+            'owner' => 'car',
+            'visibility' => 'public',
+            'max_files' => 6,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic'],
+            'conversions' => ['thumb', 'card', 'full'],
+            'upload' => ['permission' => 'cars.update'],
+        ],
+
     ],
 
 ];

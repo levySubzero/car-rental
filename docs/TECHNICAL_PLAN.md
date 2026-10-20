@@ -9,7 +9,7 @@ This plan replaces the PRD's architecture section (§8) where they disagree. The
 - **Media is its own shared feature.** One module owns uploads, storage, retrieval and download for every entity. Forms never post files. They post media UUIDs.
 - **Permissions are generated per module.** Each module adds its permissions to a registry as it is built, and a sync command writes them to the database.
 - **We make values configurable instead of waiting on client answers.** Every open question in PRD §10 becomes a setting, a table or a driver with a sensible default (see §9). The client can change these values later without a code change.
-- **Some models have a `metadata` JSON field.** Admin-defined metadata fields extend cars, brands, services and other models without migrations.
+- **Some models have a `metadata` JSON field** for informal extras that need no column (D20). It is free-form and not shown publicly unless a page picks a key on purpose.
 
 ---
 
@@ -89,7 +89,7 @@ app/
       Admin/                 CarController, BrandController, CarTypeController, ServiceController,
                              PageController, PolicyController, SettingsController, CurrencyController,
                              FxRateController, ChargeController, DepositBandController, BookingController,
-                             PaymentSubmissionController, AvailabilityController, MetadataFieldController,
+                             PaymentSubmissionController, AvailabilityController,
                              UserController, RoleController, ActivityLogController
       Public/                HomeController, FleetController, CarController, BrandController,
                              CarTypeController, ServiceController, PolicyController, PageController,
@@ -102,8 +102,8 @@ app/
   Models/                    Brand, CarType, Car, Service, Page, PageSection, Policy, PolicyVersion,
                              Currency, FxRate, Charge, DeliveryZone, DepositBand, CancellationTier,
                              Booking, BookingDriver, BookingStatusHistory, AvailabilityHold, CarBlackout,
-                             PaymentMethod, PaymentSubmission, Media, MetadataField, ContactMessage, User
-  Models/Concerns/           HasMedia, HasMetadata, HasSlug, Sortable
+                             PaymentMethod, PaymentSubmission, Media, ContactMessage, User
+  Models/Concerns/           HasMedia, HasSlug, Sortable
   Notifications/             BookingReceived, StaffNewBooking, PaymentSubmitted, BookingConfirmed,
                              PaymentRejected
   Notifications/Channels/    WhatsAppChannel (driver-based)
@@ -112,7 +112,6 @@ app/
     Catalog/                 BrandService, CarTypeService, CarService
     Content/                 PageService, PolicyService, ServiceCatalogService
     Media/                   MediaService, MediaCollectionRegistry, ImageProcessor, MediaUrlGenerator
-    Metadata/                MetadataService
     Pricing/                 QuoteService, DayCounter/*, FxRateService, Fx/Providers/*, CurrencyService
     Booking/                 BookingService, BookingStatusService, AvailabilityService,
                              DriverEligibilityService, BookingReferenceGenerator
@@ -164,7 +163,7 @@ public function store(StoreCarRequest $request, CarService $cars): RedirectRespo
 }
 ```
 
-A form request with media and metadata:
+A form request with media and extra info (see `Admin\Car\SaveCarRequest` for the real one):
 
 ```php
 public function authorize(): bool { return $this->user()->can('create', Car::class); }
@@ -177,9 +176,9 @@ public function rules(): array
         'daily_rate'      => ['required', 'numeric', 'min:0'],            // major units in, minor units stored
         'gallery'         => ['array', new MaxMediaForCollection('car.gallery')],
         'gallery.*'       => ['uuid', new PendingOrOwnedMedia('car.gallery', $this->route('car'))],
-        'cover_media_id'  => ['nullable', 'uuid', 'in_array:gallery.*'],
-        'metadata'        => ['array'],
-        ...MetadataRules::for(Car::class, 'metadata'),                    // rules from metadata_fields
+        'cover'           => ['nullable', 'uuid', 'in_array:gallery.*'],
+        'metadata'        => ['nullable', 'array', 'max:30', new MetadataKeys],   // informal extras (D20)
+        'metadata.*'      => ['nullable', 'string', 'max:500'],
     ];
 }
 ```
@@ -187,12 +186,11 @@ public function rules(): array
 A service, with the transaction and media sync inside it:
 
 ```php
-public function create(array $data): Car
+public function create(array $data, User $actor): Car
 {
-    return DB::transaction(function () use ($data) {
-        $car = Car::create(Arr::except($data, ['gallery', 'cover_media_id']));
-        $this->media->sync($car, 'car.gallery', $data['gallery'] ?? [], cover: $data['cover_media_id'] ?? null);
-        activity()->performedOn($car)->log('created');
+    return DB::transaction(function () use ($data, $actor) {
+        $car = Car::create(Arr::except($data, ['gallery', 'cover']));       // the model logs itself (LogsActivity)
+        $this->media->sync($car, 'car.gallery', $data['gallery'] ?? [], cover: $data['cover'] ?? null, actor: $actor);
 
         return $car;
     });
@@ -270,7 +268,7 @@ enum Permission: string
                             'mimes' => ['jpg','jpeg','png','webp','heic'], 'max_kb' => 8192,
                             'conversions' => ['thumb','card','full'], 'upload' => ['permission' => 'cars.update']],
     'brand.logo'        => ['model' => Brand::class,   'visibility' => 'public',  'max_files' => 1,
-                            'mimes' => ['svg','png','webp'], 'upload' => ['permission' => 'brands.update']],
+                            'mimes' => ['png','webp'], 'upload' => ['permission' => 'brands.update']],   // no SVG yet (D21)
     'service.image'     => [...], 'page.section' => [...], 'site.hero' => [...],
     'booking.id_front'  => ['model' => Booking::class, 'visibility' => 'private', 'max_files' => 1,
                             'mimes' => ['jpg','jpeg','png','heic','pdf'], 'max_kb' => 8192,
@@ -338,31 +336,15 @@ The media routes have no `auth` middleware, because renters use them. `ResolveMe
 
 ---
 
-## 7. Metadata fields
+## 7. Metadata (informal extras)
 
-Use `metadata` for attributes the client may want to add without a migration. Use columns for anything the system filters, sorts or calculates on.
+`metadata` is a nullable JSON column, cast with `AsArrayObject`, for loose information that needs no migration (D20). There is no definitions table, shared concern or field builder.
 
-- **Models with `metadata` (JSON, cast `AsArrayObject`):** `cars`, `brands`, `car_types`, `services`, `pages`, `bookings`, `booking_drivers`, `payment_submissions`, `media`.
-- **Table `metadata_fields`** (admin-managed through the CMS):
-
-    | Column           | Notes                                                                           |
-    | ---------------- | ------------------------------------------------------------------------------- |
-    | `entity`         | e.g. `car`                                                                      |
-    | `key`            | Slug, unique per entity                                                         |
-    | `label`          | Shown in forms and on the public site                                           |
-    | `type`           | `text`, `textarea`, `number`, `boolean`, `select`, `multiselect`, `date`, `url` |
-    | `options` (JSON) | Choices for select types                                                        |
-    | `rules` (JSON)   | Extra validation, e.g. min or max                                               |
-    | `unit`           | e.g. `s`, `km/h`, `L/100km`                                                     |
-    | `is_required`    |                                                                                 |
-    | `is_public`      | Shown on the public site; hidden fields stay admin-only                         |
-    | `show_on_card`   | Shown on fleet cards                                                            |
-    | `sort_order`     |                                                                                 |
-
-- `MetadataService::rulesFor(entity)` feeds form requests. `MetadataService::publicView(model)` feeds public resources, which only ever expose fields marked `is_public`.
-- `<MetadataFields entity="car" />` renders the inputs dynamically in admin forms.
-- **Seeded car fields:** `fuel_type`, `colour`, `zero_to_hundred_s`, `top_speed_kmh`, `drive` (2WD/4WD/AWD), `luggage_bags` and `features` (multiselect: AC, Bluetooth, CarPlay, sunroof, …).
-- Unknown keys are stripped on save, so `metadata` only ever holds defined fields.
+- **Columns first.** Anything the system filters, sorts, calculates on or shows as a first-class spec is a column. `cars.fuel_type` and `cars.colour` are columns for that reason.
+- **Which tables have it.** Each milestone decides for its own tables. In M4 only `cars` has it (0–100 time, top speed, drive, luggage, features, ...). `payment_methods` will (paybill, till, bank details, card link). `media` has its own system-owned keys (alt, caption, `exif_stripped`, `legal_hold`).
+- **Shape.** An object of snake_case keys (`App\Support\Rules\MetadataKeys`: a letter first, at most 40 characters) to text values of up to 500 characters, at most 30 keys. Empty values are dropped on save.
+- **Editing.** Admin forms use `<KeyValueField>` (`resources/js/components/admin/key-value-field.tsx`) with the helpers in `resources/js/lib/metadata.ts`.
+- **Public site.** Public resources never include `metadata` wholesale. A page that wants a key (say, 0–100 on the car card) adds that one key to its resource explicitly.
 
 ---
 
@@ -373,10 +355,10 @@ All money columns are `bigint` in **minor units** (cents) with a `_minor` suffix
 | Table                                           | Key columns                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **users**                                       | id, name, email, password, two_factor_*, is_staff, is_active, last_login_at                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| **brands**                                      | id, name, slug, sort_order, show_in_marquee, is_active, metadata                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| **car_types**                                   | id, name, slug, description, sort_order, is_active, metadata                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **cars**                                        | id, brand_id, car_type_id, name, slug, model_year, engine_type, engine_capacity_cc, transmission (enum), doors, seats, daily_rate_minor, car_value_minor, mileage_limit_km (nullable = use the default), damage_excess_minor + damage_excess_currency, is_featured, is_available, is_published, published_at, description, metadata, sort_order                                                                                                                                                                                  |
-| **car_blackouts**                               | car_id, starts_at, ends_at, reason (maintenance, private use)                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **brands**                                      | id, name, slug, sort_order, show_in_marquee, is_active                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **car_types**                                   | id, name, slug, description, sort_order, is_active                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **cars**                                        | id, brand_id, car_type_id, name, slug, model_year, engine_type, engine_capacity_litres, fuel_type (enum), transmission (enum), colour, doors, seats, daily_rate_minor, car_value_minor, mileage_limit_km (nullable = use the default), damage_excess_minor + damage_excess_currency, is_featured, is_available, is_published, published_at, description, metadata, sort_order                                                                                                                                                                                  |
+| **car_blackouts**                               | car_id, starts_at, ends_at, reason (maintenance, private use), notes, created_by                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **services**                                    | id, title, slug, summary, body, icon, cta_type (book, whatsapp, link), cta_value, sort_order, is_active, metadata                                                                                                                                                                                                                                                                                                                                                                                                                |
 | **pages**                                       | id, slug, title, meta_title, meta_description, og_media_id, is_system                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **page_sections**                               | page_id, key, type, content (JSON), sort_order, is_visible                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -397,7 +379,6 @@ All money columns are `bigint` in **minor units** (cents) with a `_minor` suffix
 | **payment_submissions**                         | booking_id, payment_method_code, amount_minor, currency_code, transaction_message, reference, status (pending, verified, rejected), verified_by, verified_at, rejection_reason, metadata                                                                                                                                                                                                                                                                                                                                         |
 | **handover_records**                            | booking_id, type (handover, return), balance_received_minor, deposit_received_minor, deposit_refunded_minor, odometer_km, fuel_level, notes, recorded_by, recorded_at                                                                                                                                                                                                                                                                                                                                                            |
 | **contact_messages**                            | name, email, phone, message, car_id, preferred_dates, status, handled_by                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| **metadata_fields**                             | see §7                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | **media**                                       | see §6.3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | **settings**                                    | spatie settings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **activity_log**, **permissions**, **roles**, … | package tables                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -639,7 +620,7 @@ Scheduler:
 | D6  | Money in KES minor units, FX as decimal(14,6)                                                      | Exact arithmetic; matches PRD §7                                                                                              |
 | D7  | dompdf for the voucher                                                                             | No Chrome in the containers                                                                                                   |
 | D8  | Snapshot the quote, FX and settings per booking                                                    | PRD Q-4; disputes are settled from stored data                                                                                |
-| D9  | `metadata` JSON governed by `metadata_fields`                                                      | Extensible specs without migrations, and still validated                                                                      |
+| D9  | ~~`metadata` JSON governed by `metadata_fields`~~ Superseded by D20.                              | Extensible specs without migrations, and still validated                                                                      |
 | D10 | 2026-10-17: Stay on Laravel 13, Inertia 3, Pest 4 and intervention/image v4 (plan said 12, 2, 3 and v3) | The starter kit shipped these versions and every package installs cleanly on them. Downgrading costs churn and gains nothing. |
 | D11 | 2026-10-17: vite-plus `vp check` (oxlint + oxfmt) and `vp test` replace ESLint, Prettier and a standalone Vitest | Ships with the starter kit, is one toolchain and is faster. `docs/**` is excluded from the formatter. |
 | D12 | 2026-10-17: Local development runs on the host (`composer dev`, host MySQL); Sail is removed. Dockerfiles and the staging pipeline move to M12.15. | Hosting isn't decided yet, and Sail's image build failed on this machine. M12.15 must be pulled forward before M5.13 because Gate G1 runs on staging. Redis-only behaviour (Horizon) is exercised on staging. |
@@ -651,5 +632,7 @@ Scheduler:
 | D17 | 2026-10-17: `Relation::enforceMorphMap` is on. Polymorphic columns store aliases (`user`, `role`, later `car`, `booking`). | Media collections and the uploader name owners by alias, never by class name. Each module adds its aliases. |
 | D18 | 2026-10-17: `media.status` (pending, attached) and `media.processing` (queued, done, failed, skipped) are separate columns. | §6.3 merged them, but a pending file can also be processing. |
 | D19 | 2026-10-17: The original image is sanitized during the upload request (EXIF stripped, orientation fixed, HEIC→JPEG); only the WebP conversions are queued. The image driver is `MEDIA_IMAGE_DRIVER` (Imagick when loaded, otherwise GD), and HEIC is accepted only when the driver decodes it. | A file with GPS EXIF never reaches the disk. Local development has GD only. CI and production have Imagick. |
+| D20 | 2026-10-18: `metadata` is a plain, free-form JSON column for informal extras, added only to tables that need it (M4: `cars`). There is no `metadata_fields` table, `MetadataService` or field builder, and public resources do not expose it by default. M3 is dropped. | Client decision: metadata is misc info, not an admin-defined schema. Real specs stay columns, so they can be validated, filtered and shown. |
+| D21 | 2026-10-18: Catalog details. Cars get `fuel_type` and `colour` columns, and engine capacity is `engine_capacity_litres` (decimal, one place: 2.5) as staff quote it, not cc. `brand.logo` takes PNG and WebP only (SVG would need sanitising). Cars soft-delete; brands and car types hard-delete but are refused while any car, deleted or not, uses them. Publishing needs a cover photo and a daily rate. `damage_excess_currency` is checked against `baines.currencies` until M6. Admin catalog routes bind by slug, and slugs stay unique across soft-deleted rows. | Bookings will reference cars, so cars cannot vanish. A published car without a photo would break the fleet grid. |
 
 New decisions are appended here with a date.

@@ -36,6 +36,8 @@ composer dev                  # server on :8000, queue worker, logs and Vite
 
 Sign in at http://localhost:8000/login as `admin@baines.test` / `password`. 2FA is optional unless you turn it on under Settings → Security. Locally there are also `ops@baines.test` and `editor@baines.test`.
 
+**Quick sign-in.** With `APP_ENV=local`, the login page has a "Development: sign in as" dropdown that signs you in as any active user without a password or 2FA. Set `DEV_LOGIN=false` to hide it. The endpoint returns 404 in every other environment.
+
 **Images.** Uploads are re-encoded with Imagick when the PHP extension is installed, otherwise GD. GD can't read HEIC (iPhone photos), so HEIC uploads are refused until you install `php-imagick` with libheif. Set `MEDIA_IMAGE_DRIVER` to force one driver.
 
 **S3.** Media uses local disks by default. To test the S3 path, point the `AWS_*` variables at a bucket and set `MEDIA_PUBLIC_DISK=media-public-s3` and `MEDIA_PRIVATE_DISK=media-private-s3`.

@@ -1,11 +1,17 @@
 import {
+    CarFront,
     History,
     LayoutGrid,
+    Shapes,
     Settings2,
     ShieldCheck,
+    Tags,
     Users,
 } from 'lucide-react';
 import ActivityLogController from '@/actions/App/Http/Controllers/Admin/ActivityLogController';
+import BrandController from '@/actions/App/Http/Controllers/Admin/BrandController';
+import CarController from '@/actions/App/Http/Controllers/Admin/CarController';
+import CarTypeController from '@/actions/App/Http/Controllers/Admin/CarTypeController';
 import RoleController from '@/actions/App/Http/Controllers/Admin/RoleController';
 import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsController';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
@@ -26,6 +32,29 @@ export const adminNav: NavGroup[] = [
                 href: dashboard(),
                 icon: LayoutGrid,
                 exact: true,
+            },
+        ],
+    },
+    {
+        title: 'Catalog',
+        items: [
+            {
+                title: 'Cars',
+                href: CarController.index(),
+                icon: CarFront,
+                permission: 'cars.view',
+            },
+            {
+                title: 'Brands',
+                href: BrandController.index(),
+                icon: Tags,
+                permission: 'brands.view',
+            },
+            {
+                title: 'Car types',
+                href: CarTypeController.index(),
+                icon: Shapes,
+                permission: 'car-types.view',
             },
         ],
     },
