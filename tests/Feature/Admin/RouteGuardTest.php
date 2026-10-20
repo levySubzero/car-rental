@@ -4,7 +4,12 @@ use App\Models\Brand;
 use App\Models\Car;
 use App\Models\CarBlackout;
 use App\Models\CarType;
+use App\Models\ContactMessage;
+use App\Models\Page;
+use App\Models\PaymentMethod;
+use App\Models\Policy;
 use App\Models\Role;
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +47,12 @@ function sampleParameters(RoutingRoute $route): array
         'blackout' => fn (array $resolved) => CarBlackout::factory()
             ->for(Car::query()->where('slug', $resolved['car'])->sole())
             ->create()->id,
+        'service' => fn () => Service::factory()->create()->slug,
+        // Preset slugs and payment codes are unique, so reuse the row an earlier route created.
+        'page' => fn () => Page::query()->firstOrCreate(['slug' => 'about'], ['content' => []])->slug,
+        'policy' => fn () => Policy::factory()->published()->withDraft()->create()->slug,
+        'payment_method' => fn () => (PaymentMethod::query()->firstWhere('code', 'mpesa') ?? PaymentMethod::factory()->create())->code->value,
+        'contact_message' => fn () => ContactMessage::factory()->create()->id,
     ];
 
     $resolved = [];

@@ -12,7 +12,8 @@ use Illuminate\Database\Seeder;
 /**
  * Sample fleet for local and staging (M4.11). Cars have no photos, so they stay drafts:
  * add photos in the admin, then publish. The real catalogue comes from the seed pack (M5.9).
- * Safe to run again: rows are matched by name.
+ * Safe to run again: rows are matched by name. Brand and type names match the seed pack, so
+ * after CmsSeeder they reuse its rows.
  */
 class DemoCatalogSeeder extends Seeder
 {
@@ -21,10 +22,10 @@ class DemoCatalogSeeder extends Seeder
     private const TYPES = [
         'SUV' => 'Comfortable on city roads and rough tracks.',
         '4x4 Safari' => 'Built for game drives and long-distance travel.',
-        'Luxury Sedan' => 'Executive comfort for business and events.',
-        'Executive' => 'Chauffeur-ready cars for VIP transfers.',
+        'Luxury' => 'Executive comfort for business and events.',
+        'Executive Sedan' => 'Chauffeur-ready cars for VIP transfers.',
         'Economy' => 'Efficient cars for getting around town.',
-        'Van' => 'Room for groups and luggage.',
+        'Van / Minibus' => 'Room for groups and luggage.',
     ];
 
     /**
@@ -36,11 +37,11 @@ class DemoCatalogSeeder extends Seeder
         ['Toyota Land Cruiser V8', 'Toyota', '4x4 Safari', FuelType::Diesel, Transmission::Automatic, 7, 25_000, ['drive' => '4WD', 'luggage_bags' => '5']],
         ['Toyota Prado TX', 'Toyota', 'SUV', FuelType::Diesel, Transmission::Automatic, 7, 15_000, ['drive' => '4WD', 'luggage_bags' => '4']],
         ['Range Rover Sport', 'Land Rover', 'SUV', FuelType::Petrol, Transmission::Automatic, 5, 35_000, ['zero_to_hundred_s' => '5.9', 'drive' => 'AWD']],
-        ['Range Rover Vogue', 'Land Rover', 'Executive', FuelType::Diesel, Transmission::Automatic, 5, 45_000, ['features' => 'Massage seats, Meridian audio']],
-        ['Mercedes-Benz S-Class', 'Mercedes-Benz', 'Luxury Sedan', FuelType::Petrol, Transmission::Automatic, 5, 40_000, ['zero_to_hundred_s' => '4.9']],
-        ['Mercedes-Benz V-Class', 'Mercedes-Benz', 'Van', FuelType::Diesel, Transmission::Automatic, 7, 30_000, ['luggage_bags' => '6']],
+        ['Range Rover Vogue', 'Land Rover', 'Executive Sedan', FuelType::Diesel, Transmission::Automatic, 5, 45_000, ['features' => 'Massage seats, Meridian audio']],
+        ['Mercedes-Benz S-Class', 'Mercedes-Benz', 'Luxury', FuelType::Petrol, Transmission::Automatic, 5, 40_000, ['zero_to_hundred_s' => '4.9']],
+        ['Mercedes-Benz V-Class', 'Mercedes-Benz', 'Van / Minibus', FuelType::Diesel, Transmission::Automatic, 7, 30_000, ['luggage_bags' => '6']],
         ['BMW X5', 'BMW', 'SUV', FuelType::Hybrid, Transmission::Automatic, 5, 28_000, ['zero_to_hundred_s' => '5.6', 'drive' => 'AWD']],
-        ['BMW 7 Series', 'BMW', 'Executive', FuelType::Petrol, Transmission::Automatic, 5, 42_000, []],
+        ['BMW 7 Series', 'BMW', 'Executive Sedan', FuelType::Petrol, Transmission::Automatic, 5, 42_000, []],
         ['Lexus LX 600', 'Lexus', '4x4 Safari', FuelType::Petrol, Transmission::Automatic, 7, 38_000, ['drive' => '4WD']],
         ['Nissan X-Trail', 'Nissan', 'SUV', FuelType::Petrol, Transmission::Automatic, 5, 9_000, []],
         ['Mazda Demio', 'Mazda', 'Economy', FuelType::Petrol, Transmission::Automatic, 5, 4_500, []],

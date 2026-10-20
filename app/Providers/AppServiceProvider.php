@@ -7,8 +7,14 @@ use App\Models\Brand;
 use App\Models\Car;
 use App\Models\CarBlackout;
 use App\Models\CarType;
+use App\Models\ContactMessage;
 use App\Models\Media;
+use App\Models\Page;
+use App\Models\PaymentMethod;
+use App\Models\Policy;
+use App\Models\PolicyBundle;
 use App\Models\Role;
+use App\Models\Service;
 use App\Models\User;
 use App\Services\Media\Contracts\TokenUploaderResolver;
 use App\Services\Media\CurrentUploader;
@@ -16,6 +22,7 @@ use App\Services\Media\ImageDriver;
 use App\Services\Media\MediaCollectionRegistry;
 use App\Services\Media\NullTokenUploaderResolver;
 use App\Settings\MediaSettings;
+use App\Support\Content\PageRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -37,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ImageDriver::class);
         $this->app->scoped(CurrentUploader::class);
+        $this->app->singleton(PageRegistry::class, fn () => PageRegistry::fromConfig());
 
         // M8 binds the booking implementation.
         $this->app->bind(TokenUploaderResolver::class, NullTokenUploaderResolver::class);
@@ -75,6 +83,12 @@ class AppServiceProvider extends ServiceProvider
             'car_type' => CarType::class,
             'car' => Car::class,
             'car_blackout' => CarBlackout::class,
+            'service' => Service::class,
+            'page' => Page::class,
+            'policy' => Policy::class,
+            'policy_bundle' => PolicyBundle::class,
+            'payment_method' => PaymentMethod::class,
+            'contact_message' => ContactMessage::class,
         ]);
     }
 

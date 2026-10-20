@@ -51,6 +51,30 @@ enum Permission: string
     // Availability: maintenance blackouts now, the calendar in M11
     case AvailabilityManage = 'availability.manage';
 
+    // Content
+    case ServicesView = 'services.view';
+    case ServicesCreate = 'services.create';
+    case ServicesUpdate = 'services.update';
+    case ServicesDelete = 'services.delete';
+
+    // Preset pages: fixed in code, so there is no create or delete (D22)
+    case PagesView = 'pages.view';
+    case PagesUpdate = 'pages.update';
+
+    case PoliciesView = 'policies.view';
+    case PoliciesCreate = 'policies.create';
+    case PoliciesUpdate = 'policies.update';
+    case PoliciesDelete = 'policies.delete';
+    case PoliciesPublish = 'policies.publish';
+
+    // A fixed set of methods the booking flow branches on (D25)
+    case PaymentMethodsView = 'payment-methods.view';
+    case PaymentMethodsUpdate = 'payment-methods.update';
+
+    case ContactMessagesView = 'contact-messages.view';
+    case ContactMessagesUpdate = 'contact-messages.update';
+    case ContactMessagesDelete = 'contact-messages.delete';
+
     // Settings: one update permission per settings group (SettingsGroup)
     case SettingsGeneralUpdate = 'settings.general.update';
     case SettingsPricingUpdate = 'settings.pricing.update';

@@ -5,7 +5,15 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CarBlackoutController;
 use App\Http\Controllers\Admin\CarController;
 use App\Http\Controllers\Admin\CarTypeController;
+use App\Http\Controllers\Admin\ContactMessageController;
+use App\Http\Controllers\Admin\ContentController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MarkdownPreviewController;
+use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\PaymentMethodController;
+use App\Http\Controllers\Admin\PolicyController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -22,7 +30,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::inertia('/', 'admin/dashboard')->name('dashboard');
+Route::get('/', DashboardController::class)->name('dashboard');
 
 // IAM
 Route::resource('users', UserController::class)->except('show');
@@ -50,6 +58,38 @@ Route::scopeBindings()->group(function () {
     Route::put('cars/{car}/blackouts/{blackout}', [CarBlackoutController::class, 'update'])->name('cars.blackouts.update');
     Route::delete('cars/{car}/blackouts/{blackout}', [CarBlackoutController::class, 'destroy'])->name('cars.blackouts.destroy');
 });
+
+// Content: one sidebar entry with a tab per module, like settings. URLs live under
+// /admin/content so the sidebar highlights it; route names keep their module prefix.
+// Order routes come before the resources, as above.
+Route::get('content', ContentController::class)->name('content.index');
+Route::prefix('content')->group(function () {
+    Route::put('services/order', [ServiceController::class, 'reorder'])->name('services.reorder');
+    Route::put('services/{service}/active', [ServiceController::class, 'active'])->name('services.active');
+    Route::resource('services', ServiceController::class)->except('show');
+
+    // Preset pages are fixed in code (D22): no create or delete.
+    Route::get('pages', [PageController::class, 'index'])->name('pages.index');
+    Route::get('pages/{page}/edit', [PageController::class, 'edit'])->name('pages.edit');
+    Route::put('pages/{page}', [PageController::class, 'update'])->name('pages.update');
+
+    Route::put('policies/order', [PolicyController::class, 'reorder'])->name('policies.reorder');
+    Route::put('policies/{policy}/home', [PolicyController::class, 'home'])->name('policies.home');
+    Route::put('policies/{policy}/draft', [PolicyController::class, 'saveDraft'])->name('policies.draft.save');
+    Route::delete('policies/{policy}/draft', [PolicyController::class, 'discardDraft'])->name('policies.draft.discard');
+    Route::post('policies/{policy}/publish', [PolicyController::class, 'publish'])->name('policies.publish');
+    Route::resource('policies', PolicyController::class)->except('show');
+
+    // A fixed set of methods (D25): no create or delete.
+    Route::put('payment-methods/order', [PaymentMethodController::class, 'reorder'])->name('payment-methods.reorder');
+    Route::put('payment-methods/{payment_method}/active', [PaymentMethodController::class, 'active'])->name('payment-methods.active');
+    Route::resource('payment-methods', PaymentMethodController::class)->only(['index', 'edit', 'update']);
+});
+
+// Operations
+Route::resource('contact-messages', ContactMessageController::class)->only(['index', 'show', 'update', 'destroy']);
+
+Route::post('markdown/preview', MarkdownPreviewController::class)->name('markdown.preview');
 
 // Settings
 Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');

@@ -1,0 +1,175 @@
+{
+    "_meta": {
+        "notes": "All money in KES unless the key says otherwise. Percentages as decimals. Items marked confirm=true follow PRD section 10 working assumptions."
+    },
+    "pricing": {
+        "base_currency": "KES",
+        "billable_day_hours": 12,
+        "daytime_window": { "start": "07:00", "end": "19:00", "confirm": true },
+        "day_counting": "calendar_dates_inclusive",
+        "reservation_percent": 0.25,
+        "balance_percent": 0.75,
+        "rounding": "ceil_whole_shilling",
+        "chauffeur": {
+            "amount": 50,
+            "currency": "USD",
+            "per": "day",
+            "tax_inclusive": true,
+            "confirm": true
+        },
+        "delivery_fee_kes": 2000,
+        "additional_driver": {
+            "amount": 50,
+            "currency": "USD",
+            "per": "day",
+            "tax_inclusive": true,
+            "collected": "counter"
+        },
+        "fuel_service_charge": {
+            "amount": 20,
+            "currency": "USD",
+            "tax_inclusive": true,
+            "refundable": false
+        },
+        "mileage": {
+            "default_limit_km_per_day": 300,
+            "policy_limit_km_per_day_under_7_days": 250,
+            "unlimited_from_days": 7,
+            "excess_rate_kes_per_km": null,
+            "confirm": true
+        },
+        "age": { "min": 23, "max": 70, "confirm": true },
+        "security_deposit_bands": [
+            { "min_age": 24, "max_age": 70, "percent_of_car_value": 0.02 },
+            {
+                "min_age": 23,
+                "max_age": 23,
+                "percent_of_car_value": 0.03,
+                "confirm": true
+            }
+        ],
+        "security_deposit_collected": "handover",
+        "security_deposit_refundable": true,
+        "excess": {
+            "damage_usd_min": 1700,
+            "damage_usd_max": 4000,
+            "theft_usd": 4000,
+            "tax_inclusive": true
+        },
+        "licence_min_years_held": 3,
+        "availability_hold_minutes": 120,
+        "flight_notice_days": 2,
+        "amendment_phone_only_within_hours": 48
+    },
+    "fx": {
+        "margin_kes_per_unit": 3,
+        "rule": "display_amount = amount_kes / (market_rate_kes_per_unit - margin_kes_per_unit)",
+        "refresh": "hourly",
+        "provider": "TODO: choose paid FX API (e.g. Open Exchange Rates)"
+    },
+    "currencies": [
+        {
+            "code": "KES",
+            "name": "Kenya Shilling",
+            "symbol": "KSh",
+            "decimals": 0,
+            "is_active": true,
+            "is_base": true,
+            "sort_order": 1
+        },
+        {
+            "code": "USD",
+            "name": "US Dollar",
+            "symbol": "$",
+            "decimals": 2,
+            "is_active": true,
+            "sort_order": 2
+        },
+        {
+            "code": "GBP",
+            "name": "British Pound",
+            "symbol": "£",
+            "decimals": 2,
+            "is_active": true,
+            "sort_order": 3
+        },
+        {
+            "code": "EUR",
+            "name": "Euro",
+            "symbol": "€",
+            "decimals": 2,
+            "is_active": true,
+            "sort_order": 4
+        },
+        {
+            "code": "AED",
+            "name": "UAE Dirham",
+            "symbol": "AED",
+            "decimals": 2,
+            "is_active": true,
+            "sort_order": 5,
+            "confirm": true
+        },
+        {
+            "code": "AUD",
+            "name": "Australian Dollar",
+            "symbol": "A$",
+            "decimals": 2,
+            "is_active": false,
+            "sort_order": 6,
+            "confirm": true
+        }
+    ],
+    "payment_methods": [
+        {
+            "code": "mpesa",
+            "name": "M-Pesa",
+            "sort_order": 1,
+            "is_active": true,
+            "requires_transaction_message": true,
+            "instructions": "TODO: Paybill or Till number and account format, e.g. 'Paybill XXXXXX, Account: your booking reference'. Paste the full M-Pesa confirmation SMS after paying."
+        },
+        {
+            "code": "bank",
+            "name": "Bank transfer",
+            "sort_order": 2,
+            "is_active": true,
+            "requires_transaction_message": true,
+            "instructions": "TODO: Bank name, account name, account number, branch, SWIFT code. Use your booking reference as the payment reference and paste the transfer confirmation."
+        },
+        {
+            "code": "card",
+            "name": "Card (Visa / Mastercard)",
+            "sort_order": 3,
+            "is_active": true,
+            "requires_transaction_message": true,
+            "instructions": "TODO: Card payment link or POS instructions. Paste the payment receipt or reference after paying."
+        },
+        {
+            "code": "cash",
+            "name": "Cash",
+            "sort_order": 4,
+            "is_active": true,
+            "requires_transaction_message": false,
+            "instructions": "Pay the 25% reservation in cash at our office: Horizon Flats, Dennis Pritt Road, Kilimani. Your booking is held until staff record the payment."
+        }
+    ],
+    "voucher_fields": [
+        "booking_reference",
+        "client_full_name",
+        "car_name",
+        "number_of_days",
+        "total_rental",
+        "reservation_paid",
+        "balance_due_at_handover",
+        "security_deposit_due_at_handover",
+        "pickup_date",
+        "pickup_time",
+        "pickup_point",
+        "return_date",
+        "return_time",
+        "return_point",
+        "chauffeur",
+        "delivery"
+    ]
+}

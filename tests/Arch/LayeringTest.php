@@ -72,3 +72,16 @@ test('public resources never expose the car value', function () {
 
     expect($offenders)->toBe([]);
 });
+
+test('public resources never expose metadata or raw Markdown', function () {
+    $directory = app_path('Http/Resources/Public');
+
+    // Markdown reaches the public site only as *_html (D23); metadata stays internal (D20).
+    $offenders = collect(is_dir($directory) ? File::allFiles($directory) : [])
+        ->filter(fn (SplFileInfo $file) => preg_match("/'(metadata|body|instructions)'\\s*=>/", $file->getContents()) === 1)
+        ->map(fn (SplFileInfo $file) => $file->getRelativePathname())
+        ->values()
+        ->all();
+
+    expect($offenders)->toBe([]);
+});

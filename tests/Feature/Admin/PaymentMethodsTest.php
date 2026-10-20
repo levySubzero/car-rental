@@ -1,0 +1,83 @@
+<?php
+
+use App\Enums\Permission;
+use App\Http\Resources\Public\PaymentMethodResource;
+use App\Models\PaymentMethod;
+use Inertia\Testing\AssertableInertia as Assert;
+
+function methodPayload(array $overrides = []): array
+{
+    return array_replace([
+        'name' => 'M-Pesa',
+        'instructions' => 'Pay to **Paybill 123456**, account: your booking reference.',
+        'requires_transaction_message' => true,
+        'requires_proof' => false,
+        'is_active' => true,
+        'metadata' => ['paybill' => '123456', 'account_format' => ' booking reference ', 'empty' => ''],
+    ], $overrides);
+}
+
+it('lists methods and flags TODO placeholders', function () {
+    PaymentMethod::factory()->create(['code' => 'mpesa', 'instructions' => 'TODO: paybill']);
+    PaymentMethod::factory()->create(['code' => 'cash', 'name' => 'Cash']);
+
+    $this->actingAs(staffWith([Permission::PaymentMethodsView]))
+        ->get(route('admin.payment-methods.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/payment-methods/index')
+            ->has('methods', 2)
+            ->where('methods.0.has_todo', true)
+            ->where('methods.1.has_todo', false));
+});
+
+it('updates instructions and details, dropping empty details', function () {
+    $method = PaymentMethod::factory()->create(['code' => 'mpesa', 'instructions' => 'TODO']);
+
+    $this->actingAs(staffWith([Permission::PaymentMethodsView, Permission::PaymentMethodsUpdate]))
+        ->put(route('admin.payment-methods.update', 'mpesa'), methodPayload())
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('admin.payment-methods.edit', 'mpesa'));
+
+    expect($method->fresh()->metadata->getArrayCopy())->toBe(['paybill' => '123456', 'account_format' => 'booking reference'])
+        ->and($method->fresh()->instructions)->toStartWith('Pay to');
+});
+
+it('validates detail names', function () {
+    PaymentMethod::factory()->create(['code' => 'bank']);
+
+    $this->actingAs(staffWith([Permission::PaymentMethodsUpdate]))
+        ->put(route('admin.payment-methods.update', 'bank'), methodPayload(['metadata' => ['Bank Name' => 'KCB'], 'instructions' => '']))
+        ->assertSessionHasErrors(['metadata', 'instructions']);
+});
+
+it('reorders and switches methods off', function () {
+    $mpesa = PaymentMethod::factory()->create(['code' => 'mpesa']);
+    $cash = PaymentMethod::factory()->create(['code' => 'cash']);
+    $editor = staffWith([Permission::PaymentMethodsUpdate]);
+
+    $this->actingAs($editor)->put(route('admin.payment-methods.reorder'), ['ids' => [$cash->id, $mpesa->id]])->assertRedirect();
+    $this->actingAs($editor)->put(route('admin.payment-methods.active', 'mpesa'), ['value' => false])->assertRedirect();
+
+    expect(PaymentMethod::query()->ordered()->pluck('id')->all())->toBe([$cash->id, $mpesa->id])
+        ->and(PaymentMethod::query()->active()->pluck('id')->all())->toBe([$cash->id]);
+});
+
+it('keeps details out of the public resource', function () {
+    $method = PaymentMethod::factory()->create(['metadata' => ['paybill' => '123456']]);
+
+    expect(PaymentMethodResource::make($method)->resolve())
+        ->not->toHaveKey('metadata')
+        ->toHaveKey('instructions_html');
+});
+
+it('has no create or delete routes, and needs permission to update', function () {
+    PaymentMethod::factory()->create(['code' => 'card']);
+
+    expect(Route::has('admin.payment-methods.store'))->toBeFalse()
+        ->and(Route::has('admin.payment-methods.destroy'))->toBeFalse();
+
+    $this->actingAs(staffWith([Permission::PaymentMethodsView]))
+        ->put(route('admin.payment-methods.update', 'card'), methodPayload())
+        ->assertForbidden();
+});

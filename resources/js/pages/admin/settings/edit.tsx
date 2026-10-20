@@ -3,6 +3,11 @@ import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsCon
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
 import type { GeneralSettings } from '@/components/admin/settings/general-settings-form';
 import { GeneralSettingsForm } from '@/components/admin/settings/general-settings-form';
+import type {
+    HomeSettings,
+    HomeSettingsContext,
+} from '@/components/admin/settings/home-settings-form';
+import { HomeSettingsForm } from '@/components/admin/settings/home-settings-form';
 import type { MediaSettingsContext } from '@/components/admin/settings/media-settings-form';
 import { MediaSettingsForm } from '@/components/admin/settings/media-settings-form';
 import type { NotificationSettings } from '@/components/admin/settings/notification-settings-form';
@@ -64,6 +69,13 @@ export default function EditSettings({
                         <GeneralSettingsForm
                             key={group}
                             values={values as GeneralSettings}
+                        />
+                    )}
+                    {group === 'home' && (
+                        <HomeSettingsForm
+                            key={group}
+                            values={values as HomeSettings}
+                            context={context as HomeSettingsContext}
                         />
                     )}
                     {group === 'notification' && (

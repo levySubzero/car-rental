@@ -99,6 +99,30 @@ return [
             'upload' => ['permission' => 'cars.update'],
         ],
 
+        // Content (M5)
+        'service.image' => [
+            'label' => 'Service image',
+            'owner' => 'service',
+            'visibility' => 'public',
+            'max_files' => 1,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic'],
+            'conversions' => ['thumb', 'card', 'full'],
+            'upload' => ['permission' => 'services.update'],
+        ],
+
+        // Every image field of a preset page (PageRegistry); the page keeps the uuids in its content.
+        'page.image' => [
+            'label' => 'Page image',
+            'owner' => 'page',
+            'visibility' => 'public',
+            'max_files' => 6,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic'],
+            'conversions' => ['thumb', 'card', 'full'],
+            'upload' => ['permission' => 'pages.update'],
+        ],
+
     ],
 
 ];

@@ -22,10 +22,14 @@ class DatabaseSeeder extends Seeder
         $this->role('operations', 'Booking desk: bookings, payments, handover and return.', [
             Permission::CarsView,
             Permission::AvailabilityManage,
+            ...Permission::forModule('contact-messages'),
+            Permission::PaymentMethodsView,
         ]);
         $this->role('content-editor', 'Marketing: cars, photos, brands, services, policies and home page.', [
             ...Permission::forModule('brands', 'car-types'),
             ...Permission::except(Permission::forModule('cars'), Permission::CarsViewValue),
+            ...Permission::forModule('services', 'pages', 'policies', 'payment-methods'),
+            Permission::SettingsHomeUpdate,
             Permission::MediaUpload,
         ]);
 
@@ -35,6 +39,9 @@ class DatabaseSeeder extends Seeder
             $this->staff('Operations Desk', 'ops@baines.test', 'operations');
             $this->staff('Content Editor', 'editor@baines.test', 'content-editor');
         }
+
+        // The client's content: safe in every environment, never overwrites admin edits.
+        $this->call(CmsSeeder::class);
 
         if (app()->environment(['local', 'staging'])) {
             $this->call(DemoCatalogSeeder::class);

@@ -1,0 +1,58 @@
+{
+    "_meta": {
+        "source": "Baines Executives client brief (PDF), received 2026-10-16",
+        "notes": "Values marked TODO were not in the brief and must be supplied by the client before launch."
+    },
+    "company": {
+        "name": "Baines Executives",
+        "legal_name": "TODO: registered company name (policy text mentions 'Baines executives Rent A Car Limited')",
+        "tagline": "Executive car rental and safaris in Nairobi",
+        "description": "Baines Executives is a Nairobi-based car rental and safari company offering self-drive and chauffeur-driven vehicles, airport transfers and safari experiences across Kenya.",
+        "country": "KE",
+        "timezone": "Africa/Nairobi",
+        "base_currency": "KES"
+    },
+    "contacts": {
+        "phone_primary": {
+            "label": "Main line (calls and WhatsApp)",
+            "e164": "+254724422051",
+            "display": "+254 724 422 051",
+            "tel_link": "tel:+254724422051",
+            "is_whatsapp": true
+        },
+        "whatsapp": {
+            "e164": "+254724422051",
+            "wa_link": "https://wa.me/254724422051",
+            "default_message": "Hi Baines Executives, I would like to enquire about renting a car.",
+            "car_message_template": "Hi Baines Executives, I'm interested in renting the {car_name}. Could you share availability and pricing?"
+        },
+        "email": "bainesexecutives@gmail.com",
+        "opening_hours": "TODO: supply opening hours (referenced by the policy's Contact Us page)"
+    },
+    "location": {
+        "label": "Head office",
+        "building": "Horizon Flats",
+        "street": "Dennis Pritt Road",
+        "area": "Kilimani",
+        "city": "Nairobi",
+        "country": "Kenya",
+        "display": "Horizon Flats, Dennis Pritt Road, Kilimani, Nairobi",
+        "map_query": "Horizon Flats, Dennis Pritt Road, Kilimani, Nairobi, Kenya",
+        "latitude": null,
+        "longitude": null
+    },
+    "socials": [
+        {
+            "platform": "instagram",
+            "handle": "bainesexecutives",
+            "url": "https://www.instagram.com/bainesexecutives/",
+            "sort_order": 1
+        },
+        {
+            "platform": "tiktok",
+            "handle": "bainesexecutives",
+            "url": "https://www.tiktok.com/@bainesexecutives",
+            "sort_order": 2
+        }
+    ]
+}

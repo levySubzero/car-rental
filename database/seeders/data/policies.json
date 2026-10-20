@@ -1,0 +1,289 @@
+{
+    "_meta": {
+        "source": "Baines Executives client brief (PDF) — rental policy text, received 2026-10-16",
+        "version": "1.0.0",
+        "editing_notes": "Text is the client's policy, lightly corrected for spelling and grammar. The client confirmed every policy on 2026-10-20, so the reviewer's [CONFIRM] notes were removed and the client's wording kept. The fifth display currency is UAE dirhams (AED); the empty Cancellation heading was removed until cancellation tiers are set (M6.8).",
+        "format": "body is Markdown"
+    },
+    "policies": [
+        {
+            "slug": "insurance-covers-and-waivers",
+            "title": "Insurance, covers and waivers",
+            "group": "cover",
+            "sort_order": 10,
+            "show_on_home": true,
+            "summary": "Collision Damage Waiver, Third-Party Liability, Theft Protection and Personal Accident Insurance, all valid only within the rental agreement terms.",
+            "body": "### Collision Damage Waiver (CDW)\n\nIf the car's bodywork gets damaged, the most you will pay towards repairs covered by the Collision Damage Waiver is the damage excess. This cover is only valid if you stick to the terms of the rental agreement. It does not cover other parts of the car (e.g. glass, wheels, interior, roof or undercarriage), charges (e.g. for towing or off-road time), or anything in the car (e.g. child seats, GPS devices or personal belongings).\n\n### Third-Party Liability (TPL)\n\nThis covers the driver's liability for injuries and property damage which are covered by the policy. It does not cover injuries to the driver or damage to the rental car. This cover is only valid if you stick to the terms of the rental agreement.\n\n### Theft Protection (TP)\n\nIf the car is stolen, the most you will pay towards replacement costs covered by the policy is the theft excess. This cover is only valid if you stick to the terms of the rental agreement.\n\n### Personal Accident Insurance (PAI)\n\nIn the event of an accident, this insurance covers medical and legal costs for injuries which are covered by the policy, including death and loss of limb(s). This cover is only valid if you stick to the terms of the rental agreement."
+        },
+        {
+            "slug": "included-at-no-extra-cost",
+            "title": "Included at no extra cost",
+            "group": "cover",
+            "sort_order": 20,
+            "show_on_home": true,
+            "summary": "Airport surcharge, emergency roadside assistance and premium location surcharge are included.",
+            "body": "- Airport surcharge\n- Emergency roadside assistance\n- Premium location surcharge"
+        },
+        {
+            "slug": "mileage",
+            "title": "Mileage / kilometres",
+            "group": "rental",
+            "sort_order": 30,
+            "show_on_home": true,
+            "summary": "Daily mileage limits apply to rentals of less than 7 days.",
+            "body": "Your rental includes unlimited free kilometres for rentals of one week or more, and is limited to 250 km a day for rentals of less than 7 days."
+        },
+        {
+            "slug": "local-charges",
+            "title": "Local charges",
+            "group": "charges",
+            "sort_order": 40,
+            "show_on_home": false,
+            "summary": "Charges payable at the counter based on pick-up location, driver and destination; you are responsible for all fines and tolls.",
+            "body": "This section shows charges that you will pay at the counter because of where you are picking your car up, who is driving, and where you go during your rental.\n\nThis section does not show other over-the-counter costs, such as charges for fuel, child seats or additional services. You will find details of other charges in other sections of these terms and conditions.\n\nYou are responsible for any charges and fines, including tolls, congestion charges, speeding tickets and parking or traffic fines."
+        },
+        {
+            "slug": "after-your-rental",
+            "title": "After your rental",
+            "group": "charges",
+            "sort_order": 50,
+            "show_on_home": false,
+            "summary": "Fines reported after your rental are passed on with an administration fee.",
+            "body": "If you have incurred any charges, such as speeding tickets or unpaid congestion charges, we will try to contact you when the authorities ask us who was driving. This could be months after your rental, and you will have to pay the company's administration fee as well as the original charge."
+        },
+        {
+            "slug": "one-way-rentals",
+            "title": "One-way rentals",
+            "group": "charges",
+            "sort_order": 60,
+            "show_on_home": false,
+            "summary": "A one-way fee applies; prior notice is required.",
+            "body": "If you arrange to pick the car up in one location and drop it off in another, Baines Executives will charge a one-way fee to cover the cost of returning the car to the original location.\n\nPrior notification is required for all one-way rentals. If you drop the car off at a location other than the one originally agreed, you will incur a penalty."
+        },
+        {
+            "slug": "other-fees",
+            "title": "Other fees",
+            "group": "charges",
+            "sort_order": 70,
+            "show_on_home": false,
+            "summary": "Valeting fee for cars returned needing more than reasonable cleaning.",
+            "body": "If any of the following apply, the counter staff will charge you extra when you pick your car up or when you drop it off.\n\n### Valeting fee\n\nBaines Executives will charge you if the car needs more than a reasonable amount of cleaning after your rental."
+        },
+        {
+            "slug": "acceptable-forms-of-payment",
+            "title": "Acceptable forms of payment",
+            "group": "pickup",
+            "sort_order": 80,
+            "show_on_home": false,
+            "summary": "Visa and Mastercard credit cards, cash and debit cards; prepaid, virtual and UnionPay cards are not accepted.",
+            "body": "You are required to have a credit card for this booking.\n\nThe main driver must be in possession of a credit card in their own name when picking up the car. The card must have enough available funds to cover the excess / deposit amount, which will be blocked on the card for the duration of the rental. The card will also be required to pay for local fees, extra equipment and anything purchased additionally at the car hire counter.\n\nCash and debit cards are accepted.\n\n### Accepted credit cards\n\n- Mastercard\n- Visa\n\n### Please note\n\n- We do not accept prepaid, recharge or virtual credit cards, or any card on which the relevant characters are not raised (embossed).\n- Visa Dankort cards are not accepted.\n- We do not accept Chinese UnionPay credit cards. Please check the UnionPay website for details."
+        },
+        {
+            "slug": "licence-requirements",
+            "title": "Licence requirements",
+            "group": "pickup",
+            "sort_order": 90,
+            "show_on_home": true,
+            "summary": "A full driving licence held for at least 3 years, for every driver.",
+            "body": "When picking the car up, the main driver and any additional drivers will need to provide a full driving licence in their name.\n\nAll drivers must have held their driving licence for at least 3 years.\n\nFor drivers whose national licence has a photocard and a secondary paper counterpart, both parts will be required when collecting the vehicle."
+        },
+        {
+            "slug": "forms-of-identification",
+            "title": "Forms of identification",
+            "group": "pickup",
+            "sort_order": 100,
+            "show_on_home": true,
+            "summary": "A passport or national identity card is required.",
+            "body": "A passport or identity card is required."
+        },
+        {
+            "slug": "rental-voucher",
+            "title": "Rental voucher / eVoucher",
+            "group": "pickup",
+            "sort_order": 110,
+            "show_on_home": false,
+            "summary": "Show your booking confirmation (printed or electronic) at pick-up.",
+            "body": "Your voucher is the booking confirmation sent to you by email or WhatsApp. When you pick your car up, our staff will need to see it. Your voucher proves that the car is booked in the main driver's name.\n\nAt pick-up, Baines Executives will require either a printed copy of the voucher or an eVoucher. If this is not presented, we may not allow the car to be picked up, or may charge again for the rental."
+        },
+        {
+            "slug": "age-requirements",
+            "title": "Age requirements",
+            "group": "pickup",
+            "sort_order": 120,
+            "show_on_home": true,
+            "summary": "Drivers must be aged 23 to 70.",
+            "body": "- Minimum age: 23\n- Maximum age: 70\n\nBaines Executives' age-related charges and restrictions apply to all additional drivers."
+        },
+        {
+            "slug": "arrival-details",
+            "title": "Arrival details",
+            "group": "pickup",
+            "sort_order": 130,
+            "show_on_home": false,
+            "summary": "Share your flight number at least 2 days before pick-up.",
+            "body": "If you are arriving by plane, please tell us your flight number so we can pass it on to your driver, ideally at least 2 days before you pick your car up. You can give us your flight number when you book your car. Please enter your flight number and not any other number the airline may have sent you, such as a confirmation number.\n\nWe cannot be held responsible if a problem with your flight stops you picking up your car. You may decide to contact your airline about compensation."
+        },
+        {
+            "slug": "deposit-and-excess",
+            "title": "Deposits, excess and cover",
+            "group": "deposit",
+            "sort_order": 140,
+            "show_on_home": true,
+            "summary": "A refundable security deposit is paid at pick-up; damage excess US$1,700–4,000 and theft excess US$4,000.",
+            "body": "### Security deposit\n\nBaines Executives requires a security deposit when you pick your car up:\n\n- **2% of the car's value** for drivers aged 24 to 70\n- **3% of the car's value** for drivers below 24\n\nThe deposit is paid at handover, together with the remaining 75% of the rental amount, and is 100% refundable after the rental as long as the car is returned in the condition it left and all conditions have been met.\n\n### Excess\n\n- Damage excess: between US$1,700 and US$4,000 including tax, depending on the vehicle model.\n- Theft excess: US$4,000 including tax.\n\nDue to changing foreign exchange rates and possible banking charges, Baines Executives cannot be held responsible for any difference between the amount paid and the amount refunded."
+        },
+        {
+            "slug": "full-protection",
+            "title": "Full Protection",
+            "group": "cover",
+            "sort_order": 150,
+            "show_on_home": false,
+            "summary": "Optional waiver that removes your liability for most damage, immobilisation, roadside and key charges.",
+            "body": "If you purchase Baines Executives' Full Protection waiver before you pick the car up, we will waive your liability (and refund you) for:\n\n- charges for damage to the rental car's exterior or mechanical components, including:\n    - bodywork, roof, undercarriage\n    - windscreen, windows, mirrors\n    - wheels, tyres, hubcaps\n    - engine, clutch, battery\n    - locks\n- immobilisation charges (loss of revenue while the car is being repaired and cannot be rented out)\n- roadside assistance charges resulting from a breakdown or accident\n- charges directly related to locking yourself out of the rental car or losing its key(s)\n- the amount Baines Executives charges as a result of claiming on the car's Theft Protection policy\n- our administration fees related to any of these points\n\n### Not covered by Full Protection\n\n- repairs, roadside assistance or other services not approved by us\n- cleaning charges or damage to the car's interior (unless caused by a collision)\n- damage to or loss of child seats, GPS devices, trackers or other extra equipment\n\nAll drivers must abide by the terms of the rental agreement. Full Protection will not refund any cost incurred in circumstances which violate those terms, such as dangerous, careless or negligent driving, refuelling errors, or driving under the influence of drugs or alcohol.\n\nIf you purchase Full Protection, Baines Executives may still block a deposit on your card at pick-up to cover potential damage to or loss of the car. Because your liability is waived for the charges above, we will refund any sum withheld from the deposit for them, subject to these terms.\n\nIf you buy Full Protection, you will receive the policy documentation by email. Because you receive the benefit of the product throughout your rental, we cannot issue a refund if you do not make a claim."
+        },
+        {
+            "slug": "optional-covers-at-counter",
+            "title": "Optional covers and waivers available at the counter",
+            "group": "cover",
+            "sort_order": 160,
+            "show_on_home": false,
+            "summary": "Super Collision Damage Waiver can reduce your excess to zero.",
+            "body": "### Super Collision Damage Waiver\n\nSuper Collision Damage Waiver reduces the driver's liability if the rental car is damaged, limiting their legal obligation to pay for repairing or replacing the car, subject to the terms of the rental agreement.\n\nRather than the full cost, the driver is generally only responsible for the first portion, known as the excess, and in many cases this excess is set at zero, meaning the driver's liability is waived entirely.\n\nThis protection applies to all authorised drivers of the rental car."
+        },
+        {
+            "slug": "cover-arrangements",
+            "title": "Cover arrangements",
+            "group": "cover",
+            "sort_order": 170,
+            "show_on_home": false,
+            "summary": "What additional cover at pick-up does and does not include.",
+            "body": "When you pick your car up, our staff may offer to sell you additional products in relation to your excess or deposit. If you have bought Full Protection, you do not need to buy them, although our products may provide additional benefits, such as an advanced level of service.\n\nPlease read the terms and conditions of the cover you receive when signing the rental agreement at pick-up to find out about the policy's exclusions and limits.\n\nPolicies normally exclude windscreens, glass, wheels, tyres, undercarriage, interior, personal belongings, towing charges and off-road time, as well as any extra equipment hired from Baines Executives, such as child seats, GPS devices and trackers.\n\nYour cover will be invalidated by negligence, refuelling errors or breaking the terms of the rental agreement (for example, by driving under the influence of alcohol or drugs)."
+        },
+        {
+            "slug": "administration-charges",
+            "title": "Administration charges",
+            "group": "charges",
+            "sort_order": 180,
+            "show_on_home": false,
+            "summary": "Damage administration fee and compulsory immobilisation charge after an accident.",
+            "body": "Damage to the car will be charged by Baines Executives after it is dropped off and will incur a damage administration fee on top of the amount deducted from the excess.\n\nAn immobilisation charge is payable in the event of an accident. This is in addition to the amount deducted from the excess and is compulsory. It is calculated on the car group and the number of repair days."
+        },
+        {
+            "slug": "fuel-policy",
+            "title": "Fuel policy",
+            "group": "rental",
+            "sort_order": 190,
+            "show_on_home": true,
+            "summary": "Return the car with the same fuel level; a US$20 service charge applies otherwise.",
+            "body": "Return the car with the same fuel level as when you picked it up.\n\n### Full to full\n\nWhen you pick your car up, the fuel tank will be full or partly full. You will leave a deposit to cover the cost of the fuel, which our staff will block on your credit card. Just before you return your car, please replace the fuel you have used.\n\nIf you return the car with less fuel than it had at pick-up, Baines Executives will keep some or all of your deposit to cover the missing fuel. This will cost you more than refilling the tank yourself: as well as the cost of the fuel, you will pay a non-refundable fuel service charge of US$20 including tax."
+        },
+        {
+            "slug": "cross-border",
+            "title": "Cross-border and boundary rules",
+            "group": "rental",
+            "sort_order": 200,
+            "show_on_home": true,
+            "summary": "Cross-border travel is not currently allowed.",
+            "body": "Cross-border travel is not allowed at the moment."
+        },
+        {
+            "slug": "deliveries-and-collections",
+            "title": "Deliveries and collections",
+            "group": "rental",
+            "sort_order": 210,
+            "show_on_home": false,
+            "summary": "Delivery at the start of the rental on request; KES 2,000 when selected at booking.",
+            "body": "If requested in advance, Baines Executives may agree to deliver the car at the start of the rental. Delivery selected during online booking is charged at KES 2,000."
+        },
+        {
+            "slug": "taxes-and-fees",
+            "title": "Taxes and fees",
+            "group": "charges",
+            "sort_order": 220,
+            "show_on_home": false,
+            "summary": "Additional services are subject to applicable taxes and location fees.",
+            "body": "Any additional services are subject to applicable sales taxes and location fees."
+        },
+        {
+            "slug": "extra-equipment",
+            "title": "Extra equipment",
+            "group": "charges",
+            "sort_order": 230,
+            "show_on_home": false,
+            "summary": "Request extras at booking and pay at pick-up; availability not guaranteed.",
+            "body": "Additional extras should be requested at the time of booking and paid for at pick-up. We cannot guarantee their availability, and prices may be subject to change.\n\nExtras are subject to applicable sales and location taxes. Customers requiring extra equipment may have to leave a deposit at the counter."
+        },
+        {
+            "slug": "additional-drivers",
+            "title": "Additional drivers",
+            "group": "charges",
+            "sort_order": 240,
+            "show_on_home": true,
+            "summary": "US$50 per day including tax.",
+            "body": "The cost to add an additional driver is US$50.00 including tax, per day.\n\nBaines Executives' age-related charges and restrictions apply to all additional drivers."
+        },
+        {
+            "slug": "chauffeur-service",
+            "title": "Chauffeur service",
+            "group": "rental",
+            "sort_order": 245,
+            "show_on_home": true,
+            "summary": "Optional chauffeur at US$50 per day including tax.",
+            "body": "A chauffeur can be added when booking a car at US$50 per day, inclusive of tax."
+        },
+        {
+            "slug": "booking-and-payment",
+            "title": "Booking, reservation and payment",
+            "group": "booking",
+            "sort_order": 5,
+            "show_on_home": true,
+            "summary": "Pay 25% to reserve; 75% balance and security deposit at handover.",
+            "body": "- Rental is charged per day, where one day is a 12-hour daytime period.\n- To reserve a unit, you pay **25% of the total rental amount**.\n- The remaining **75%** is paid at handover, together with the **refundable security deposit**.\n- Accepted payment methods: cash, M-Pesa, bank transfer and cards (Visa and Mastercard). Payment details are provided when you continue to payment.\n- After paying, paste your transaction message in the booking form so we can confirm your payment.\n- Once payment is confirmed, we send your booking confirmation (voucher) by email or WhatsApp.\n- Prices can be viewed in Kenya shillings, US dollars, British pounds, euros and UAE dirhams. Conversions use current market rates less KES 3 per unit."
+        },
+        {
+            "slug": "important-information",
+            "title": "Important information",
+            "group": "general",
+            "sort_order": 250,
+            "show_on_home": false,
+            "summary": "Read the terms before pick-up; you sign a rental agreement at handover.",
+            "body": "To make sure you understand the rules and laws about driving hired cars, it is essential that you read these terms and conditions in full before you pick your car up.\n\nIn particular, make sure you know which documents you must bring (e.g. driving licence, identification and payment cards) and what you will need to pay at the counter. If you do not have everything you need, Baines Executives may not let you pick the car up.\n\nBy making a booking, you confirm that you have read and accept our terms and conditions.\n\nWhen you pick your car up, Baines Executives will ask you to sign a rental agreement. Please read it carefully, and if anything is not clear, discuss it with us before you sign.\n\nIf you are dissatisfied with any aspect of your rental, please discuss it with us at the time. If you are not satisfied with our response, contact us through our Contact Us page.\n\nIf you have any questions, need support during your rental, or have any problem with your hired car, please contact us. Our opening hours and contact information are on the Contact Us page."
+        },
+        {
+            "slug": "exchange-rates-and-fees",
+            "title": "Exchange rates and fees",
+            "group": "general",
+            "sort_order": 260,
+            "show_on_home": false,
+            "summary": "We are not responsible for exchange-rate fluctuations or bank fees.",
+            "body": "We cannot be held responsible for fluctuations in exchange rates or for any fee your bank or card issuer may charge. The amount on your card statement may therefore differ from the amount shown when you made your booking. If we credit your account with any money, we will refund the exact amount originally charged."
+        },
+        {
+            "slug": "accidents-and-breakdowns",
+            "title": "Accidents, breakdowns and safety",
+            "group": "general",
+            "sort_order": 270,
+            "show_on_home": false,
+            "summary": "Call us immediately and report to the police within 48 hours; no smoking in any car.",
+            "body": "### Accident or breakdown\n\nIn the event of a breakdown, accident or mechanical difficulty, you must call us immediately and report it to the nearest police station within 48 hours. We must authorise any repairs or replacement of cars. Keep copies of all documentation you are asked to complete, as it may be needed for a claim. For accidents, a police report and an incident report from us are required.\n\nIf you are involved in an accident in which the car rolls over onto its roof, you may be asked to pay an additional fee on top of the excess.\n\n### Roadside assistance\n\nWe provide an emergency roadside assistance service, for which you may have to pay extra. At pick-up, check where the paperwork is kept; it is usually in the glove box or attached to the sun visor.\n\n### Lost keys\n\nIf you lose your key(s), you will be charged the cost of replacement.\n\n### Seatbelts\n\nThe driver and all passengers must wear seatbelts wherever fitted.\n\n### No smoking\n\nAll cars are non-smoking. Fines apply if this policy is not followed."
+        },
+        {
+            "slug": "price-calculation",
+            "title": "Price calculation and changing car",
+            "group": "booking",
+            "sort_order": 280,
+            "show_on_home": false,
+            "summary": "No refund for late pick-up or early return; changing car at pick-up may cost extra.",
+            "body": "Prices are based on the pick-up and drop-off dates and times you agree before your rental starts. If you pick the car up later or bring it back earlier, you will not receive a refund for unused time.\n\nAt pick-up, you may choose to take a different car from the one reserved. If you do, we may charge an additional premium, even if the new car is smaller than your original choice."
+        },
+        {
+            "slug": "cancellations-no-shows-amendments",
+            "title": "Cancellations, no-shows and amendments",
+            "group": "booking",
+            "sort_order": 290,
+            "show_on_home": true,
+            "summary": "No refund for no-shows; free amendments before pick-up, by phone within 48 hours.",
+            "body": "### No-show\n\nA no-show is when you:\n\n- wish to cancel but do not tell us before your rental is due to start, or\n- fail to pick the car up at the arranged date and time, or\n- fail to provide the documentation required to pick the car up, or\n- fail to provide a credit card in the main driver's name with enough available funds.\n\nIn all of these cases, you will receive no refund of the money you have paid.\n\nBaines Executives reserves the right to refuse to hand over the car to any customer who fails to arrive on time with all necessary documentation and a credit card with enough available funds for the car's deposit. In that case, unless the rental was cancelled in advance, the customer is not entitled to a refund.\n\n### Amendments\n\nYou can change your booking any time before you are due to pick the car up. If your pick-up time is less than 48 hours away, please call us instead.\n\nThere is no fee for changing a booking that is less than 2 weeks from the start date, but changes may affect the rental price.\n\nThe price is based on the pick-up and drop-off times arranged before your rental starts. If you pick the car up later or bring it back earlier, you will not receive a refund for unused days."
+        }
+    ]
+}

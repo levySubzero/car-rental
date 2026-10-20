@@ -39,7 +39,7 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | M2  | Media module (shared)                                          | Done        | 16/16    | —                    |
 | M3  | Metadata fields                                                | Dropped     | —        | —                    |
 | M4  | Catalog (brands, car types, cars)                              | Done        | 12/12    | **G1** (with M5)     |
-| M5  | Content CMS and seed pack                                      | Not started | 0/14     | **G1**               |
+| M5  | Content CMS and seed pack                                      | Blocked     | 12/14    | **G1**               |
 | M6  | Pricing, currencies and FX                                     | Not started | 0/16     | —                    |
 | M7  | Public site                                                    | Not started | 0/20     | **G2**               |
 | M8  | Booking engine                                                 | Not started | 0/20     | —                    |
@@ -138,20 +138,20 @@ Status: **Done** · PRD: A-1, A-2, F-1–F-5
 
 ## M5 — Content CMS and seed pack
 
-Status: **Not started** · PRD: A-2, H-5, O-1, §11 · **Gate G1:** the client adds a car with 6 photos and edits a policy on staging.
+Status: **Blocked** (M5.13 waits for M12.15) · PRD: A-2, H-5, O-1, §11 · **Gate G1:** the client adds a car with 6 photos and edits a policy on staging.
 
-- [ ] M5.1 Services module (`services.*`): cta_type (book, whatsapp, link), image media, and a `metadata` column only if needed (D20).
-- [ ] M5.2 Pages and page sections (`pages.*`): section types hero, rich_text, cards, stats, cta and faq, plus a section editor with reorder and visibility.
-- [ ] M5.3 Home page sections bound to `HomeSettings` (hero media, CTAs, featured count, `marquee_position`, trust figures).
-- [ ] M5.4 Policies and versions (`policies.*`, `policies.publish`): draft, publish, diff against the previous version, and the `show_on_home` summary.
-- [ ] M5.5 Policy bundles: publishing creates a bundle snapshot of every currently published version, which is what renters accept.
-- [ ] M5.6 Payment methods admin (`payment-methods.*`): rich instructions, metadata (paybill, till, bank, card link), flags.
-- [ ] M5.7 Contacts, socials, location and WhatsApp templates edited through `GeneralSettings`.
-- [ ] M5.8 Contact messages inbox (`contact-messages.*`) with a status workflow.
-- [ ] M5.9 Seed pack JSON under `database/seeders/data/`: site_settings, policies, catalog, pricing.
-- [ ] M5.10 `CmsSeeder`: upserts by slug or code, creates a new policy version only when the body changes, and leaves `[CONFIRM]` versions unpublished.
-- [ ] M5.11 Mark `TODO` values (paybill, bank, card link, hours, legal name) and add an admin dashboard widget that lists the unfilled TODO settings.
-- [ ] M5.12 Tests: seeder idempotency (run twice, same counts), policy versioning, bundle creation.
+- [x] M5.1 Services module (`services.*`): cta_type (book, whatsapp, link), image media, and a `metadata` column only if needed (D20). *(No `metadata`.)*
+- [x] M5.2 Preset pages (`pages.view|update`): pages and their fields defined in `config/pages.php`, staff edit the content only. *(Changed from pages + typed section engine, D22.)*
+- [x] M5.3 Home page sections bound to `HomeSettings` (hero media, CTAs, featured count, `marquee_position`, trust figures).
+- [x] M5.4 Policies and versions (`policies.*`, `policies.publish`): draft, publish, diff against the previous version, and the `show_on_home` summary.
+- [x] M5.5 Policy bundles: publishing creates a bundle snapshot of every currently published version, which is what renters accept.
+- [x] M5.6 Payment methods admin (`payment-methods.view|update`, a fixed set, D25): Markdown instructions, metadata (paybill, till, bank, card link), flags.
+- [x] M5.7 Contacts, socials, location and WhatsApp templates edited through `GeneralSettings`.
+- [x] M5.8 Contact messages inbox (`contact-messages.*`) with a status workflow.
+- [x] M5.9 Seed pack JSON under `database/seeders/data/`: site_settings, policies, catalog, pricing.
+- [x] M5.10 `CmsSeeder`: upserts by slug or code, creates a new policy version only when the body changes, and leaves `[CONFIRM]` versions unpublished.
+- [x] M5.11 Mark `TODO` values (paybill, bank, card link, hours, legal name) and add an admin dashboard widget that lists the unfilled TODO settings.
+- [x] M5.12 Tests: seeder idempotency (run twice, same counts), policy versioning, bundle creation.
 - [ ] M5.13 Deploy to staging and load the seed pack.
 - [ ] M5.14 **Gate G1** walkthrough with the client: add a car with 6 photos, edit a policy. Record sign-off in the log.
 
@@ -330,6 +330,11 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-20 | M5.1–M5.6, M5.8 | Changed | Admin navigation: pages, services, policies and payment methods are one **Content** entry under System, with tabs like Settings (`admin.content.index` opens the first tab the user may see). Their URLs moved under `/admin/content/…`; route names are unchanged. Messages sit in a new **Operations** sidebar group, which bookings and payments join in M11. 348 Pest tests green. |
+| 2026-10-20 | M5 | Blocked | 12/14. M5.1–M5.12 done: 346 Pest tests (1 skipped, HEIC), 23 Vitest tests; Pint, Larastan 7, `vp check`, `tsc` and `vp build` green. `migrate:fresh --seed` on SQLite runs twice with identical counts. Not yet clicked through in a browser. **Blocked:** M5.13 (staging) needs Docker and the deploy pipeline (M12.15), and M5.14 (Gate G1) runs on staging. |
+| 2026-10-20 | M5.9–M5.12 | Done | Seed pack copied to `database/seeders/data/` with a README. The client confirmed every policy, so the reviewer's `[CONFIRM]` notes were removed (8 policies; "a fifth currency" became UAE dirhams, and the empty Cancellation heading went until M6.8). `CmsSeeder` runs in every environment, before `DemoCatalogSeeder`: 30 brands, 7 types, 6 services, 7 pages, 31 policies published as bundle 1, 4 payment methods. Writes are insert-only or fill-if-empty; policy versions the seeder wrote have `created_by` null, and staff-written versions or drafts are never replaced. The demo seeder now uses the pack's type names. `SetupChecklistService` feeds a "Before launch" card on the dashboard (D26), which is now a controller. The general map URL is a keyless Google Maps embed built from the pack's address; CSP `frame-src` must allow it in M7. |
+| 2026-10-20 | M5.4–M5.8 | Done | Policies with integer versions, one draft at most, immutable published versions (model guard), `[CONFIRM]` refused on publish, a bundle per publish and per deletion of a live policy (soft delete). Admin edit page: Text, Changes (jsdiff line diff, `diff` npm package added with npm), Details, History. Payment methods: fixed set (D25), Markdown instructions, `KeyValueField` details, `has_todo` flag. `PaymentMethod` overrides `getRouteKey()` because its key is an enum. Contact messages inbox with free status moves, `handled_by`/`handled_at`, spam hidden by default; public creation waits for M7.15. M5.7 needed no new code: the General tab (M1.9) already covers it, and the seeder fills it. |
+| 2026-10-20 | M5.1–M5.3 | Done | Content is Markdown (D23): `App\Support\Markdown` (HTML stripped, unsafe links dropped) and a shared `MarkdownField` with a server-rendered preview (`admin.markdown.preview`). Services copy the brand module (`service.image`). Preset pages (D22): `config/pages.php` defines home, about, services, fleet, rental-policy, contact and privacy; `PageRegistry` builds rules and the blank shape; images sync to `page.image`. Home settings tab: hero via `MediaService::claim` (the old hero is released), section order and visibility, trust figures. Content editors get services, pages, policies (with publish), payment methods and `settings.home.update` on first role creation; operations get contact messages and `payment-methods.view`. |
 | 2026-10-20 | M4.4, M4.9 | Changed | Engine capacity is `engine_capacity_litres` (decimal 3,1, e.g. 2.5) instead of cc; the cars migration was edited in place, so local databases need `migrate:fresh --seed`. `DataTable` gained an optional grid view (`grid` + `viewKey`; phones default to it, the choice is remembered per list) used by cars, brands and users. Light/dark/system toggle in the top bar. |
 | 2026-10-18 | M4 | Milestone done | All 12 steps. 292 Pest tests (1 skipped, HEIC), 23 Vitest tests; Pint, Larastan 7, `vp check`, `tsc` and `vp build` green. `migrate:fresh --seed` (local env) seeds the demo catalogue, and a second run adds nothing. Not yet clicked through in a browser. |
 | 2026-10-18 | M4.10–M4.12 | Done | `car_blackouts` with `CarBlackoutService` (overlaps refused, back-to-back allowed; booking clashes come with M8), nested scoped routes, a Blackouts tab that sends ISO instants. Factories and `DemoCatalogSeeder` (8 brands, 6 types, 12 draft cars). Seeded starting roles get catalog permissions on first creation only: content-editor gets brands, car types, cars (not the value) and `media.upload`; operations gets `cars.view` and `availability.manage`. `RouteGuardTest` samples can now depend on earlier parameters (nested routes). |

@@ -1,0 +1,295 @@
+{
+    "_meta": {
+        "notes": "Brand logos are not bundled: upload official brand-asset files per brand in the CMS. Cars are not seeded here; the client supplies the fleet list with values and photos (see sample_cars for the shape only)."
+    },
+    "brands": [
+        {
+            "name": "Toyota",
+            "slug": "toyota",
+            "sort_order": 1,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Mercedes-Benz",
+            "slug": "mercedes-benz",
+            "sort_order": 2,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Land Rover",
+            "slug": "land-rover",
+            "sort_order": 3,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Range Rover",
+            "slug": "range-rover",
+            "sort_order": 4,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Lexus",
+            "slug": "lexus",
+            "sort_order": 5,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Nissan",
+            "slug": "nissan",
+            "sort_order": 6,
+            "show_in_marquee": true
+        },
+        {
+            "name": "BMW",
+            "slug": "bmw",
+            "sort_order": 7,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Audi",
+            "slug": "audi",
+            "sort_order": 8,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Porsche",
+            "slug": "porsche",
+            "sort_order": 9,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Volkswagen",
+            "slug": "volkswagen",
+            "sort_order": 10,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Mitsubishi",
+            "slug": "mitsubishi",
+            "sort_order": 11,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Subaru",
+            "slug": "subaru",
+            "sort_order": 12,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Mazda",
+            "slug": "mazda",
+            "sort_order": 13,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Honda",
+            "slug": "honda",
+            "sort_order": 14,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Isuzu",
+            "slug": "isuzu",
+            "sort_order": 15,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Ford",
+            "slug": "ford",
+            "sort_order": 16,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Jeep",
+            "slug": "jeep",
+            "sort_order": 17,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Hyundai",
+            "slug": "hyundai",
+            "sort_order": 18,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Kia",
+            "slug": "kia",
+            "sort_order": 19,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Suzuki",
+            "slug": "suzuki",
+            "sort_order": 20,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Volvo",
+            "slug": "volvo",
+            "sort_order": 21,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Jaguar",
+            "slug": "jaguar",
+            "sort_order": 22,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Bentley",
+            "slug": "bentley",
+            "sort_order": 23,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Rolls-Royce",
+            "slug": "rolls-royce",
+            "sort_order": 24,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Maserati",
+            "slug": "maserati",
+            "sort_order": 25,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Cadillac",
+            "slug": "cadillac",
+            "sort_order": 26,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Chevrolet",
+            "slug": "chevrolet",
+            "sort_order": 27,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Peugeot",
+            "slug": "peugeot",
+            "sort_order": 28,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Tesla",
+            "slug": "tesla",
+            "sort_order": 29,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Lamborghini",
+            "slug": "lamborghini",
+            "sort_order": 30,
+            "show_in_marquee": true
+        }
+    ],
+    "car_types": [
+        {
+            "name": "SUV",
+            "slug": "suv",
+            "description": "Spacious, comfortable SUVs for city and upcountry travel.",
+            "sort_order": 1
+        },
+        {
+            "name": "4x4 Safari",
+            "slug": "4x4-safari",
+            "description": "Rugged four-wheel-drive vehicles built for national parks and rough roads.",
+            "sort_order": 2
+        },
+        {
+            "name": "Luxury",
+            "slug": "luxury",
+            "description": "Premium vehicles for executives, events and special occasions.",
+            "sort_order": 3
+        },
+        {
+            "name": "Executive Sedan",
+            "slug": "executive-sedan",
+            "description": "Refined sedans for business travel and airport transfers.",
+            "sort_order": 4
+        },
+        {
+            "name": "Economy",
+            "slug": "economy",
+            "description": "Fuel-efficient cars for everyday travel around Nairobi.",
+            "sort_order": 5
+        },
+        {
+            "name": "Van / Minibus",
+            "slug": "van-minibus",
+            "description": "People carriers for groups, families and tours.",
+            "sort_order": 6
+        },
+        {
+            "name": "Pickup",
+            "slug": "pickup",
+            "description": "Double-cabin pickups for work and adventure.",
+            "sort_order": 7
+        }
+    ],
+    "services": [
+        {
+            "title": "Self-drive car rental",
+            "slug": "self-drive-car-rental",
+            "summary": "Daily, weekly and monthly rentals across our fleet.",
+            "cta_type": "book",
+            "sort_order": 1
+        },
+        {
+            "title": "Chauffeur-driven rental",
+            "slug": "chauffeur-driven",
+            "summary": "Professional drivers at US$50 per day, tax inclusive.",
+            "cta_type": "book",
+            "sort_order": 2
+        },
+        {
+            "title": "Airport transfers",
+            "slug": "airport-transfers",
+            "summary": "Meet-and-greet pick-up and drop-off at JKIA and Wilson Airport.",
+            "cta_type": "whatsapp",
+            "sort_order": 3
+        },
+        {
+            "title": "Safaris",
+            "slug": "safaris",
+            "summary": "Guided and self-drive safaris to Kenya's parks and reserves.",
+            "cta_type": "whatsapp",
+            "sort_order": 4
+        },
+        {
+            "title": "Corporate and events",
+            "slug": "corporate-and-events",
+            "summary": "Executive transport for corporates, weddings and events.",
+            "cta_type": "whatsapp",
+            "sort_order": 5
+        },
+        {
+            "title": "Delivery and collection",
+            "slug": "delivery-and-collection",
+            "summary": "We deliver your car to your location for KES 2,000.",
+            "cta_type": "book",
+            "sort_order": 6
+        }
+    ],
+    "sample_cars": [
+        {
+            "_note": "Shape example only — do not seed in production. Values are placeholders.",
+            "brand": "toyota",
+            "car_type": "4x4-safari",
+            "name": "Toyota Land Cruiser Prado",
+            "slug": "toyota-land-cruiser-prado",
+            "engine_type": "Diesel",
+            "engine_capacity_cc": 2800,
+            "transmission": "automatic",
+            "doors": 5,
+            "seats": 7,
+            "daily_rate_kes": 15000,
+            "car_value_kes": 8000000,
+            "mileage_limit_km": 300,
+            "damage_excess_usd": 1700,
+            "is_featured": true,
+            "is_available": true
+        }
+    ]
+}

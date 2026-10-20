@@ -1,7 +1,9 @@
 import {
     CarFront,
     History,
+    Inbox,
     LayoutGrid,
+    PanelsTopLeft,
     Shapes,
     Settings2,
     ShieldCheck,
@@ -12,6 +14,8 @@ import ActivityLogController from '@/actions/App/Http/Controllers/Admin/Activity
 import BrandController from '@/actions/App/Http/Controllers/Admin/BrandController';
 import CarController from '@/actions/App/Http/Controllers/Admin/CarController';
 import CarTypeController from '@/actions/App/Http/Controllers/Admin/CarTypeController';
+import ContentController from '@/actions/App/Http/Controllers/Admin/ContentController';
+import ContactMessageController from '@/actions/App/Http/Controllers/Admin/ContactMessageController';
 import RoleController from '@/actions/App/Http/Controllers/Admin/RoleController';
 import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsController';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
@@ -32,6 +36,18 @@ export const adminNav: NavGroup[] = [
                 href: dashboard(),
                 icon: LayoutGrid,
                 exact: true,
+            },
+        ],
+    },
+    {
+        // Day-to-day desk work; bookings and payments join in M11.
+        title: 'Operations',
+        items: [
+            {
+                title: 'Messages',
+                href: ContactMessageController.index(),
+                icon: Inbox,
+                permission: 'contact-messages.view',
             },
         ],
     },
@@ -72,6 +88,18 @@ export const adminNav: NavGroup[] = [
                 href: RoleController.index(),
                 icon: ShieldCheck,
                 permission: 'roles.view',
+            },
+            {
+                // Pages, services, policies and payment methods, as tabs.
+                title: 'Content',
+                href: ContentController(),
+                icon: PanelsTopLeft,
+                permission: [
+                    'pages.view',
+                    'services.view',
+                    'policies.view',
+                    'payment-methods.view',
+                ],
             },
             {
                 title: 'Settings',

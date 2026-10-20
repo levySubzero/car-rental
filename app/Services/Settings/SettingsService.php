@@ -2,11 +2,17 @@
 
 namespace App\Services\Settings;
 
+use App\Enums\MediaStatus;
 use App\Enums\SettingsGroup;
+use App\Http\Resources\Media\MediaResource;
+use App\Models\Media;
 use App\Models\User;
 use App\Services\Media\MediaCollectionRegistry;
+use App\Services\Media\MediaService;
+use App\Settings\HomeSettings;
 use App\Support\Media\MediaCollection;
 use BackedEnum;
+use Illuminate\Support\Facades\DB;
 use Spatie\LaravelSettings\Settings;
 
 class SettingsService
@@ -44,6 +50,11 @@ class SettingsService
                     'effective' => $this->registry()->get($ceiling->key)->toArray(),
                 ], $this->registry()->ceilings())),
             ],
+            // The hero uploader shows the current file and the collection's limits.
+            SettingsGroup::Home => [
+                'hero' => ($hero = $this->hero()) ? MediaResource::make($hero) : null,
+                'heroLimits' => $this->registry()->get('site.hero')->toArray(),
+            ],
             default => [],
         };
     }
@@ -57,7 +68,14 @@ class SettingsService
     {
         $before = $this->values($group);
 
-        $settings = $this->for($group)->fill($data)->save();
+        $settings = DB::transaction(function () use ($group, $data, $actor) {
+            // The hero is a standalone media file: attach the new one, release the old one.
+            if ($group === SettingsGroup::Home && array_key_exists('hero_media_uuid', $data)) {
+                $this->media()->claim('site.hero', array_filter([$data['hero_media_uuid']]), $actor);
+            }
+
+            return $this->for($group)->fill($data)->save();
+        });
 
         $after = $this->values($group);
         $changed = array_keys(array_filter($after, fn ($value, $key) => ($before[$key] ?? null) !== $value, ARRAY_FILTER_USE_BOTH));
@@ -75,6 +93,22 @@ class SettingsService
         }
 
         return $settings;
+    }
+
+    private function hero(): ?Media
+    {
+        $uuid = app(HomeSettings::class)->hero_media_uuid;
+
+        return $uuid === null ? null : Media::query()
+            ->where('uuid', $uuid)
+            ->where('collection', 'site.hero')
+            ->where('status', MediaStatus::Attached)
+            ->first();
+    }
+
+    private function media(): MediaService
+    {
+        return app(MediaService::class);
     }
 
     private function registry(): MediaCollectionRegistry
