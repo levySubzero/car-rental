@@ -34,9 +34,9 @@ return [
         'max_kb_ceiling' => 8192,
     ],
 
-    // Currency codes accepted on per-car amounts such as the damage excess.
-    // M6 replaces this with the currencies table.
-    'currencies' => ['KES', 'USD', 'GBP', 'EUR', 'AED'],
+    // The business's local time zone. Billable days are counted in it (D30); the app and
+    // the database stay in UTC.
+    'timezone' => 'Africa/Nairobi',
 
     // Admin sessions are logged out after this many minutes without a request.
     'admin_idle_minutes' => (int) env('ADMIN_IDLE_MINUTES', 30),

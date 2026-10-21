@@ -8,9 +8,11 @@ use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Activitylog\Models\Activity;
 use Tests\Support\CatalogFixtures;
+use Tests\Support\PricingFixtures;
 
 beforeEach(function () {
     CatalogFixtures::setUp();
+    PricingFixtures::currencies();
     $this->brand = Brand::factory()->create(['name' => 'Toyota']);
     $this->type = CarType::factory()->create(['name' => 'SUV']);
 

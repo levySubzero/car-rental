@@ -15,6 +15,7 @@ use App\Services\Catalog\BrandService;
 use App\Services\Catalog\CarService;
 use App\Services\Catalog\CarTypeService;
 use App\Services\Media\MediaCollectionRegistry;
+use App\Services\Pricing\CurrencyService;
 use App\Settings\PricingSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -141,7 +142,7 @@ class CarController extends Controller
             'fuelOptions' => array_map(fn (FuelType $type) => ['value' => $type->value, 'label' => $type->label()], FuelType::cases()),
             'transmissionOptions' => array_map(fn (Transmission $type) => ['value' => $type->value, 'label' => $type->label()], Transmission::cases()),
             'blackoutReasons' => array_map(fn (BlackoutReason $reason) => ['value' => $reason->value, 'label' => $reason->label()], BlackoutReason::cases()),
-            'currencies' => (array) config('baines.currencies'),
+            'currencies' => app(CurrencyService::class)->codes(),
             'defaultMileageKm' => $this->pricing->default_mileage_km,
             'galleryLimits' => $this->collections->get('car.gallery')->toArray(),
         ];

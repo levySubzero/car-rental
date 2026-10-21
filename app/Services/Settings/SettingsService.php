@@ -2,7 +2,10 @@
 
 namespace App\Services\Settings;
 
+use App\Enums\DayCountingStrategy;
+use App\Enums\FxProvider;
 use App\Enums\MediaStatus;
+use App\Enums\RoundingMode;
 use App\Enums\SettingsGroup;
 use App\Http\Resources\Media\MediaResource;
 use App\Models\Media;
@@ -54,6 +57,15 @@ class SettingsService
             SettingsGroup::Home => [
                 'hero' => ($hero = $this->hero()) ? MediaResource::make($hero) : null,
                 'heroLimits' => $this->registry()->get('site.hero')->toArray(),
+            ],
+            SettingsGroup::Pricing => [
+                'roundingOptions' => array_map(fn (RoundingMode $mode) => ['value' => $mode->value, 'label' => $mode->label()], RoundingMode::cases()),
+                'dayCountingOptions' => array_map(fn (DayCountingStrategy $strategy) => ['value' => $strategy->value, 'label' => $strategy->label()], DayCountingStrategy::cases()),
+            ],
+            // The key is env-only (FX_API_KEY); the tab only says whether one is set.
+            SettingsGroup::Fx => [
+                'providers' => array_map(fn (FxProvider $provider) => ['value' => $provider->value, 'label' => $provider->label()], FxProvider::cases()),
+                'hasApiKey' => filled(config('services.fx.api_key')),
             ],
             default => [],
         };

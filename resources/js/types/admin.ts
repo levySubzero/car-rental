@@ -280,3 +280,150 @@ export type SetupChecklistItem = {
     detail: string;
     url: string;
 };
+
+// Pricing (M6)
+
+export type AdminCurrency = {
+    id: number;
+    code: string;
+    name: string;
+    symbol: string;
+    // Display decimals only; amounts are stored with 2 (D27).
+    decimals: number;
+    is_active: boolean;
+    is_base: boolean;
+    sort_order: number;
+};
+
+// Mirrors App\Services\Pricing\Fx\ResolvedRate::toArray(). Rates are decimal strings.
+export type ResolvedFxRate = {
+    code: string;
+    market: string;
+    margin: string;
+    effective: string;
+    source: 'api' | 'manual';
+    fetched_at: string;
+    stale: boolean;
+    override_until: string | null;
+};
+
+export type AdminFxRate = {
+    id: number;
+    currency_code: string;
+    market_rate: string;
+    source: 'api' | 'manual';
+    source_label: string;
+    provider: string | null;
+    fetched_at: string;
+    override_until: string | null;
+    override_by?: string | null;
+    is_live_override: boolean;
+};
+
+export type FxRefreshOutcome = {
+    at: string;
+    status: 'refreshed' | 'skipped' | 'failed';
+    message: string;
+    stored: Record<string, string>;
+    rejected: Record<
+        string,
+        { previous: string; fetched: string; change: string }
+    >;
+};
+
+export type AdminCharge = {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    basis: 'per_day' | 'per_booking' | 'per_km' | 'info_only';
+    basis_label: string;
+    // Null for info-only and per-km charges quoted on request.
+    amount: Money | null;
+    currency_code: string;
+    tax_inclusive: boolean;
+    payable_at: 'reservation' | 'handover' | 'counter';
+    payable_at_label: string;
+    // When it goes on a quote (D32).
+    applies: 'extra' | 'always' | 'listed';
+    applies_label: string;
+    is_active: boolean;
+    sort_order: number;
+};
+
+export type AdminDeliveryZone = {
+    id: number;
+    name: string;
+    description: string | null;
+    // Null means staff quote the fee.
+    fee: Money | null;
+    is_default: boolean;
+    is_active: boolean;
+    sort_order: number;
+};
+
+export type AdminDepositBand = {
+    id: number;
+    min_age: number;
+    max_age: number;
+    // Basis points of the car value: 200 = 2%.
+    percent_bp: number;
+    label: string | null;
+    is_active: boolean;
+};
+
+export type AdminCancellationTier = {
+    id: number;
+    hours_before_pickup: number;
+    refund_percent_bp: number;
+    label: string | null;
+};
+
+export type QuoteLine = {
+    kind: 'rental' | 'charge' | 'delivery';
+    code: string;
+    label: string;
+    quantity: number;
+    // In the charge's own currency.
+    unit: Money | null;
+    // In KES; null when quoted on request or by staff.
+    amount: Money | null;
+    payable_at: string;
+    counted: boolean;
+    note: string | null;
+};
+
+// Mirrors App\Services\Pricing\Quote\Quote::toArray() (Admin\QuoteResource).
+export type AdminQuote = {
+    pickup_at: string;
+    return_at: string;
+    days: number;
+    lines: QuoteLine[];
+    rental: Money;
+    total: Money;
+    reservation: Money;
+    balance: Money;
+    // Null without a date of birth, or for staff without cars.view-value.
+    deposit: Money | null;
+    deposit_band: {
+        min_age: number;
+        max_age: number;
+        percent_bp: number;
+    } | null;
+    deposit_hidden?: boolean;
+    driver_age: number | null;
+    mileage_km_per_day: number | null;
+    requires_staff_quote: boolean;
+    display: Record<
+        string,
+        {
+            total: Money;
+            reservation: Money;
+            balance: Money;
+            deposit: Money | null;
+        }
+    >;
+    fx: { base: string; rates: Record<string, ResolvedFxRate> };
+    settings: Record<string, string | number | null>;
+    settings_hash: string;
+};

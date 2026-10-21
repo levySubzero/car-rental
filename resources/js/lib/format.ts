@@ -21,3 +21,8 @@ export function humanize(value: string): string {
 
     return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+// Basis points as a percentage: 250 → "2.5%".
+export function percentFromBp(basisPoints: number): string {
+    return `${Number((basisPoints / 100).toFixed(2))}%`;
+}

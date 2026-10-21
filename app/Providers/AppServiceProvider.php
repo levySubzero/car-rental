@@ -2,12 +2,19 @@
 
 namespace App\Providers;
 
+use App\Enums\FxProvider;
 use App\Enums\SettingsGroup;
 use App\Models\Brand;
+use App\Models\CancellationTier;
 use App\Models\Car;
 use App\Models\CarBlackout;
 use App\Models\CarType;
+use App\Models\Charge;
 use App\Models\ContactMessage;
+use App\Models\Currency;
+use App\Models\DeliveryZone;
+use App\Models\DepositBand;
+use App\Models\FxRate;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\PaymentMethod;
@@ -21,6 +28,10 @@ use App\Services\Media\CurrentUploader;
 use App\Services\Media\ImageDriver;
 use App\Services\Media\MediaCollectionRegistry;
 use App\Services\Media\NullTokenUploaderResolver;
+use App\Services\Pricing\Fx\FxRateProvider;
+use App\Services\Pricing\Fx\ManualProvider;
+use App\Services\Pricing\Fx\OpenExchangeRatesProvider;
+use App\Settings\FxSettings;
 use App\Settings\MediaSettings;
 use App\Support\Content\PageRegistry;
 use Carbon\CarbonImmutable;
@@ -48,6 +59,12 @@ class AppServiceProvider extends ServiceProvider
 
         // M8 binds the booking implementation.
         $this->app->bind(TokenUploaderResolver::class, NullTokenUploaderResolver::class);
+
+        // Chosen per resolution: admins can switch the provider in the FX settings tab.
+        $this->app->bind(FxRateProvider::class, fn ($app) => match (FxProvider::tryFrom($app->make(FxSettings::class)->provider)) {
+            FxProvider::OpenExchangeRates => new OpenExchangeRatesProvider(config('services.fx.api_key')),
+            default => new ManualProvider,
+        });
 
         // Not a singleton: admins can change the overrides mid-request (settings save).
         $this->app->bind(MediaCollectionRegistry::class, fn ($app) => new MediaCollectionRegistry(
@@ -89,6 +106,12 @@ class AppServiceProvider extends ServiceProvider
             'policy_bundle' => PolicyBundle::class,
             'payment_method' => PaymentMethod::class,
             'contact_message' => ContactMessage::class,
+            'currency' => Currency::class,
+            'fx_rate' => FxRate::class,
+            'charge' => Charge::class,
+            'delivery_zone' => DeliveryZone::class,
+            'deposit_band' => DepositBand::class,
+            'cancellation_tier' => CancellationTier::class,
         ]);
     }
 
@@ -108,6 +131,9 @@ class AppServiceProvider extends ServiceProvider
             : Limit::perHour(30)->by('token:'.($request->header('X-Booking-Token') ?? $request->ip())));
 
         RateLimiter::for('contact', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
+
+        // The booking form re-prices as the renter changes dates and extras.
+        RateLimiter::for('quote-preview', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
     }
 
     /**

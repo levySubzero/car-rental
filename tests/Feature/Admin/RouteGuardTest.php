@@ -1,10 +1,16 @@
 <?php
 
 use App\Models\Brand;
+use App\Models\CancellationTier;
 use App\Models\Car;
 use App\Models\CarBlackout;
 use App\Models\CarType;
+use App\Models\Charge;
 use App\Models\ContactMessage;
+use App\Models\Currency;
+use App\Models\DeliveryZone;
+use App\Models\DepositBand;
+use App\Models\FxRate;
 use App\Models\Page;
 use App\Models\PaymentMethod;
 use App\Models\Policy;
@@ -53,6 +59,21 @@ function sampleParameters(RoutingRoute $route): array
         'policy' => fn () => Policy::factory()->published()->withDraft()->create()->slug,
         'payment_method' => fn () => (PaymentMethod::query()->firstWhere('code', 'mpesa') ?? PaymentMethod::factory()->create())->code->value,
         'contact_message' => fn () => ContactMessage::factory()->create()->id,
+        // Currency codes are unique, so reuse USD once an earlier route created it.
+        'currency' => fn () => (Currency::query()->firstWhere('code', 'USD') ?? Currency::factory()->code('USD')->create())->code,
+        'charge' => function () {
+            Currency::query()->firstWhere('code', 'KES') ?? Currency::factory()->code('KES')->create();
+
+            return Charge::factory()->create()->code;
+        },
+        'delivery_zone' => fn () => DeliveryZone::factory()->create()->id,
+        'deposit_band' => fn () => DepositBand::factory()->create()->id,
+        'cancellation_tier' => fn () => CancellationTier::factory()->create()->id,
+        'fx_rate' => function () {
+            Currency::query()->firstWhere('code', 'USD') ?? Currency::factory()->code('USD')->create();
+
+            return FxRate::factory()->manual()->create()->id;
+        },
     ];
 
     $resolved = [];

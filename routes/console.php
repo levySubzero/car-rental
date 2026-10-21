@@ -10,3 +10,7 @@ Artisan::command('inspire', function () {
 
 // Scheduler (TECHNICAL_PLAN §17). Other jobs are added by their milestones.
 Schedule::command('media:cleanup')->hourly()->withoutOverlapping()->onOneServer();
+
+// The command itself waits FxSettings::refresh_minutes between fetches and does nothing
+// while the provider is manual.
+Schedule::command('fx:refresh')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();

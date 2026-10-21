@@ -75,6 +75,37 @@ enum Permission: string
     case ContactMessagesUpdate = 'contact-messages.update';
     case ContactMessagesDelete = 'contact-messages.delete';
 
+    // Pricing (M6). The PRD keeps pricing rules with the super admin by default.
+    case CurrenciesView = 'currencies.view';
+    case CurrenciesCreate = 'currencies.create';
+    case CurrenciesUpdate = 'currencies.update';
+
+    case FxRatesView = 'fx-rates.view';
+    case FxRatesOverride = 'fx-rates.override';
+
+    case ChargesView = 'charges.view';
+    case ChargesCreate = 'charges.create';
+    case ChargesUpdate = 'charges.update';
+    case ChargesDelete = 'charges.delete';
+
+    case DeliveryZonesView = 'delivery-zones.view';
+    case DeliveryZonesCreate = 'delivery-zones.create';
+    case DeliveryZonesUpdate = 'delivery-zones.update';
+    case DeliveryZonesDelete = 'delivery-zones.delete';
+
+    case DepositBandsView = 'deposit-bands.view';
+    case DepositBandsCreate = 'deposit-bands.create';
+    case DepositBandsUpdate = 'deposit-bands.update';
+    case DepositBandsDelete = 'deposit-bands.delete';
+
+    case CancellationTiersView = 'cancellation-tiers.view';
+    case CancellationTiersCreate = 'cancellation-tiers.create';
+    case CancellationTiersUpdate = 'cancellation-tiers.update';
+    case CancellationTiersDelete = 'cancellation-tiers.delete';
+
+    // The admin quote sandbox (M6.15), used for the Gate G3 session
+    case QuotesSandbox = 'quotes.sandbox';
+
     // Settings: one update permission per settings group (SettingsGroup)
     case SettingsGeneralUpdate = 'settings.general.update';
     case SettingsPricingUpdate = 'settings.pricing.update';

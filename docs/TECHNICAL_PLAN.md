@@ -112,7 +112,7 @@ app/
     Catalog/                 BrandService, CarTypeService, CarService
     Content/                 PageService, PolicyService, ServiceCatalogService
     Media/                   MediaService, MediaCollectionRegistry, ImageProcessor, MediaUrlGenerator
-    Pricing/                 QuoteService, DayCounter/*, FxRateService, Fx/Providers/*, CurrencyService
+    Pricing/                 QuoteService, Quote/*, DayCounter/*, FxRateService, Fx/*, CurrencyService
     Booking/                 BookingService, BookingStatusService, AvailabilityService,
                              DriverEligibilityService, BookingReferenceGenerator
     Payments/                PaymentSubmissionService, PaymentVerificationService
@@ -129,8 +129,7 @@ database/
 resources/js/
   pages/{public,admin}/...   mirrors controllers
   components/{ui,public,admin,media}/
-  lib/quote/                 TS port of QuoteService + day counters
-  lib/money.ts, lib/currency.ts, lib/whatsapp.ts
+  lib/money.ts, lib/whatsapp.ts
   types/                     resource types (hand-maintained, one file per resource group)
 tests/
   Unit/  Feature/{Admin,Public,Media,Booking,Payments}/  Arch/  fixtures/quotes.json
@@ -364,14 +363,14 @@ All money columns are `bigint` in **minor units** (cents) with a `_minor` suffix
 | **policies**                                    | id, slug, title, group, summary, show_on_home, sort_order, deleted_at (soft deletes: bundles keep pointing at their versions) |
 | **policy_versions**                             | policy_id, version (integer per policy), body (Markdown), published_at (null = draft, at most one per policy), created_by (null = seed pack). Published versions are immutable (D24). |
 | **policy_bundles**                              | id, version (integer), published_at, created_by, plus the pivot `policy_bundle_version`. A snapshot of the published version of every live policy, taken on each publish; it is what a renter accepts (D24). |
-| **currencies**                                  | code, name, symbol, decimals, is_active, sort_order, is_base                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **fx_rates**                                    | currency_code, market_rate (decimal 14,6 KES per unit), margin_minor, effective_rate, source, fetched_at, is_override, override_by, override_until                                                                                                                                                                                                                                                                                                                                                                               |
-| **charges**                                     | code, name, description, basis (per_day, per_booking, per_km, info_only), amount_minor, currency_code, tax_inclusive, payable_at (reservation, handover, counter), is_optional, is_active, trigger (chauffeur, delivery, additional_driver, one_way, valeting, admin, full_protection, excess_km, null), sort_order                                                                                                                                                                                                              |
+| **currencies**                                  | code, name, symbol, decimals (display only; amounts are stored with 2, D27), is_active, sort_order. The base currency is `PricingSettings::base_currency` (KES), not a column. |
+| **fx_rates**                                    | currency_code, market_rate (decimal 14,6 KES per unit), source (`api`, `manual`), provider, fetched_at (the provider's "as of" time), override_by, override_until. Append-only history; the margin is applied when read (D28). |
+| **charges**                                     | code, name, description, basis (per_day, per_booking, per_km, info_only), amount_minor (null = on request), currency_code, tax_inclusive, payable_at (reservation, handover, counter), applies (`extra`: the renter picks it by code; `always`: every quote; `listed`: policy page only; D32), is_active, sort_order. `code` is fixed once created. Delivery is priced by zone (D29). |
 | **delivery_zones**                              | name, description, fee_minor (null = quoted by staff), is_default, is_active, sort_order                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | **deposit_bands**                               | min_age, max_age, percent_bp (basis points of car value), label, is_active                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | **cancellation_tiers**                          | hours_before_pickup, refund_percent_bp, label                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **payment_methods**                             | code (`PaymentMethodCode`: mpesa, bank, card, cash; a fixed set, D25), name, instructions (Markdown), requires_transaction_message, requires_proof, is_active, sort_order, metadata (paybill, till, account, bank details, card link) |
-| **bookings**                                    | id, reference, access_token_hash, car_id, status (enum), pickup_at, return_at, pickup_point, return_point, delivery_zone_id, delivery_address, chauffeur_required, additional_driver, flight_number, billable_days, display_currency, quote (JSON snapshot), fx (JSON snapshot), settings_snapshot (JSON), total_minor, reservation_minor, balance_minor, security_deposit_minor, policy_bundle_id, accepted_terms_at, accepted_terms_ip, current_step, expires_at, confirmed_at, handover_at, returned_at, metadata, timestamps |
+| **bookings**                                    | id, reference, access_token_hash, car_id, status (enum), pickup_at, return_at, pickup_point, return_point, delivery_zone_id, delivery_address, delivery_landmark, delivery_lat, delivery_lng, delivery_contact_phone, delivery_fee_minor (null while staff-quoted, D33), return_address (same fields with `return_` prefix when collected), chauffeur_required, additional_driver, flight_number, billable_days, display_currency, quote (JSON snapshot), fx (JSON snapshot), settings_snapshot (JSON), cancellation_tiers (JSON snapshot, D34), total_minor, reservation_minor, balance_minor, security_deposit_minor, policy_bundle_id, accepted_terms_at, accepted_terms_ip, current_step, expires_at, confirmed_at, handover_at, returned_at, metadata, timestamps |
 | **booking_drivers**                             | booking_id, is_main, surname, first_name, second_name, dob, email, phone, nationality, is_kenyan_resident, id_type (national_id, passport), id_number (encrypted), id_number_hash, kra_pin (encrypted), licence_number (encrypted), licence_expiry, licence_years_declared, metadata                                                                                                                                                                                                                                             |
 | **booking_status_histories**                    | booking_id, from, to, actor_type, actor_id, reason, created_at                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **availability_holds**                          | car_id, booking_id, starts_at, ends_at, expires_at                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -402,7 +401,7 @@ We do not block on any of PRD §10. Each item ships with a setting or table and 
 | Q8 Marquee placement    | `HomeSettings::marquee_position` (`below_hero` or `page_bottom`)                                                                          | `page_bottom`                                                                                                       |
 | Q9 Flight notice        | `BookingSettings::flight_notice_days`                                                                                                     | 2                                                                                                                   |
 | Q10 Delivery fee        | `delivery_zones` table                                                                                                                    | "Nairobi" KES 2,000 (default); "Outside Nairobi" quoted by staff                                                    |
-| Q11 FX source           | `FxSettings::provider` driver (`manual`, `open_exchange_rates`, `exchangerate_api`), refresh frequency, margin, staleness alert           | `manual` until an API key exists; margin KES 3; refresh hourly                                                      |
+| Q11 FX source           | `FxSettings::provider` driver (`manual`, `open_exchange_rates`), refresh frequency, margin, staleness, jump guard (`max_jump_percent`)       | `manual` until an API key exists; margin KES 3; refresh hourly                                                      |
 | Q12 Damage excess       | `cars.damage_excess_minor` and currency, shown on the detail page                                                                         | null = hidden                                                                                                       |
 | Q13 Other fees          | `charges` rows with `info_only` basis and nullable amount                                                                                 | Shown as text only                                                                                                  |
 | Q14 Cancellation tiers  | `cancellation_tiers` table, rendered into the policy page and the voucher                                                                 | Empty; the policy text is the only source until the client fills the tiers                                          |
@@ -425,38 +424,38 @@ Other settings groups:
 
 ## 10. Pricing and quote engine
 
-`Pricing\QuoteService::calculate(QuoteInput $in): Quote` is pure apart from the injected settings and repositories, and it is deterministic.
+`Pricing\QuoteService::quote(Car, pickup, return, extras, zone, driver DOB): Quote` loads the rules in force (settings, active charges, active deposit bands, the FX table) and hands them to `Pricing\Quote\QuoteCalculator`, which has no database access and is deterministic. It is the only quote engine (D31): the admin sandbox, the public preview and booking submit all call it.
 
-The input:
+The input (`QuoteInput`):
 
-- car (daily rate, value, mileage)
+- car (daily rate, value, mileage allowance)
 - pickup and return times
-- extras flags (chauffeur, delivery zone, additional driver)
-- driver date of birth
-- display currency
+- the extras the renter picked (charge codes) and a delivery zone
+- driver date of birth (optional: without it there is no deposit yet)
 
 The steps:
 
-1. `DayCounter` (the strategy chosen by setting) calculates the billable days.
+1. `DayCounter` (the strategy chosen by setting, counted in the business time zone, D30) calculates the billable days.
 2. Rental = days × daily rate.
-3. Each active charge whose trigger is selected adds its amount. A foreign-currency charge is converted to KES at the **market** rate (PRD: chauffeur at the market rate). `per_day` multiplies by days.
-4. Total = rental + charges payable at reservation or handover. `info_only` and `counter` charges are listed but not summed.
-5. Reservation = round(total × reservation %, rounding mode). Balance = total − reservation.
-6. Age at pickup date selects the deposit band, and security deposit = band % × car value. If no band matches, the quote throws `DriverAgeException`.
-7. Display conversion: amount ÷ (market rate − margin), per active currency.
+3. Each active charge that applies is listed: an `extra` the renter picked, or an `always` charge; `listed` charges never are (D32). A per-day or per-booking charge with an amount is multiplied out in its own currency and then converted once to KES at the **market** rate, half up to the cent (3 × USD 50 at 129 = KES 19,350). Per-km and info-only charges, and charges without an amount, are listed but have no amount.
+4. Delivery comes from the chosen zone. A zone without a fee is listed as quoted by staff and sets `requires_staff_quote` (D29).
+5. Total = the lines payable at reservation or handover. Counter charges and lines without an amount are listed but not summed.
+6. Reservation = total × reservation % with the rounding mode. Balance = total − reservation.
+7. Age on the pickup date (business time zone) selects the deposit band, and security deposit = band % × car value, rounded half up. If no band matches, the quote throws `QuoteException::driverAge` on the `driver_dob` field.
+8. Mileage: the car's allowance, else the default, per day; unlimited from `unlimited_mileage_after_days`.
+9. Display conversion: amount ÷ (market rate − margin), half up, for every active currency with a rate.
 
-The output, `Quote` (serializable to JSON for the snapshot):
+The output, `Quote` (`toArray()` is the booking snapshot):
 
-- line items
-- totals in minor units
+- line items, each with its unit in the charge's currency, its KES amount and whether it is counted
+- totals in minor units, deposit and band, driver age, mileage
 - days
-- band
-- the FX table used
-- the settings hash
+- the FX table used, with the margin
+- the settings used and their sha256 hash
 
-**TS parity:** `resources/js/lib/quote/` is a line-for-line port, including the day counters. Both implementations run against `tests/fixtures/quotes.json`, which holds at least 40 cases: the PRD worked example, age edges, day-counting edges, every rounding case and each currency. Pest and Vitest both run in CI, so drift fails the build. Gate G3 adds the client's 20 spreadsheet cases to the same fixture.
+**Fixtures:** `tests/fixtures/quotes.json` holds the PRD worked example, age edges, every day-counting strategy's edges, every rounding mode, each currency, and staff-quoted, counter and info-only lines. It is generated by `tests/fixtures/generate_quotes.py`, an independent implementation of these rules; the PHP calculator must match every case (`tests/Unit/Pricing/QuoteFixturesTest.php`), and `lib/money.ts` must match every display conversion (Vitest). Gate G3 adds the client's 20 spreadsheet cases to the same file.
 
-**FX:** `FxRateService` pulls from the configured `FxRateProvider` driver every hour. It stores history, respects active overrides (`override_until`), and alerts staff when rates are older than `FxSettings::stale_after_hours`.
+**FX (D28):** `FxRateService` fetches from the configured `FxRateProvider` (`fx:refresh`, scheduled every 15 minutes, waits `refresh_minutes` between fetches). Open Exchange Rates is called directly over HTTP: rates are USD-based, so KES per unit is the cross rate rate[KES] ÷ rate[X], worked out with bcmath. A response with a wrong base, a missing or non-positive rate or a future timestamp is rejected whole. A rate that moved more than `max_jump_percent` since the last API rate is held back until staff accept it. A fresh API rate always wins; a manual rate applies only while the API rate is missing or older than `stale_after_hours`; after that the last API rate is used, flagged stale. Missing, stale, failed and held-back rates are listed on the dashboard (mail alerts come with M10).
 
 ---
 
@@ -470,7 +469,7 @@ The output, `Quote` (serializable to JSON for the snapshot):
 | Start draft      | `POST /bookings`                                                            | `@store` (`StartBookingRequest`) → `BookingService::startDraft()`. Returns a plain token, stores only the hash, and redirects to `/bookings/{token}`.                                                                               |
 | Save step        | `PUT /bookings/{token}/steps/{step}`                                        | `@updateStep` (one FormRequest per step) → `BookingService::saveStep()`                                                                                                                                                             |
 | Upload documents | `POST /media` with `X-Booking-Token`                                        | Media module, `booking.*` collections                                                                                                                                                                                               |
-| Live quote       | Client-side TS. Optional `POST /bookings/{token}/quote` for server preview. | `QuoteService`                                                                                                                                                                                                                      |
+| Live quote       | `POST /quote/preview` (rate limited), debounced from the form (D31).        | `QuoteService`                                                                                                                                                                                                                      |
 | Submit           | `POST /bookings/{token}/submit`                                             | `SubmitBookingRequest` → `BookingService::submit()`: eligibility checks, required documents, `AvailabilityService::lockAndHold()` in a transaction with `lockForUpdate` on the car, quote recalculation, snapshot, Awaiting payment |
 | Payment          | `POST /bookings/{token}/payments`                                           | `BookingPaymentController@store` → `PaymentSubmissionService::submit()`                                                                                                                                                             |
 | Status page      | `GET /bookings/{token}`                                                     | Renter's signed view of status, quote and payment instructions                                                                                                                                                                      |
@@ -541,8 +540,8 @@ Submission re-checks availability under a row lock. The admin calendar uses the 
 
 ## 14. Public site
 
-- `ShareCurrency` middleware reads the `currency` cookie, which is validated against active currencies. It shares the selected currency and the effective FX table as Inertia props. `CurrencyController@update` sets the cookie.
-- Prices are always sent in KES minor units and converted on the client by `lib/money.ts` with the shared rates. The server-side resources also expose a `display` price for SSR, so there is no flash on first render.
+- `ShareCurrency` middleware (alias `currency`, public routes only) reads the `currency` cookie, which is validated against the active currencies that have a rate. It shares the selected currency and each option's effective rate as the `currency` prop. `POST /currency` (`Public\CurrencyController@update`) sets the cookie.
+- Prices are always sent in KES minor units and converted on the client by `lib/money.ts` with the shared rates, using exact integer maths and the server's half-up rounding. The server-side resources also expose a `display` price for SSR, so there is no flash on first render.
 - Brand pages (`/car-brands/{brand}`) and type pages (`/car-types/{type}`) reuse `FleetController@index` with a preset filter. `/fleet` takes query filters: brand, type, transmission, seats, sort.
 - SEO:
     - per-page meta from the preset `pages` (D22); the OG image is added in M7.17
@@ -638,5 +637,13 @@ Scheduler:
 | D24 | 2026-10-20: Policy versions and bundles. Versions are integers per policy; a policy has at most one draft; published versions are immutable (enforced on the model). A body containing `[CONFIRM` cannot be published. Each publish, and each deletion of a live policy, snapshots a new `policy_bundles` row linked to the current published version of every live policy. Policies soft-delete. The seeder writes versions with `created_by` null and never replaces a version or draft staff wrote. | Bookings (M8.14) must be able to show exactly what a renter accepted. |
 | D25 | 2026-10-20: Payment methods are a fixed set keyed by the `PaymentMethodCode` enum (mpesa, bank, card, cash), created by the seed pack. Staff edit, reorder and switch them off, but cannot create or delete them. Permissions are `payment-methods.view` and `payment-methods.update`. | The booking flow (M9) branches on the code: cash goes to Awaiting cash, the others to Payment submitted. |
 | D26 | 2026-10-20: TODO convention. In settings, null or empty means "still to supply"; the seeder never writes `TODO` strings into settings. In content (payment instructions and details), a literal `TODO` word marks a gap. `SetupChecklistService` lists both, plus unpublished policies and preset pages with empty required fields, on the dashboard's "Before launch" card, filtered by the viewer's permissions. Contact messages use `new`, `in_progress`, `resolved` and `spam`, and staff may move between any of them. | One place shows what is missing before launch (M13.4), and only to staff who can fix it. |
+| D27 | 2026-10-20: Money is stored in minor units with 2 decimals for every currency, KES included; `currencies.decimals` is for display only (KES shows none). | Cars already stored cents, and one rule for every column avoids per-currency scaling bugs. |
+| D28 | 2026-10-20: FX precedence. `fx_rates` is append-only. A fresh API rate always wins; a manual rate (no expiry, or one in the future) applies only while the API rate is missing or older than `stale_after_hours`; then the last API rate, flagged stale; otherwise the currency is hidden. Rows store the market rate only; the margin (`FxSettings::margin_minor`) is applied when read and recorded in each quote's FX snapshot. One provider, Open Exchange Rates, written against its HTTP API with bcmath cross rates and a jump guard (`max_jump_percent`); `exchangerate_api` is dropped. The API key is env-only. | The client wants the API as the source of truth; manual rates cover outages and the time before a key exists. One place holds the margin. |
+| D29 | 2026-10-20: Delivery is priced by `delivery_zones` only; there is no delivery charge. A zone without a fee is listed as quoted by staff, left out of the total, and sets `requires_staff_quote`. | Two ways to price delivery would disagree. |
+| D30 | 2026-10-20: Billable days and driver age use the business time zone, `config('baines.timezone')` = Africa/Nairobi. The app and database stay in UTC. | Calendar days and birthdays are local. |
+| D31 | 2026-10-20: One quote engine, on the server. No TypeScript port (M6.12 dropped): the booking form calls `POST /quote/preview`. `lib/money.ts` only converts and formats display prices. | Every pricing rule written once; G3 checks one implementation. |
+| D32 | 2026-10-21: Charges are dynamic. Each charge has `applies` (`extra`, `always`, `listed`) instead of a fixed trigger list; renters pick extras by the charge's `code`, which is fixed once created. Code that must recognise a charge (chauffeur, additional driver in M8) uses its code. | Staff can add a bookable extra, such as a child seat, without a code change. |
+| D33 | 2026-10-21: Home delivery. A delivery zone is a pricing area, not an address: the renter picks the zone (its description lists the areas it covers) and types the address, with an optional landmark, map pin and driver phone. Nothing checks the address against the zone; staff confirm it on the booking (M11.13). A zone without a fee does not block the booking: the reservation excludes delivery, and staff set the fee later, which is added to the balance at handover. Map-drawn zones wait for P2.9. | No maps API or new integration before launch, and it matches how the office already confirms deliveries. Nairobi addresses are vague, so the landmark and pin matter more than the street. |
+| D34 | 2026-10-21: Cancellation refunds. A booking snapshots the cancellation tiers at submit. On cancellation the tier is the one with the longest notice the renter still met, counted in hours before pickup; the refund is that share of the reservation paid. Less notice than every tier, or a no-show, suggests 0%. The amount is a suggestion: staff may change it with a reason, and both amounts are stored. Refunds are paid back by hand and recorded with a reference. *To confirm with the client: the 0% default and the reservation-only base.* | The renter is held to the terms they accepted (B-8), and staff keep discretion, since payments are manual. |
 
 New decisions are appended here with a date.

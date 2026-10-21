@@ -2,10 +2,12 @@
 
 namespace App\Enums;
 
+use App\Http\Requests\Admin\Settings\UpdateFxSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateGeneralSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateHomeSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateMediaSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateNotificationSettingsRequest;
+use App\Http\Requests\Admin\Settings\UpdatePricingSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateRetentionSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateSecuritySettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateSettingsRequest;
@@ -85,7 +87,7 @@ enum SettingsGroup: string
 
     /**
      * The FormRequest that validates this tab, or null while the tab is still to be built:
-     * Pricing (M6.14), Booking (M8.8) and Fx (M6.4).
+     * Booking (M8.8).
      *
      * @return class-string<UpdateSettingsRequest>|null
      */
@@ -93,6 +95,8 @@ enum SettingsGroup: string
     {
         return match ($this) {
             self::General => UpdateGeneralSettingsRequest::class,
+            self::Pricing => UpdatePricingSettingsRequest::class,
+            self::Fx => UpdateFxSettingsRequest::class,
             self::Notification => UpdateNotificationSettingsRequest::class,
             self::Home => UpdateHomeSettingsRequest::class,
             self::Retention => UpdateRetentionSettingsRequest::class,

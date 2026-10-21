@@ -1,6 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
 import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsController';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
+import type {
+    FxSettings,
+    FxSettingsContext,
+} from '@/components/admin/settings/fx-settings-form';
+import { FxSettingsForm } from '@/components/admin/settings/fx-settings-form';
 import type { GeneralSettings } from '@/components/admin/settings/general-settings-form';
 import { GeneralSettingsForm } from '@/components/admin/settings/general-settings-form';
 import type {
@@ -12,6 +17,11 @@ import type { MediaSettingsContext } from '@/components/admin/settings/media-set
 import { MediaSettingsForm } from '@/components/admin/settings/media-settings-form';
 import type { NotificationSettings } from '@/components/admin/settings/notification-settings-form';
 import { NotificationSettingsForm } from '@/components/admin/settings/notification-settings-form';
+import type {
+    PricingSettings,
+    PricingSettingsContext,
+} from '@/components/admin/settings/pricing-settings-form';
+import { PricingSettingsForm } from '@/components/admin/settings/pricing-settings-form';
 import type { RetentionSettings } from '@/components/admin/settings/retention-settings-form';
 import { RetentionSettingsForm } from '@/components/admin/settings/retention-settings-form';
 import type { SecuritySettings } from '@/components/admin/settings/security-settings-form';
@@ -69,6 +79,20 @@ export default function EditSettings({
                         <GeneralSettingsForm
                             key={group}
                             values={values as GeneralSettings}
+                        />
+                    )}
+                    {group === 'pricing' && (
+                        <PricingSettingsForm
+                            key={group}
+                            values={values as PricingSettings}
+                            context={context as PricingSettingsContext}
+                        />
+                    )}
+                    {group === 'fx' && (
+                        <FxSettingsForm
+                            key={group}
+                            values={values as FxSettings}
+                            context={context as FxSettingsContext}
                         />
                     )}
                     {group === 'home' && (

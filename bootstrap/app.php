@@ -8,6 +8,7 @@ use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveMediaUploader;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ShareCurrency;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             '2fa' => EnsureTwoFactor::class,
             'admin.idle' => AdminIdleTimeout::class,
             'media.uploader' => ResolveMediaUploader::class,
+            'currency' => ShareCurrency::class,
         ]);
 
         $middleware->web(append: [

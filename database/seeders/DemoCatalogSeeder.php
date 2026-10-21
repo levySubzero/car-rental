@@ -3,15 +3,19 @@
 namespace Database\Seeders;
 
 use App\Enums\FuelType;
+use App\Enums\FxRateSource;
 use App\Enums\Transmission;
 use App\Models\Brand;
 use App\Models\Car;
 use App\Models\CarType;
+use App\Models\Currency;
+use App\Models\FxRate;
 use Illuminate\Database\Seeder;
 
 /**
  * Sample fleet for local and staging (M4.11). Cars have no photos, so they stay drafts:
- * add photos in the admin, then publish. The real catalogue comes from the seed pack (M5.9).
+ * add photos in the admin, then publish. Also sets manual exchange rates, so prices convert
+ * before an FX API key exists (M6). The real catalogue comes from the seed pack (M5.9).
  * Safe to run again: rows are matched by name. Brand and type names match the seed pack, so
  * after CmsSeeder they reuse its rows.
  */
@@ -48,8 +52,13 @@ class DemoCatalogSeeder extends Seeder
         ['Volkswagen Polo', 'Volkswagen', 'Economy', FuelType::Petrol, Transmission::Manual, 5, 5_000, []],
     ];
 
+    // KES per unit; a fresh API rate replaces these as soon as one is fetched (D28).
+    private const DEMO_RATES = ['USD' => '129', 'GBP' => '163.5', 'EUR' => '140.25', 'AED' => '35.12'];
+
     public function run(): void
     {
+        $this->rates();
+
         $brands = collect(self::BRANDS)->mapWithKeys(
             fn (string $name) => [$name => Brand::query()->firstOrCreate(['name' => $name])],
         );
@@ -67,8 +76,26 @@ class DemoCatalogSeeder extends Seeder
                 'doors' => $seats > 5 ? 5 : 4,
                 'seats' => $seats,
                 'daily_rate_minor' => $rate * 100,
+                'car_value_minor' => $this->value($name, $rate) * 100,
                 'metadata' => $extra ?: null,
             ]);
+        }
+    }
+
+    /**
+     * A rough car value in KES: 500 days' rent, except the PRD worked example's Prado (8M).
+     */
+    private function value(string $name, int $dailyRate): int
+    {
+        return $name === 'Toyota Prado TX' ? 8_000_000 : $dailyRate * 500;
+    }
+
+    private function rates(): void
+    {
+        foreach (self::DEMO_RATES as $code => $rate) {
+            if (Currency::query()->where('code', $code)->exists() && ! FxRate::query()->where('currency_code', $code)->exists()) {
+                FxRate::create(['currency_code' => $code, 'market_rate' => $rate, 'source' => FxRateSource::Manual, 'fetched_at' => now()]);
+            }
         }
     }
 }

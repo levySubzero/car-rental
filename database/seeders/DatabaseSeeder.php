@@ -24,6 +24,13 @@ class DatabaseSeeder extends Seeder
             Permission::AvailabilityManage,
             ...Permission::forModule('contact-messages'),
             Permission::PaymentMethodsView,
+            // Pricing is the super admin's (PRD §3); the desk can see it and run quotes.
+            Permission::FxRatesView,
+            Permission::ChargesView,
+            Permission::DeliveryZonesView,
+            Permission::DepositBandsView,
+            Permission::CancellationTiersView,
+            Permission::QuotesSandbox,
         ]);
         $this->role('content-editor', 'Marketing: cars, photos, brands, services, policies and home page.', [
             ...Permission::forModule('brands', 'car-types'),
@@ -42,6 +49,7 @@ class DatabaseSeeder extends Seeder
 
         // The client's content: safe in every environment, never overwrites admin edits.
         $this->call(CmsSeeder::class);
+        $this->call(PricingSeeder::class);
 
         if (app()->environment(['local', 'staging'])) {
             $this->call(DemoCatalogSeeder::class);

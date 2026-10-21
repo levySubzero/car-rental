@@ -2,11 +2,16 @@
 
 namespace App\Services\Cms;
 
+use App\Enums\FxProvider;
 use App\Enums\Permission;
 use App\Models\Page;
 use App\Models\PaymentMethod;
 use App\Models\Policy;
 use App\Models\User;
+use App\Services\Pricing\CurrencyService;
+use App\Services\Pricing\Fx\FxRefreshResult;
+use App\Services\Pricing\FxRateService;
+use App\Settings\FxSettings;
 use App\Settings\GeneralSettings;
 use App\Settings\HomeSettings;
 use App\Support\Content\PageRegistry;
@@ -14,7 +19,8 @@ use App\Support\Markdown;
 
 /**
  * What is still missing before launch (M5.11, D26): empty settings, TODO payment details,
- * unpublished policies and preset pages without copy. Each item is shown only to staff who
+ * unpublished policies, preset pages without copy, and exchange rates that are missing,
+ * stale or held back (M6.4). Each item is shown only to staff who
  * can fix it. M11.10 reuses this on the operations dashboard.
  *
  * @phpstan-type ChecklistItem array{key: string, area: string, label: string, detail: string, url: string}
@@ -25,6 +31,8 @@ class SetupChecklistService
         private readonly PageRegistry $pages,
         private readonly GeneralSettings $general,
         private readonly HomeSettings $home,
+        private readonly FxRateService $fx,
+        private readonly CurrencyService $currencies,
     ) {}
 
     /**
@@ -38,6 +46,7 @@ class SetupChecklistService
             ...($user->can(Permission::PaymentMethodsView) ? $this->paymentMethods() : []),
             ...($user->can(Permission::PoliciesView) ? $this->policies() : []),
             ...($user->can(Permission::PagesView) ? $this->presetPages() : []),
+            ...($user->can(Permission::FxRatesView) ? $this->exchangeRates() : []),
         ];
     }
 
@@ -143,6 +152,44 @@ class SetupChecklistService
                     route('admin.pages.edit', $page),
                 );
             }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<ChecklistItem>
+     */
+    private function exchangeRates(): array
+    {
+        $url = route('admin.fx-rates.index');
+        $settings = app(FxSettings::class);
+        $items = [];
+
+        if ($settings->provider !== FxProvider::Manual->value && blank(config('services.fx.api_key'))) {
+            $items[] = $this->item('fx.key', 'Exchange rates', 'Exchange rate API key', 'The provider is an API but FX_API_KEY is not set, so no rates are fetched.', $url);
+        }
+
+        $table = $this->fx->table();
+        $missing = array_values(array_filter($this->currencies->foreignCodes(), fn (string $code) => ! $table->has($code)));
+        $stale = array_keys(array_filter($table->rates, fn ($rate) => $rate->stale));
+
+        if ($missing !== []) {
+            $items[] = $this->item('fx.missing', 'Exchange rates', 'Missing exchange rates', 'No rate for '.implode(', ', $missing).': prices cannot be shown in it.', $url);
+        }
+
+        if ($stale !== []) {
+            $items[] = $this->item('fx.stale', 'Exchange rates', 'Stale exchange rates', 'Older than '.$settings->stale_after_hours.' hours: '.implode(', ', $stale).'.', $url);
+        }
+
+        $last = $this->fx->lastRefresh();
+
+        if ($last !== null && $last['status'] === FxRefreshResult::STATUS_FAILED) {
+            $items[] = $this->item('fx.failed', 'Exchange rates', 'Exchange rate refresh failed', $last['message'], $url);
+        }
+
+        if ($last !== null && $last['rejected'] !== []) {
+            $items[] = $this->item('fx.rejected', 'Exchange rates', 'Exchange rates held back', 'Moved more than '.$settings->max_jump_percent.'% since the last rate: '.implode(', ', array_keys($last['rejected'])).'. Review and refresh accepting the change.', $url);
         }
 
         return $items;

@@ -53,7 +53,7 @@ it('forbids groups without permission', function () {
 it('404s for groups whose tab is not built yet or do not exist', function () {
     $admin = superAdmin();
 
-    $this->actingAs($admin)->get(route('admin.settings.edit', 'pricing'))->assertNotFound();
+    $this->actingAs($admin)->get(route('admin.settings.edit', 'booking'))->assertNotFound();
     $this->actingAs($admin)->get(route('admin.settings.edit', 'nope'))->assertNotFound();
 });
 

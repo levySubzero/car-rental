@@ -2,16 +2,23 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CancellationTierController;
 use App\Http\Controllers\Admin\CarBlackoutController;
 use App\Http\Controllers\Admin\CarController;
 use App\Http\Controllers\Admin\CarTypeController;
+use App\Http\Controllers\Admin\ChargeController;
 use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\ContentController;
+use App\Http\Controllers\Admin\CurrencyController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DeliveryZoneController;
+use App\Http\Controllers\Admin\DepositBandController;
+use App\Http\Controllers\Admin\FxRateController;
 use App\Http\Controllers\Admin\MarkdownPreviewController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PolicyController;
+use App\Http\Controllers\Admin\QuoteSandboxController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -58,6 +65,27 @@ Route::scopeBindings()->group(function () {
     Route::put('cars/{car}/blackouts/{blackout}', [CarBlackoutController::class, 'update'])->name('cars.blackouts.update');
     Route::delete('cars/{car}/blackouts/{blackout}', [CarBlackoutController::class, 'destroy'])->name('cars.blackouts.destroy');
 });
+
+// Pricing (M6). Order routes come before the resources, as above.
+Route::put('currencies/order', [CurrencyController::class, 'reorder'])->name('currencies.reorder');
+Route::put('currencies/{currency}/active', [CurrencyController::class, 'active'])->name('currencies.active');
+Route::resource('currencies', CurrencyController::class)->except(['show', 'destroy']);
+
+Route::get('fx-rates', [FxRateController::class, 'index'])->name('fx-rates.index');
+Route::post('fx-rates', [FxRateController::class, 'store'])->name('fx-rates.store');
+Route::post('fx-rates/refresh', [FxRateController::class, 'refresh'])->name('fx-rates.refresh');
+Route::put('fx-rates/{fx_rate}/expire', [FxRateController::class, 'expire'])->name('fx-rates.expire');
+
+Route::put('charges/order', [ChargeController::class, 'reorder'])->name('charges.reorder');
+Route::resource('charges', ChargeController::class)->except('show');
+
+Route::put('delivery-zones/order', [DeliveryZoneController::class, 'reorder'])->name('delivery-zones.reorder');
+Route::resource('delivery-zones', DeliveryZoneController::class)->except('show');
+
+Route::resource('deposit-bands', DepositBandController::class)->except('show');
+Route::resource('cancellation-tiers', CancellationTierController::class)->except('show');
+
+Route::get('quote-sandbox', QuoteSandboxController::class)->name('quote-sandbox');
 
 // Content: one sidebar entry with a tab per module, like settings. URLs live under
 // /admin/content so the sidebar highlights it; route names keep their module prefix.

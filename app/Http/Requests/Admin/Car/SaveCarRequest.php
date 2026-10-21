@@ -56,7 +56,8 @@ class SaveCarRequest extends FormRequest
             'car_value' => ['nullable', 'string', self::AMOUNT],
             'mileage_limit_km' => ['nullable', 'integer', 'between:1,10000'],
             'damage_excess' => ['nullable', 'string', self::AMOUNT],
-            'damage_excess_currency' => ['nullable', 'required_with:damage_excess', Rule::in((array) config('baines.currencies'))],
+            // Any known currency, active or not: a car saved with one must stay saveable.
+            'damage_excess_currency' => ['nullable', 'required_with:damage_excess', 'string', 'exists:currencies,code'],
             'description' => ['nullable', 'string', 'max:20000'],
             'metadata' => ['nullable', 'array', 'max:30', new MetadataKeys],
             'metadata.*' => ['nullable', 'string', 'max:500'],

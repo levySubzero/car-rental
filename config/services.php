@@ -46,8 +46,8 @@ return [
         'cloud_phone_number_id' => env('WHATSAPP_CLOUD_PHONE_NUMBER_ID'),
     ],
 
+    // The provider is chosen in the admin (FxSettings::provider); only its key lives here.
     'fx' => [
-        'provider' => env('FX_PROVIDER', 'manual'),
         'api_key' => env('FX_API_KEY'),
     ],
 

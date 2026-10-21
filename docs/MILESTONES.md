@@ -40,15 +40,16 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | M3  | Metadata fields                                                | Dropped     | —        | —                    |
 | M4  | Catalog (brands, car types, cars)                              | Done        | 12/12    | **G1** (with M5)     |
 | M5  | Content CMS and seed pack                                      | Blocked     | 12/14    | **G1**               |
-| M6  | Pricing, currencies and FX                                     | Not started | 0/16     | —                    |
+| M6  | Pricing, currencies and FX                                     | Done        | 16/17    | —                    |
 | M7  | Public site                                                    | Not started | 0/20     | **G2**               |
-| M8  | Booking engine                                                 | Not started | 0/20     | —                    |
+| M8  | Booking engine                                                 | Not started | 0/23     | —                    |
 | M9  | Payments                                                       | Not started | 0/10     | **G3** (with M6, M8) |
 | M10 | Notifications and voucher                                      | Not started | 0/11     | —                    |
-| M11 | Operations desk                                                | Not started | 0/12     | **G4**               |
+| M11 | Operations desk                                                | Not started | 0/14     | **G4**               |
 | M12 | Hardening (security, performance, SEO, a11y)                   | Not started | 0/15     | —                    |
+| M12B | Integrations: keys, configuration and live tests              | Not started | 0/12     | —                    |
 | M13 | UAT and launch                                                 | Not started | 0/10     | **G5**               |
-| P2  | Post-launch backlog                                            | Not started | 0/8      | —                    |
+| P2  | Post-launch backlog                                            | Not started | 0/9      | —                    |
 
 ---
 
@@ -157,24 +158,25 @@ Status: **Blocked** (M5.13 waits for M12.15) · PRD: A-2, H-5, O-1, §11 · **Ga
 
 ## M6 — Pricing, currencies and FX
 
-Status: **Not started** · PRD: §5, Q-1–Q-4, A-3, A-4, G-1, G-6
+Status: **Done** · PRD: §5, Q-1–Q-4, A-3, A-4, G-1, G-6
 
-- [ ] M6.1 Currencies table and admin (`currencies.*`). Seed KES (base), USD, GBP, EUR, AED (active) and AUD (inactive).
-- [ ] M6.2 FX rates: migration, history, and overrides with `override_until` (`fx-rates.view|override`).
-- [ ] M6.3 `FxRateProvider` interface with `manual`, `open_exchange_rates` and `exchangerate_api` drivers, selected by `FxSettings`.
-- [ ] M6.4 `FxRateService` and the `fx:refresh` command (hourly), with a staleness alert to staff.
-- [ ] M6.5 Charges table and admin (`charges.*`). Seed chauffeur (USD 50, per day), additional driver (USD 50, counter, info), one-way, valeting, admin, full protection and excess km (info_only).
-- [ ] M6.6 Delivery zones admin (`delivery-zones.*`). Seed Nairobi at KES 2,000 and "Outside Nairobi" as quoted by staff.
-- [ ] M6.7 Deposit bands admin (`deposit-bands.*`). Seed 23–23 at 3% and 24–70 at 2%, and add an overlap validation rule.
-- [ ] M6.8 Cancellation tiers admin (`cancellation-tiers.*`), empty by default.
-- [ ] M6.9 Day counter strategies `calendar_inclusive`, `rolling_24h` and `daytime_blocks`, with unit tests.
-- [ ] M6.10 `QuoteService` and the `Quote` value object: line items, totals, reservation rounding, balance, deposit band, display conversions.
-- [ ] M6.11 `tests/fixtures/quotes.json` with at least 40 cases, including the PRD worked example (66,350 / 16,588 / 49,762 / 160,000).
-- [ ] M6.12 TS port in `resources/js/lib/quote/` plus Vitest parity against the same fixtures.
-- [ ] M6.13 `ShareCurrency` middleware, `CurrencyController@update` (cookie) and `lib/money.ts` formatting.
-- [ ] M6.14 Pricing settings admin tab: reservation %, rounding, day counting, window, hold and expiry, turnaround, mileage defaults.
-- [ ] M6.15 Admin "Quote sandbox" page: pick a car, dates and extras to see the server quote. Used for client validation (G3).
-- [ ] M6.16 Tests: FX margin maths, overrides, stale handling, quote edge cases, settings changes not affecting snapshots.
+- [x] M6.1 Currencies table and admin (`currencies.view|create|update`; deactivated, never deleted). Seed KES (base), USD, GBP, EUR, AED (active) and AUD (inactive).
+- [x] M6.2 FX rates: migration, history, and manual rates with `override_until` (`fx-rates.view|override`). *(A fresh API rate always wins, D28.)*
+- [x] M6.3 `FxRateProvider` interface with `manual` and `open_exchange_rates` drivers, selected by `FxSettings`. *(Changed: one API, written against its HTTP API; `exchangerate_api` dropped, D28.)*
+- [x] M6.4 `FxRateService` and the `fx:refresh` command (every 15 minutes, honours `refresh_minutes`), with a jump guard and a staleness alert to staff. *(The alert is on the dashboard; mail joins in M10.)*
+- [x] M6.5 Charges table and admin (`charges.*`). Seed chauffeur (USD 50, per day), additional driver (USD 50, counter), fuel service (USD 20, counter), one-way, valeting, admin, full protection (info_only) and excess km (per km, on request). *(Changed: charges are dynamic, `applies` = extra, always or listed, D32.)*
+- [x] M6.6 Delivery zones admin (`delivery-zones.*`). Seed Nairobi at KES 2,000 and "Outside Nairobi" as quoted by staff.
+- [x] M6.7 Deposit bands admin (`deposit-bands.*`). Seed 23–23 at 3% and 24–70 at 2%, and add an overlap validation rule.
+- [x] M6.8 Cancellation tiers admin (`cancellation-tiers.*`), empty by default.
+- [x] M6.9 Day counter strategies `calendar_inclusive`, `rolling_24h` and `daytime_blocks`, with unit tests.
+- [x] M6.10 `QuoteService` and the `Quote` value object: line items, totals, reservation rounding, balance, deposit band, display conversions.
+- [x] M6.11 `tests/fixtures/quotes.json` with at least 40 cases, including the PRD worked example (66,350 / 16,588 / 49,762 / 160,000).
+- [~] M6.12 TS port in `resources/js/lib/quote/` plus Vitest parity against the same fixtures. *Dropped (D31): replaced by M6.17.*
+- [x] M6.13 `ShareCurrency` middleware, `CurrencyController@update` (cookie) and `lib/money.ts` formatting.
+- [x] M6.14 Pricing settings admin tab: reservation %, rounding, day counting, window, hold and expiry, turnaround, mileage defaults.
+- [x] M6.15 Admin "Quote sandbox" page: pick a car, dates and extras to see the server quote. Used for client validation (G3).
+- [x] M6.16 Tests: FX margin maths, overrides, stale handling, quote edge cases, settings changes not affecting snapshots.
+- [x] M6.17 Server quote preview: `POST /quote/preview` (rate limited) returns the quote for the booking form. Replaces M6.12 (D31).
 
 ## M7 — Public site
 
@@ -217,7 +219,7 @@ Status: **Not started** · PRD: B-1–B-8, Q-1–Q-4, §5 lifecycle, §8.4
 - [ ] M8.10 Step 1, trip and extras: `SaveTripStepRequest` (dates, points, delivery zone and address, chauffeur, flight).
 - [ ] M8.11 Step 2, driver and documents: `SaveDriverStepRequest`, with document requirements resolved per id_type and residency.
 - [ ] M8.12 KYC uploads through `<MediaUploader>` with the booking token into the `booking.*` private collections.
-- [ ] M8.13 Step 3, review quote: live TS calculator, a toggle to view other currencies, and an optional server preview endpoint.
+- [ ] M8.13 Step 3, review quote: live price from `POST /quote/preview` (M6.17, debounced), with a toggle to view other currencies.
 - [ ] M8.14 Terms acceptance: policy bundle id, timestamp and IP stored (B-8).
 - [ ] M8.15 `BookingService::submit()`: re-validate, recalculate, lock and hold, snapshot quote, FX and settings, then Awaiting payment.
 - [ ] M8.16 Renter booking status page `/bookings/{token}`: status, quote and next action.
@@ -225,6 +227,9 @@ Status: **Not started** · PRD: B-1–B-8, Q-1–Q-4, §5 lifecycle, §8.4
 - [ ] M8.18 Booking form UI: multi-step wizard, step state restored from the server after a refresh, mobile-first.
 - [ ] M8.19 Tests: full flow, age block, missing documents, expired licence, concurrent submit race (one wins), expiry job, snapshot immutability.
 - [ ] M8.20 Playwright E2E: renter completes steps 1–3 and submits with documents.
+- [ ] M8.21 Delivery and collection address (D33): when the car is delivered or collected, the renter picks the zone (each zone's description, e.g. the areas it covers, is shown with it), then gives the address, an optional landmark and map pin, and a contact phone for the driver. The same fields cover the return collection point. The address is free text: nothing matches it to the zone automatically.
+- [ ] M8.22 Staff-quoted delivery (D33): a zone without a fee does not stop the booking. The reservation is worked out without delivery, the quote snapshot marks delivery as pending, and the renter is told the fee is added to the balance at handover. Tests: a quoted zone submits, its reservation excludes delivery, and the snapshot shows it pending.
+- [ ] M8.23 Cancellation terms snapshot (D34): submit stores the cancellation tiers in force with the quote and settings snapshots, so later tier changes never alter an existing booking's refund. The status page and voucher show the booking's own tiers. Test: editing tiers after submit leaves the booking's tiers unchanged.
 
 ## M9 — Payments
 
@@ -273,6 +278,8 @@ Status: **Not started** · PRD: A-5–A-7, P-4 · **Gate G4:** end-to-end bookin
 - [ ] M11.10 Dashboard: today's pickups and returns, pending verifications, stale FX, TODO settings.
 - [ ] M11.11 `kyc:purge` retention job with legal hold, and the activity log retention schedule.
 - [ ] M11.12 **Gate G4** timed run-through with the operations staff. Record the result in the log.
+- [ ] M11.13 Delivery check (D33): the booking detail shows the delivery address, landmark, pin and zone, with a reminder to confirm the address is in that zone. Staff can set the fee for a staff-quoted zone, or move the booking to the right zone; either recalculates only the balance (the reservation already paid stays), is activity-logged and notifies the renter (`bookings.update-delivery`).
+- [ ] M11.14 Cancellation refunds (D34): cancelling a booking (M11.8) shows the notice in hours, the tier from the booking's snapshot (the longest notice the renter still met) and the suggested refund, a share of the reservation paid. Less notice than every tier, or a no-show, suggests 0%. Staff can change the amount with a reason; the suggested and final amounts, the tier and the reason are stored and activity-logged. The refund itself is paid back by hand (payments are manual), and staff mark it refunded with a reference. Tests: each tier boundary, below every tier, no-show, override with reason, and tiers edited after booking.
 
 ## M12 — Hardening
 
@@ -294,6 +301,25 @@ Status: **Not started** · PRD: §7 non-functional
 - [ ] M12.14 Runbook: deploy, rollback, rotate keys, restore, switch media disk.
 - [ ] M12.15 Dockerfiles (php-fpm + nginx, SSR node, Horizon, scheduler) and the staging deploy pipeline (moved from M0.9). **Pull forward before M5.13**: Gate G1 runs on staging.
 
+## M12B — Integrations: keys, configuration and live tests
+
+Status: **Not started** · Runs on staging after M12, before UAT.
+
+Through M12 the code is built end to end against fakes, test keys and manual fallbacks: the manual FX provider, the log mailer, Turnstile's test secret, local media disks and the `click_to_chat` WhatsApp driver. This milestone gets the real accounts and keys from the client, configures them on staging and proves each integration live. M13 then copies the verified configuration to production. For each step, the client creates the account (they own it), keys go into the staging env (never the repo or the settings table), and the live test is recorded in the log.
+
+- [ ] M12B.1 Integration register in `docs/INTEGRATIONS.md`: each service, the account owner, plan and cost, which env keys it needs, where the keys are stored, who can rotate them, and the live test that proves it works. Check `.env.example` lists every key.
+- [ ] M12B.2 FX: the client buys an Open Exchange Rates plan. Set `FX_API_KEY` on staging, switch Settings → Exchange rates to Open Exchange Rates, run `fx:refresh`, and compare the stored rates with a bank's quote. Test the failure paths live: a wrong key (dashboard alert), a stale rate (manual fallback) and the jump guard.
+- [ ] M12B.3 Mail: choose the transactional provider (e.g. Postmark, Mailgun or SES). Verify the sending domain (SPF, DKIM, DMARC) on a staging sender, then send every M10 notification to real Gmail, Outlook and Apple inboxes and check that none land in spam and the voucher PDF opens.
+- [ ] M12B.4 WhatsApp: confirm the business number and staff recipients. Check that every click-to-chat link (floating button, car enquiry, voucher, staff alerts) opens the right chat with the right prefilled text on Android and iPhone. The Cloud API stays in P2.3 unless the client asks for it.
+- [ ] M12B.5 Payments: enter the real M-Pesa paybill or till, bank details and card payment link in the payment methods (clearing the TODO items). Make one small real payment by each method through the staging booking flow, have staff verify it, and refund it. Daraja STK push stays in P2.1.
+- [ ] M12B.6 Turnstile: real site and secret keys for the staging and production hostnames. Confirm the public forms reject a failed challenge and the contact and booking limits still hold.
+- [ ] M12B.7 Media storage: create the public and private S3 buckets (or the chosen S3-compatible store) with least-privilege keys and CORS for uploads. Switch the staging disks by env, upload through every collection, check that private URLs expire, and dry-run `media:migrate-disk`.
+- [ ] M12B.8 Monitoring: Sentry DSNs for PHP and JS with release tracking, a test exception from each, Horizon failure alerts, and the uptime check on the booking endpoint (M12.10) pointing at real alert recipients.
+- [ ] M12B.9 Queue and cache: Redis and Horizon on staging, with mail, FX refresh and media jobs running through the real queue and the scheduler entries firing (`fx:refresh`, `media:cleanup`, `bookings:expire`, `kyc:purge`).
+- [ ] M12B.10 Maps and embeds: confirm the map embed and the PDF viewer under the production CSP (`frame-src`), on mobile and desktop.
+- [ ] M12B.11 Secrets: rotate every key used during testing, record the rotation steps in the runbook (M12.14), and confirm no key is in the repo, logs or Sentry breadcrumbs.
+- [ ] M12B.12 End-to-end live run on staging: a booking with documents, a real payment, staff verification, the voucher email and the WhatsApp link, with display prices from live FX. Record the result and any defects in the log.
+
 ## M13 — UAT and launch
 
 Status: **Not started** · **Gate G5:** go-live approval.
@@ -301,9 +327,9 @@ Status: **Not started** · **Gate G5:** go-live approval.
 - [ ] M13.1 UAT scripts written per requirement ID (G, H, F, B, Q, P, O, A).
 - [ ] M13.2 Client UAT on staging, with defects triaged and fixed.
 - [ ] M13.3 Production content load: real fleet, photos, brand logos, policies with the `[CONFIRM]` markers resolved and published.
-- [ ] M13.4 Production settings filled in: no TODO settings remaining, FX provider key, payment details.
+- [ ] M13.4 Production settings filled in: no TODO settings remaining, FX provider key, payment details (copied from the configuration verified in M12B).
 - [ ] M13.5 Production infrastructure: S3 media disks switched on, CDN, Cloudflare WAF, DNS records.
-- [ ] M13.6 Mail domain: SPF, DKIM and DMARC verified.
+- [ ] M13.6 Mail domain: SPF, DKIM and DMARC verified for the production sender (staging verified in M12B.3).
 - [ ] M13.7 Staff accounts created with 2FA enrolled and roles assigned.
 - [ ] M13.8 ODPC registration confirmed by the client.
 - [ ] M13.9 DNS cut-over and post-launch smoke test (a booking through to voucher in production with a test car).
@@ -321,6 +347,7 @@ Status: **Not started**
 - [ ] P2.6 Generated TS types from the resources (replacing the hand-maintained types).
 - [ ] P2.7 Reporting: revenue, utilisation per car, conversion funnel.
 - [ ] P2.8 Multi-language content (EN plus another language if requested).
+- [ ] P2.9 Map-drawn delivery zones: staff draw each zone on a map, the renter drops a pin and the zone (and fee) is picked automatically. Needs a paid maps API key (M12B). Only if wrong zone picks become a problem (D33).
 
 ---
 
@@ -330,6 +357,14 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-21 | M8, M11 | Added | Cancellation refunds (D34): M8.23 snapshots the tiers on submit; M11.14 suggests the refund from the booking's own tiers (reservation only; below every tier or a no-show is 0%), lets staff override it with a reason, and records the manual refund. The 0% default and the reservation-only base need client confirmation before M11. |
+| 2026-10-21 | M8, M11, P2 | Added | Home delivery (D33): renters pick the zone and type their address; staff check the address against the zone. New steps M8.21 (address, landmark, pin, driver phone; same for return collection), M8.22 (a staff-quoted zone books normally, with delivery added to the balance at handover), M11.13 (staff set the quoted fee or correct the zone, balance only) and P2.9 (map-drawn zones, later). |
+| 2026-10-21 | M6.5 | Changed | Dynamic charges (D32): the fixed `ChargeTrigger` enum and `is_optional` are replaced by `applies` (`extra`, `always`, `listed`), and renters pick extras by charge code, so staff can add a bookable extra without a code change. Seeded valeting, admin fee and excess km are listed only. The pricing-rules migration was edited in place: run `php artisan migrate:rollback --step=1 && php artisan migrate` (or `migrate:fresh --seed`) on local databases. Fixtures regenerated (57 cases). |
+| 2026-10-21 | M12B | Added | New milestone after M12: get the client's accounts and keys for every integration (FX, mail, WhatsApp, payments, Turnstile, S3, monitoring), configure them on staging and test each live. Until then code is built end to end against fakes and test keys. Named M12B so M13 keeps its number. |
+| 2026-10-20 | M6 | Milestone done | 16/17; M6.12 dropped for M6.17 (D31). 541 Pest tests (1 skipped, HEIC), 79 Vitest tests; Pint, Larastan 7, `vp check`, `tsc` and `vp build` green. `migrate:fresh --seed` on SQLite runs twice with identical counts. Not yet clicked through in a browser. |
+| 2026-10-20 | M6.9–M6.17 | Done | Day counters work in Africa/Nairobi (D30). `QuoteService` loads the rules; `Quote\QuoteCalculator` has no database access. `tests/fixtures/quotes.json` (57 cases) is generated by `tests/fixtures/generate_quotes.py`, an independent Python implementation, and the PHP calculator matches every case; `lib/money.ts` (exact BigInt conversion, half up) matches every display conversion in Vitest. Foreign charges are multiplied out, then converted once at the market rate. A mandatory charge (not optional, no trigger) always applies. Age is taken on the local pickup date. Public: `currency` middleware on public routes, `POST /currency` (cookie), `POST /quote/preview` (`quote-preview` limiter, 30/min; no band percentage, so the car value stays hidden). Admin: Pricing settings tab, Quote sandbox (`quotes.sandbox`; scenario in the query string, local times; deposit only with `cars.view-value`). Operations gets the pricing `.view` permissions, `fx-rates.view` and `quotes.sandbox` on first role creation. |
+| 2026-10-20 | M6.1–M6.8 | Done | Currencies, FX and the four pricing tables. Rates are bcmath strings (`Support\Decimal`), never floats. Open Exchange Rates is called directly (USD-based, KES cross rates at 12 places, rounded to 6); a wrong base, missing or non-positive rate, or future timestamp rejects the whole fetch; a move over `max_jump_percent` (new setting, 10) is held back until staff accept it. The provider's timestamp is stored as `fetched_at`, and unchanged fetches are not stored again. The API key is env-only (`FX_API_KEY`; `FX_PROVIDER` removed: the admin picks the provider). `config('baines.currencies')` is gone: car excess currencies come from the table. `PricingSeeder` runs after `CmsSeeder` (insert-only; bands only into an empty table); `DemoCatalogSeeder` adds manual demo rates and car values for local and staging. Currencies can't be deactivated while active charges use them. Dashboard: missing key, missing, stale, failed and held-back rates. |
+| 2026-10-20 | M6 | In progress | Plan approved. Decisions D27–D31: storage vs display decimals, FX precedence (API always wins), delivery by zone only, business time zone, server-only quote. |
 | 2026-10-20 | M5.1–M5.6, M5.8 | Changed | Admin navigation: pages, services, policies and payment methods are one **Content** entry under System, with tabs like Settings (`admin.content.index` opens the first tab the user may see). Their URLs moved under `/admin/content/…`; route names are unchanged. Messages sit in a new **Operations** sidebar group, which bookings and payments join in M11. 348 Pest tests green. |
 | 2026-10-20 | M5 | Blocked | 12/14. M5.1–M5.12 done: 346 Pest tests (1 skipped, HEIC), 23 Vitest tests; Pint, Larastan 7, `vp check`, `tsc` and `vp build` green. `migrate:fresh --seed` on SQLite runs twice with identical counts. Not yet clicked through in a browser. **Blocked:** M5.13 (staging) needs Docker and the deploy pipeline (M12.15), and M5.14 (Gate G1) runs on staging. |
 | 2026-10-20 | M5.9–M5.12 | Done | Seed pack copied to `database/seeders/data/` with a README. The client confirmed every policy, so the reviewer's `[CONFIRM]` notes were removed (8 policies; "a fifth currency" became UAE dirhams, and the empty Cancellation heading went until M6.8). `CmsSeeder` runs in every environment, before `DemoCatalogSeeder`: 30 brands, 7 types, 6 services, 7 pages, 31 policies published as bundle 1, 4 payment methods. Writes are insert-only or fill-if-empty; policy versions the seeder wrote have `created_by` null, and staff-written versions or drafts are never replaced. The demo seeder now uses the pack's type names. `SetupChecklistService` feeds a "Before launch" card on the dashboard (D26), which is now a controller. The general map URL is a keyless Google Maps embed built from the pack's address; CSP `frame-src` must allow it in M7. |
