@@ -2,9 +2,9 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import CarTypeController from '@/actions/App/Http/Controllers/Admin/CarTypeController';
+import { FlagSwitch } from '@/components/admin/catalog/flag-switch';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
 import { SortableList } from '@/components/admin/sortable-list';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCan } from '@/hooks/use-can';
 import type { AdminCarType } from '@/types';
@@ -31,7 +31,16 @@ export default function CarTypesIndex({ types }: { types: AdminCarType[] }) {
             <span className="shrink-0 text-sm text-muted-foreground">
                 {type.cars_count ?? 0} car(s)
             </span>
-            {!type.is_active && <Badge variant="outline">Hidden</Badge>}
+            <span className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
+                <span className="hidden sm:inline">On website</span>
+                <FlagSwitch
+                    key={`${type.id}-${type.is_active}`}
+                    url={CarTypeController.visibility.url(type.slug)}
+                    checked={type.is_active}
+                    label={`Show ${type.name} on the website`}
+                    disabled={!can('car-types.update')}
+                />
+            </span>
         </div>
     );
 
@@ -41,7 +50,7 @@ export default function CarTypesIndex({ types }: { types: AdminCarType[] }) {
             <AdminPage>
                 <PageHeader
                     title="Car types"
-                    description="Categories for the fleet filters and the home page rows. Drag to set their order."
+                    description="Categories for the fleet filters and the home page rows. Drag to set their order. A type that is off the website keeps its cars in the fleet."
                     actions={
                         can('car-types.create') && (
                             <Button asChild>

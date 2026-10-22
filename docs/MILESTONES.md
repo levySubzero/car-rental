@@ -41,7 +41,7 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | M4  | Catalog (brands, car types, cars)                              | Done        | 12/12    | **G1** (with M5)     |
 | M5  | Content CMS and seed pack                                      | Blocked     | 12/14    | **G1**               |
 | M6  | Pricing, currencies and FX                                     | Done        | 16/17    | —                    |
-| M7  | Public site                                                    | Not started | 0/20     | **G2**               |
+| M7  | Public site                                                    | In review   | 19/20    | **G2**               |
 | M8  | Booking engine                                                 | Not started | 0/23     | —                    |
 | M9  | Payments                                                       | Not started | 0/10     | **G3** (with M6, M8) |
 | M10 | Notifications and voucher                                      | Not started | 0/11     | —                    |
@@ -180,27 +180,27 @@ Status: **Done** · PRD: §5, Q-1–Q-4, A-3, A-4, G-1, G-6
 
 ## M7 — Public site
 
-Status: **Not started** · PRD: G-1–G-6, H-1–H-5, F-1–F-5, O-1, §6 design · **Gate G2:** design and content sign-off on staging, on mobile and desktop.
+Status: **In review**, all three slices built; waiting for Gate G2 · PRD: G-1–G-6, H-1–H-5, F-1–F-5, O-1, §6 design · **Gate G2:** design and content sign-off on staging, on mobile and desktop.
 
-- [ ] M7.1 Design tokens in Tailwind 4 (palette #0B0B0C, #16171A, #C8A45A; Playfair or Cormorant + Inter), with a motion utility that respects `prefers-reduced-motion`.
-- [ ] M7.2 Public layout: top bar (tap-to-call, socials, currency switcher), header nav, and a mobile menu.
-- [ ] M7.3 Floating WhatsApp and Call buttons, plus `WhatsAppLinkBuilder` and `lib/whatsapp.ts` (prefilled text naming the car).
-- [ ] M7.4 Footer: about, brands, types, useful links, contacts, embedded map, socials, payment icons, policy links.
-- [ ] M7.5 Home: hero (image or video, overlay, slow zoom) with Rent a Car and Enquire CTAs.
-- [ ] M7.6 Home sections in configurable order: About, Featured Fleet, Car Types rows, Services, Policy highlights, Requirements 01–03, Why Choose Us 01–04, Trust strip, Contact CTA.
-- [ ] M7.7 Brand marquee (Embla auto-scroll, pause on hover, lazy logos, each logo links to the filtered fleet), positioned by `HomeSettings::marquee_position`.
-- [ ] M7.8 Car card component: cover, brand badge, name, price per day in the selected currency, specs (any `cars.metadata` key shown here is added to `CarCardResource` explicitly, D20), mileage, and View, Book and WhatsApp buttons.
-- [ ] M7.9 Fleet page: filters for brand, type, transmission and seats, a price sort, query-string state and pagination.
-- [ ] M7.10 Brand and car type listing pages, plus filtered views reusing the fleet page.
-- [ ] M7.11 Car detail: gallery with lightbox and swipe (6 photos, keyboard accessible), info block (F-4), damage excess, and a Book this unit CTA.
-- [ ] M7.12 Services page, including safaris with WhatsApp enquiry.
-- [ ] M7.13 About and Privacy pages, rendered from `pages`.
-- [ ] M7.14 Rental Policy page: grouped sections, an in-page index, cancellation tiers and the fees table.
-- [ ] M7.15 Contact page: form (Turnstile, rate limited), map, call and WhatsApp CTAs. Stores to `contact_messages` and notifies staff.
-- [ ] M7.16 Inertia SSR enabled for public routes and verified without hydration warnings.
-- [ ] M7.17 SEO: per-page meta and OG, canonical URLs, `sitemap.xml`, JSON-LD (`AutoRental`, `Car`, `LocalBusiness`), clean slugs.
-- [ ] M7.18 Responsive image `srcset` from media conversions, plus lazy loading.
-- [ ] M7.19 Feature tests for every public route, plus an SSR smoke test.
+- [x] M7.1 Design tokens in Tailwind 4 (palette #0B0B0C, #16171A, #C8A45A; Playfair or Cormorant + Inter), with a motion utility that respects `prefers-reduced-motion`.
+- [x] M7.2 Public layout: top bar (tap-to-call, socials, currency switcher), header nav, and a mobile menu.
+- [x] M7.3 Floating WhatsApp and Call buttons, plus `WhatsAppLinkBuilder` and `lib/whatsapp.ts` (prefilled text naming the car).
+- [x] M7.4 Footer: about, brands, types, useful links, contacts, embedded map, socials, payment icons, policy links.
+- [x] M7.5 Home: hero (image or video, overlay, slow zoom) with Rent a Car and Enquire CTAs.
+- [x] M7.6 Home sections in configurable order: About, Featured Fleet, Car Types rows, Services, Policy highlights, Requirements 01–03, Why Choose Us 01–04, Trust strip, Contact CTA.
+- [x] M7.7 Brand marquee (Embla auto-scroll, pause on hover, lazy logos, each logo links to the filtered fleet), positioned by `HomeSettings::marquee_position`.
+- [x] M7.8 Car card component: cover, brand badge, name, price per day in the selected currency, specs (any `cars.metadata` key shown here is added to `CarCardResource` explicitly, D20), mileage, and View, Book and WhatsApp buttons.
+- [x] M7.9 Fleet page: filters for brand, type, transmission and seats, a price sort, query-string state and pagination.
+- [x] M7.10 Brand and car type listing pages, plus filtered views reusing the fleet page.
+- [x] M7.11 Car detail: gallery with lightbox and swipe (6 photos, keyboard accessible), info block (F-4), damage excess, and a Book this unit CTA.
+- [x] M7.12 Services page, including safaris with WhatsApp enquiry.
+- [x] M7.13 About and Privacy pages, rendered from `pages`.
+- [x] M7.14 Rental Policy page: grouped sections, an in-page index, cancellation tiers and the fees table.
+- [x] M7.15 Contact page: form (Turnstile, rate limited), map, call and WhatsApp CTAs. Stores to `contact_messages` and notifies staff.
+- [x] M7.16 Inertia SSR enabled for public routes and verified without hydration warnings.
+- [x] M7.17 SEO: per-page meta and OG, canonical URLs, `sitemap.xml`, JSON-LD (`AutoRental`, `Car`, `LocalBusiness`), clean slugs.
+- [x] M7.18 Responsive image `srcset` from media conversions, plus lazy loading.
+- [x] M7.19 Feature tests for every public route, plus an SSR smoke test.
 - [ ] M7.20 **Gate G2** review on staging, mobile and desktop. Record sign-off in the log.
 
 ## M8 — Booking engine
@@ -357,6 +357,11 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-22 | M7 | Changed | Images managed in the admin with upload guidance. Each media collection (`config/media.php`) and page image field (`config/pages.php`) can give `guidance` (shape, recommended pixels, framing tip); the uploader shows it with the shape drawn to scale, and warns when an uploaded image is under 75% of the recommended size. New: an optional hero video (`site.hero_video`, MP4 or WebM up to 20 MB, `HomeSettings::hero_video_uuid`) that plays muted over the hero image (its poster, and the fallback with reduced motion); a header image on the Services, Fleet (also the brand and type pages), Rental policy, Contact and About pages, shown behind the title. Service photos (Content → Services) feed both the home cards and the Services page, now both upright 4:5. `baines.uploads.max_kb_ceiling` is 20 MB, so PHP's `upload_max_filesize` and `post_max_size` must allow that on the server (M12); locally they are 2 MB and 8 MB. `PageContent` service resolves preset page content for public controllers. |
+| 2026-10-22 | M7.9–M7.19 | Done | Slices 2 and 3. Fleet (`FleetController`): brand, type, gearbox and seat filters, price sort, query-string state, 12 per page; an unknown, inactive or hidden brand or type in the query is ignored. `/car-brands/{brand}` and `/car-types/{type}` are the same page with the filter fixed; inactive or hidden ones are not found. Car page: Embla gallery with thumbnails, arrows, keys and a full-screen lightbox; the F-4 information block; "Book this car" opens the contact form with the car chosen until M8; related cars. Services (anchored sections, CTA per `cta_type`), About and Privacy (preset pages; About falls back to the home story), Rental Policy (grouped policies, index, live fees, deposit bands, cancellation tiers, delivery zones), Contact (Turnstile, `contact` limiter, stores to `contact_messages`, mails the staff emails; one "email or phone" error). SEO: `Seo` component (title, description, canonical without the query, Open Graph), JSON-LD `AutoRental` (home, contact) and `Car`, `sitemap.xml`, `robots.txt` route. SSR: Inertia v3 uses `app.tsx` as the SSR entry; public pages only (`$withoutSsr`); production bundle `bootstrap/ssr/app.js` from `npm run build:ssr`, served by `php artisan inertia:start-ssr` (to add to the deploy in M12). `SsrSmokeTest` renders all 10 public pages through the built bundle; no hydration warnings on any page in a browser. Local media URLs are now root-relative (`/media-files/...`), so images load on any host. New scope `hasPublishedCars()` on brands and car types. 599 Pest tests, 85 Vitest tests; Pint, Larastan, `vp check`, `tsc`, `vp build` and `build:ssr` green. Next: M7.20, Gate G2 review on staging. |
+| 2026-10-22 | M7.5–M7.6 | Changed | Hero fills the first screen. Services are a continuously gliding row of photo cards (Embla auto-scroll, like the brand strip; stops on hover or focus; still with reduced motion); the text sits on a blurred, darkened copy of the photo. Interim Unsplash photos for the hero and the six services, cropped with plates blurred, credits in `data/media/stock.json`, added by `SiteMediaSeeder` only where none is set. A photo brief for the client covers fleet, banner, services and About shots. Section tones per band (sand, olive, gold, charcoal) and icons on the Before you book cards. |
+| 2026-10-22 | M7.1, M7.6, M4 | Changed | Design refinement. Type is now Manrope only (replaces Playfair Display + Inter): semibold, tight-set headings read automotive rather than editorial; prices use tabular figures. Removed template chrome: gold all-caps labels above headings, the gold rule under each heading, middle-dot strings, arrows on text links, and numbering on Why choose us and services (Requirements keep 01–03 as steps). Home: the services overview now comes straight after the hero, listing the real services from the admin with a "Learn more" link each (to `/services#slug`) and "Explore all services"; the settings migration `2026_10_22_100000` moves this order only where staff never changed it. Car types: `is_active` already was the public visibility flag (default true), so no new column; it is relabelled "Shown on the website", gets an inline switch in the car type list (`PUT admin/car-types/{car_type}/visibility`, like the Featured and In marquee switches), and a hidden type's public page is a 404. Hiding a type never hides its cars. |
+| 2026-10-21 | M7.1–M7.8 | Done | Slice 1 of 3: tokens, layout, card and home. `.public` scope on top of `.dark` gives the public site the brand palette while the admin keeps its appearance toggle; `app.css` now uses `@theme inline` so utilities follow the scoped variables. Inter + Playfair Display (Bunny). New `site` middleware (`ShareSite`) next to `currency`. `WhatsAppLinkBuilder` and `lib/whatsapp.ts` share fill rules and encoding (same test cases on both sides). `HomeController` sends only visible sections; car type rows hold 4 published cars. The other public routes are named and render `public/coming-soon` until slices 2–3. Seed pack from the client's info sheet: the client's 7 car types and 6 marquee brands, home headline and trust figures, home page copy (`pages.json`, fills empty fields only), and `FleetSeeder` with the real Mazda Demio and its 6 photos (plates blurred). Demo cars get a placeholder photo and are published. Run `migrate:fresh --seed` and `php artisan storage:link` locally. Screenshots checked at 390px and 1440px. Pending: the map embed, which rendered blank in headless Chrome, so check it in a real browser; the existing inline appearance script in `app.blade.php` is blocked by the CSP outside `vp dev`. |
 | 2026-10-21 | M8, M11 | Added | Cancellation refunds (D34): M8.23 snapshots the tiers on submit; M11.14 suggests the refund from the booking's own tiers (reservation only; below every tier or a no-show is 0%), lets staff override it with a reason, and records the manual refund. The 0% default and the reservation-only base need client confirmation before M11. |
 | 2026-10-21 | M8, M11, P2 | Added | Home delivery (D33): renters pick the zone and type their address; staff check the address against the zone. New steps M8.21 (address, landmark, pin, driver phone; same for return collection), M8.22 (a staff-quoted zone books normally, with delivery added to the balance at handover), M11.13 (staff set the quoted fee or correct the zone, balance only) and P2.9 (map-drawn zones, later). |
 | 2026-10-21 | M6.5 | Changed | Dynamic charges (D32): the fixed `ChargeTrigger` enum and `is_optional` are replaced by `applies` (`extra`, `always`, `listed`), and renters pick extras by charge code, so staff can add a bookable extra without a code change. Seeded valeting, admin fee and excess km are listed only. The pricing-rules migration was edited in place: run `php artisan migrate:rollback --step=1 && php artisan migrate` (or `migrate:fresh --seed`) on local databases. Fixtures regenerated (57 cases). |

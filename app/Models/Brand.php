@@ -88,4 +88,14 @@ class Brand extends Model
     {
         $query->where('is_active', true)->where('show_in_marquee', true)->ordered();
     }
+
+    /**
+     * Only those with at least one published car, so no public list or filter shows an empty choice.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeHasPublishedCars(Builder $query): void
+    {
+        $query->whereHas('cars', /** @param Builder<Car> $cars */ fn (Builder $cars) => $cars->published());
+    }
 }

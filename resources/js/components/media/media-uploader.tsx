@@ -20,6 +20,10 @@ import { FileText, GripVertical, Star, Upload, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import MediaController from '@/actions/App/Http/Controllers/Media/MediaController';
+import {
+    ImageGuidance,
+    SmallImageWarning,
+} from '@/components/media/image-guidance';
 import { UploadTile } from '@/components/media/upload-tile';
 import { Button } from '@/components/ui/button';
 import {
@@ -217,6 +221,14 @@ export function MediaUploader({
                 </SortableContext>
             </DndContext>
 
+            {limits.guidance && (
+                <SmallImageWarning items={value} guidance={limits.guidance} />
+            )}
+
+            {!disabled && limits.guidance && (
+                <ImageGuidance guidance={limits.guidance} />
+            )}
+
             {canAdd && (
                 <label
                     htmlFor={inputId}
@@ -301,7 +313,21 @@ function SavedTile({
                 isCover && 'ring-2 ring-primary',
             )}
         >
-            {thumbnail && isImage(item) ? (
+            {item.mime.startsWith('video/') && item.urls.original ? (
+                <video
+                    src={item.urls.original}
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-label={item.name}
+                    className="h-full w-full object-cover"
+                    onMouseEnter={(event) =>
+                        void event.currentTarget.play().catch(() => undefined)
+                    }
+                    onMouseLeave={(event) => event.currentTarget.pause()}
+                />
+            ) : thumbnail && isImage(item) ? (
                 <img
                     src={thumbnail}
                     alt={item.alt ?? ''}

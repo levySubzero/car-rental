@@ -10,6 +10,15 @@ export type MediaCollectionLimits = {
     max_kb: number;
     mimes: string[];
     accept: string[];
+    guidance?: MediaGuidance | null;
+};
+
+// What to upload (config/media.php `guidance`, or a page image field's).
+export type MediaGuidance = {
+    shape: string;
+    width: number;
+    height: number;
+    tip?: string;
 };
 
 export type MediaConversion = 'thumb' | 'card' | 'full';

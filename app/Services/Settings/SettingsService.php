@@ -53,10 +53,12 @@ class SettingsService
                     'effective' => $this->registry()->get($ceiling->key)->toArray(),
                 ], $this->registry()->ceilings())),
             ],
-            // The hero uploader shows the current file and the collection's limits.
+            // The hero uploaders show the current files and their collections' limits.
             SettingsGroup::Home => [
-                'hero' => ($hero = $this->hero()) ? MediaResource::make($hero) : null,
+                'hero' => ($hero = $this->hero('site.hero', app(HomeSettings::class)->hero_media_uuid)) ? MediaResource::make($hero) : null,
                 'heroLimits' => $this->registry()->get('site.hero')->toArray(),
+                'heroVideo' => ($video = $this->hero('site.hero_video', app(HomeSettings::class)->hero_video_uuid)) ? MediaResource::make($video) : null,
+                'heroVideoLimits' => $this->registry()->get('site.hero_video')->toArray(),
             ],
             SettingsGroup::Pricing => [
                 'roundingOptions' => array_map(fn (RoundingMode $mode) => ['value' => $mode->value, 'label' => $mode->label()], RoundingMode::cases()),
@@ -81,9 +83,13 @@ class SettingsService
         $before = $this->values($group);
 
         $settings = DB::transaction(function () use ($group, $data, $actor) {
-            // The hero is a standalone media file: attach the new one, release the old one.
+            // The hero image and video are standalone media files: attach the new one, release the old one.
             if ($group === SettingsGroup::Home && array_key_exists('hero_media_uuid', $data)) {
                 $this->media()->claim('site.hero', array_filter([$data['hero_media_uuid']]), $actor);
+            }
+
+            if ($group === SettingsGroup::Home && array_key_exists('hero_video_uuid', $data)) {
+                $this->media()->claim('site.hero_video', array_filter([$data['hero_video_uuid']]), $actor);
             }
 
             return $this->for($group)->fill($data)->save();
@@ -107,13 +113,11 @@ class SettingsService
         return $settings;
     }
 
-    private function hero(): ?Media
+    private function hero(string $collection, ?string $uuid): ?Media
     {
-        $uuid = app(HomeSettings::class)->hero_media_uuid;
-
         return $uuid === null ? null : Media::query()
             ->where('uuid', $uuid)
-            ->where('collection', 'site.hero')
+            ->where('collection', $collection)
             ->where('status', MediaStatus::Attached)
             ->first();
     }

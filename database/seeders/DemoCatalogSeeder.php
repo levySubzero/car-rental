@@ -10,46 +10,51 @@ use App\Models\Car;
 use App\Models\CarType;
 use App\Models\Currency;
 use App\Models\FxRate;
+use Database\Seeders\Concerns\AttachesCarPhotos;
 use Illuminate\Database\Seeder;
 
 /**
- * Sample fleet for local and staging (M4.11). Cars have no photos, so they stay drafts:
- * add photos in the admin, then publish. Also sets manual exchange rates, so prices convert
- * before an FX API key exists (M6). The real catalogue comes from the seed pack (M5.9).
- * Safe to run again: rows are matched by name. Brand and type names match the seed pack, so
- * after CmsSeeder they reuse its rows.
+ * Sample fleet for local and staging (M4.11). Each car gets the "photo coming soon"
+ * placeholder and is published, so the public site has cards to show (M7). Also sets manual
+ * exchange rates, so prices convert before an FX API key exists (M6). The real cars come from
+ * FleetSeeder. Safe to run again: rows are matched by name, and a car that already has photos
+ * keeps them. Brand and type names match the seed pack, so after CmsSeeder they reuse its rows.
  */
 class DemoCatalogSeeder extends Seeder
 {
-    private const BRANDS = ['Toyota', 'Land Rover', 'Mercedes-Benz', 'BMW', 'Lexus', 'Nissan', 'Mazda', 'Volkswagen'];
+    use AttachesCarPhotos;
 
+    private const BRANDS = ['Toyota', 'Land Rover', 'Mercedes-Benz', 'BMW', 'Lexus', 'Nissan', 'Volkswagen', 'Porsche'];
+
+    // The client's car types (information sheet); descriptions are only used when CmsSeeder has not run.
     private const TYPES = [
-        'SUV' => 'Comfortable on city roads and rough tracks.',
-        '4x4 Safari' => 'Built for game drives and long-distance travel.',
-        'Luxury' => 'Executive comfort for business and events.',
-        'Executive Sedan' => 'Chauffeur-ready cars for VIP transfers.',
+        'Executive Sedans' => 'Chauffeur-ready cars for VIP transfers.',
+        'Executive SUVs' => 'Executive comfort for business and events.',
+        'SUVs' => 'Comfortable on city roads and rough tracks.',
+        'Medium SUVs' => 'Compact SUVs for town and weekend trips.',
+        'Safari Landcruiser' => 'Built for game drives and long-distance travel.',
+        'Sports Cars' => 'Performance for special occasions.',
         'Economy' => 'Efficient cars for getting around town.',
-        'Van / Minibus' => 'Room for groups and luggage.',
     ];
 
     /**
-     * name, brand, type, fuel, transmission, seats, daily rate (KES), extra info
+     * name, brand, type, fuel, transmission, doors, seats, daily rate (KES), extra info
      *
-     * @var list<array{0: string, 1: string, 2: string, 3: FuelType, 4: Transmission, 5: int, 6: int, 7: array<string, string>}>
+     * @var list<array{0: string, 1: string, 2: string, 3: FuelType, 4: Transmission, 5: int, 6: int, 7: int, 8: array<string, string>}>
      */
     private const CARS = [
-        ['Toyota Land Cruiser V8', 'Toyota', '4x4 Safari', FuelType::Diesel, Transmission::Automatic, 7, 25_000, ['drive' => '4WD', 'luggage_bags' => '5']],
-        ['Toyota Prado TX', 'Toyota', 'SUV', FuelType::Diesel, Transmission::Automatic, 7, 15_000, ['drive' => '4WD', 'luggage_bags' => '4']],
-        ['Range Rover Sport', 'Land Rover', 'SUV', FuelType::Petrol, Transmission::Automatic, 5, 35_000, ['zero_to_hundred_s' => '5.9', 'drive' => 'AWD']],
-        ['Range Rover Vogue', 'Land Rover', 'Executive Sedan', FuelType::Diesel, Transmission::Automatic, 5, 45_000, ['features' => 'Massage seats, Meridian audio']],
-        ['Mercedes-Benz S-Class', 'Mercedes-Benz', 'Luxury', FuelType::Petrol, Transmission::Automatic, 5, 40_000, ['zero_to_hundred_s' => '4.9']],
-        ['Mercedes-Benz V-Class', 'Mercedes-Benz', 'Van / Minibus', FuelType::Diesel, Transmission::Automatic, 7, 30_000, ['luggage_bags' => '6']],
-        ['BMW X5', 'BMW', 'SUV', FuelType::Hybrid, Transmission::Automatic, 5, 28_000, ['zero_to_hundred_s' => '5.6', 'drive' => 'AWD']],
-        ['BMW 7 Series', 'BMW', 'Executive Sedan', FuelType::Petrol, Transmission::Automatic, 5, 42_000, []],
-        ['Lexus LX 600', 'Lexus', '4x4 Safari', FuelType::Petrol, Transmission::Automatic, 7, 38_000, ['drive' => '4WD']],
-        ['Nissan X-Trail', 'Nissan', 'SUV', FuelType::Petrol, Transmission::Automatic, 5, 9_000, []],
-        ['Mazda Demio', 'Mazda', 'Economy', FuelType::Petrol, Transmission::Automatic, 5, 4_500, []],
-        ['Volkswagen Polo', 'Volkswagen', 'Economy', FuelType::Petrol, Transmission::Manual, 5, 5_000, []],
+        ['Toyota Land Cruiser V8', 'Toyota', 'Safari Landcruiser', FuelType::Diesel, Transmission::Automatic, 5, 7, 25_000, ['drive' => '4WD', 'luggage_bags' => '5']],
+        ['Toyota Prado TX', 'Toyota', 'SUVs', FuelType::Diesel, Transmission::Automatic, 5, 7, 15_000, ['drive' => '4WD', 'luggage_bags' => '4']],
+        ['Toyota Harrier', 'Toyota', 'Medium SUVs', FuelType::Hybrid, Transmission::Automatic, 5, 5, 8_000, []],
+        ['Range Rover Sport', 'Land Rover', 'Executive SUVs', FuelType::Petrol, Transmission::Automatic, 5, 5, 35_000, ['zero_to_hundred_s' => '5.9', 'drive' => 'AWD']],
+        ['Range Rover Vogue', 'Land Rover', 'Executive SUVs', FuelType::Diesel, Transmission::Automatic, 5, 5, 45_000, ['features' => 'Massage seats, Meridian audio']],
+        ['Mercedes-Benz S-Class', 'Mercedes-Benz', 'Executive Sedans', FuelType::Petrol, Transmission::Automatic, 4, 5, 40_000, ['zero_to_hundred_s' => '4.9']],
+        ['BMW X5', 'BMW', 'Executive SUVs', FuelType::Hybrid, Transmission::Automatic, 5, 5, 28_000, ['zero_to_hundred_s' => '5.6', 'drive' => 'AWD']],
+        ['BMW 7 Series', 'BMW', 'Executive Sedans', FuelType::Petrol, Transmission::Automatic, 4, 5, 42_000, []],
+        ['Lexus LX 600', 'Lexus', 'Safari Landcruiser', FuelType::Petrol, Transmission::Automatic, 5, 7, 38_000, ['drive' => '4WD']],
+        ['Nissan X-Trail', 'Nissan', 'Medium SUVs', FuelType::Petrol, Transmission::Automatic, 5, 5, 9_000, []],
+        ['Porsche 911 Carrera', 'Porsche', 'Sports Cars', FuelType::Petrol, Transmission::Automatic, 2, 4, 60_000, ['zero_to_hundred_s' => '4.2']],
+        ['Volkswagen Polo', 'Volkswagen', 'Economy', FuelType::Petrol, Transmission::Manual, 5, 5, 5_000, []],
     ];
 
     // KES per unit; a fresh API rate replaces these as soon as one is fetched (D28).
@@ -67,18 +72,20 @@ class DemoCatalogSeeder extends Seeder
             fn (string $description, string $name) => [$name => CarType::query()->firstOrCreate(['name' => $name], ['description' => $description])],
         );
 
-        foreach (self::CARS as [$name, $brand, $type, $fuel, $transmission, $seats, $rate, $extra]) {
-            Car::query()->firstOrCreate(['name' => $name], [
+        foreach (self::CARS as [$name, $brand, $type, $fuel, $transmission, $doors, $seats, $rate, $extra]) {
+            $car = Car::query()->firstOrCreate(['name' => $name], [
                 'brand_id' => $brands[$brand]->id,
                 'car_type_id' => $types[$type]->id,
                 'fuel_type' => $fuel,
                 'transmission' => $transmission,
-                'doors' => $seats > 5 ? 5 : 4,
+                'doors' => $doors,
                 'seats' => $seats,
                 'daily_rate_minor' => $rate * 100,
                 'car_value_minor' => $this->value($name, $rate) * 100,
                 'metadata' => $extra ?: null,
             ]);
+
+            $this->attachPhotos($car, ['placeholder-car.jpg']);
         }
     }
 

@@ -1,4 +1,6 @@
+import type { SharedCurrency } from '@/lib/money';
 import type { Auth } from '@/types/auth';
+import type { SharedSite } from '@/types/public';
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -12,6 +14,9 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            // Public routes only (ShareCurrency, ShareSite).
+            currency?: SharedCurrency;
+            site?: SharedSite;
             [key: string]: unknown;
         };
     }

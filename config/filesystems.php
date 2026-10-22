@@ -69,8 +69,10 @@ return [
         'media-public-local' => [
             'driver' => 'local',
             'root' => storage_path('app/media-public'),
-            // Not /media: that prefix belongs to the media routes.
-            'url' => rtrim((string) env('APP_URL', 'http://localhost'), '/').'/media-files',
+            // Not /media: that prefix belongs to the media routes. Root-relative, so images load
+            // from whatever host the app is opened on (localhost, 127.0.0.1, a LAN address);
+            // wrap in url() where an absolute URL is needed (mail, Open Graph).
+            'url' => '/media-files',
             'visibility' => 'public',
             'throw' => true,
             'report' => false,

@@ -15,6 +15,8 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A body or use category (SUV, 4x4 Safari, Executive, ...). `sort_order` orders the home page rows.
+ * `is_active` is whether the type is shown on the public site (default true); hiding a type
+ * never hides its cars.
  *
  * @property int $id
  * @property string $name
@@ -31,6 +33,9 @@ class CarType extends Model
     use HasFactory, HasSlug, LogsActivity, Sortable;
 
     protected $fillable = ['name', 'slug', 'description', 'is_active'];
+
+    // Matches the column default, so a new type is visible before it is saved too.
+    protected $attributes = ['is_active' => true];
 
     /**
      * @return array<string, string>
@@ -61,10 +66,22 @@ class CarType extends Model
     }
 
     /**
+     * Types shown on the public site.
+     *
      * @param  Builder<self>  $query
      */
     public function scopeActive(Builder $query): void
     {
         $query->where('is_active', true);
+    }
+
+    /**
+     * Only those with at least one published car, so no public list or filter shows an empty choice.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeHasPublishedCars(Builder $query): void
+    {
+        $query->whereHas('cars', /** @param Builder<Car> $cars */ fn (Builder $cars) => $cars->published());
     }
 }

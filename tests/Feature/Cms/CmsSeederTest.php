@@ -14,6 +14,7 @@ use App\Services\Cms\PolicyService;
 use App\Settings\GeneralSettings;
 use Database\Seeders\CmsSeeder;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Support\Facades\Storage;
 
 it('loads the seed pack once', function () {
     $this->seed(CmsSeeder::class);
@@ -29,6 +30,30 @@ it('loads the seed pack once', function () {
         ->and(PolicyBundle::count())->toBe(1)
         ->and(PolicyBundle::sole()->versions()->count())->toBe(31)
         ->and(PaymentMethod::count())->toBe(4);
+});
+
+it('fills the home page copy without replacing what staff wrote', function () {
+    $this->seed(CmsSeeder::class);
+    $home = Page::firstWhere('slug', 'home');
+    $home->update(['content' => [...$home->content, 'contact_heading' => 'Our own heading', 'about_heading' => '']]);
+
+    $this->seed(CmsSeeder::class);
+    $content = $home->refresh()->content;
+
+    expect($content['contact_heading'])->toBe('Our own heading')
+        ->and($content['about_heading'])->toBe('Executive mobility in Nairobi since 2023')
+        ->and($content['why_choose_us'])->toHaveCount(4)
+        ->and($content['why_choose_us'][0]['title'])->toBe('24/7 support')
+        ->and($content['requirements'][2]['title'])->toBe('ID or passport');
+});
+
+it('seeds the client\'s car types and marquee brands', function () {
+    $this->seed(CmsSeeder::class);
+
+    expect(CarType::query()->ordered()->pluck('name')->all())
+        ->toBe(['Executive Sedans', 'Executive SUVs', 'SUVs', 'Medium SUVs', 'Safari Landcruiser', 'Sports Cars', 'Economy'])
+        ->and(Brand::query()->inMarquee()->pluck('name')->all())
+        ->toBe(['Mercedes-Benz', 'BMW', 'Toyota', 'Nissan', 'Honda', 'Lexus']);
 });
 
 it('has no unresolved [CONFIRM] notes left in the policies', function () {
@@ -94,6 +119,7 @@ it('never replaces text staff published or drafted', function () {
 });
 
 it('gives the starting roles their content permissions', function () {
+    Storage::fake('media-public-local'); // FleetSeeder uploads the client's photos.
     $this->seed(DatabaseSeeder::class);
 
     $editor = User::factory()->staff()->create()->assignRole('content-editor');

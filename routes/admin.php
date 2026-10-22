@@ -53,6 +53,7 @@ Route::put('brands/{brand}/marquee', [BrandController::class, 'marquee'])->name(
 Route::resource('brands', BrandController::class)->except('show');
 
 Route::put('car-types/order', [CarTypeController::class, 'reorder'])->name('car-types.reorder');
+Route::put('car-types/{car_type}/visibility', [CarTypeController::class, 'visibility'])->name('car-types.visibility');
 Route::resource('car-types', CarTypeController::class)->except('show');
 
 Route::post('cars/{car}/publish', [CarController::class, 'publish'])->name('cars.publish');

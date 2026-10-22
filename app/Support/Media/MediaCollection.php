@@ -13,6 +13,7 @@ final readonly class MediaCollection
     /**
      * @param  list<string>  $mimes  allowed extensions (values of media.mime_types)
      * @param  list<string>  $conversions
+     * @param  array{shape: string, width: int, height: int, tip?: string}|null  $guidance  shown by the uploader
      */
     public function __construct(
         public string $key,
@@ -26,6 +27,7 @@ final readonly class MediaCollection
         public ?string $uploadPermission = null,
         public bool $tokenUpload = false,
         public bool $systemUpload = false,
+        public ?array $guidance = null,
     ) {}
 
     /**
@@ -47,6 +49,7 @@ final readonly class MediaCollection
             uploadPermission: isset($upload['permission']) ? (string) $upload['permission'] : null,
             tokenUpload: (bool) ($upload['token'] ?? false),
             systemUpload: (bool) ($upload['system'] ?? false),
+            guidance: self::guidanceFrom($definition['guidance'] ?? null),
         );
 
         $collection->assertValid();
@@ -110,7 +113,7 @@ final readonly class MediaCollection
     }
 
     /**
-     * @return array{key: string, label: string, visibility: string, max_files: int, max_kb: int, mimes: list<string>, accept: list<string>}
+     * @return array{key: string, label: string, visibility: string, max_files: int, max_kb: int, mimes: list<string>, accept: list<string>, guidance: array{shape: string, width: int, height: int, tip?: string}|null}
      */
     public function toArray(): array
     {
@@ -122,7 +125,27 @@ final readonly class MediaCollection
             'max_kb' => $this->maxKb,
             'mimes' => $this->mimes,
             'accept' => $this->mimeTypes(),
+            'guidance' => $this->guidance,
         ];
+    }
+
+    /**
+     * Shape, recommended size and a framing tip, from config/media.php or a page field.
+     *
+     * @return array{shape: string, width: int, height: int, tip?: string}|null
+     */
+    public static function guidanceFrom(mixed $guidance): ?array
+    {
+        if (! is_array($guidance) || ! isset($guidance['shape'], $guidance['width'], $guidance['height'])) {
+            return null;
+        }
+
+        return array_filter([
+            'shape' => (string) $guidance['shape'],
+            'width' => max(1, (int) $guidance['width']),
+            'height' => max(1, (int) $guidance['height']),
+            'tip' => isset($guidance['tip']) ? (string) $guidance['tip'] : null,
+        ], fn ($value) => $value !== null);
     }
 
     /**
@@ -142,6 +165,7 @@ final readonly class MediaCollection
             uploadPermission: $this->uploadPermission,
             tokenUpload: $this->tokenUpload,
             systemUpload: $this->systemUpload,
+            guidance: $this->guidance,
         );
     }
 

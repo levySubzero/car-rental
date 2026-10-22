@@ -9,6 +9,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveMediaUploader;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ShareCurrency;
+use App\Http\Middleware\ShareSite;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.idle' => AdminIdleTimeout::class,
             'media.uploader' => ResolveMediaUploader::class,
             'currency' => ShareCurrency::class,
+            'site' => ShareSite::class,
         ]);
 
         $middleware->web(append: [

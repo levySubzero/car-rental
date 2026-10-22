@@ -13,6 +13,8 @@
 | Field keys:
 |
 | type       text | markdown | image | list (App\Enums\ContentFieldType)
+| guidance   image: shape, recommended width and height, tip (else the
+|            page.image collection's, config/media.php)
 | label      shown in the admin
 | section    optional heading the admin groups following fields under
 | help       optional hint under the field
@@ -27,6 +29,31 @@
 
 $heading = ['type' => 'text', 'label' => 'Heading', 'max' => 120, 'required' => true];
 $intro = ['type' => 'text', 'label' => 'Introduction', 'max' => 400, 'multiline' => true, 'required' => true];
+// The band behind a page's title. Wide and short, so it is cropped top and bottom on phones.
+$headerImage = [
+    'type' => 'image',
+    'label' => 'Header image',
+    'help' => 'Shown behind the page title, darkened so the title stays readable. Leave empty for a plain dark header.',
+    'guidance' => [
+        'shape' => 'Wide banner, about 3:1',
+        'width' => 2400,
+        'height' => 800,
+        'tip' => 'Keep the subject in the middle band: the top and bottom are cropped on phones, and the left side sits under the title.',
+    ],
+];
+
+// A photo beside a block of text.
+$sideImage = [
+    'type' => 'image',
+    'label' => 'Image',
+    'guidance' => [
+        'shape' => 'Landscape 4:3',
+        'width' => 1600,
+        'height' => 1200,
+        'tip' => 'Shown beside the text: the team, the office or a car at work.',
+    ],
+];
+
 $item = [
     'title' => ['label' => 'Title', 'max' => 80],
     'body' => ['label' => 'Text', 'max' => 300, 'multiline' => true],
@@ -40,7 +67,7 @@ return [
         'fields' => [
             'about_heading' => [...$heading, 'section' => 'About'],
             'about_body' => ['type' => 'markdown', 'label' => 'Text', 'max' => 3000, 'required' => true],
-            'about_image' => ['type' => 'image', 'label' => 'Image'],
+            'about_image' => $sideImage,
             'requirements' => [
                 'type' => 'list',
                 'label' => 'Rental requirements',
@@ -70,33 +97,34 @@ return [
         'fields' => [
             'heading' => $heading,
             'intro' => $intro,
+            'header_image' => $headerImage,
             'body' => ['type' => 'markdown', 'label' => 'Story', 'required' => true],
-            'image' => ['type' => 'image', 'label' => 'Image'],
+            'image' => $sideImage,
         ],
     ],
 
     'services' => [
         'title' => 'Services',
         'description' => 'The header of the Services page. The services themselves are edited under Services.',
-        'fields' => ['heading' => $heading, 'intro' => $intro],
+        'fields' => ['heading' => $heading, 'intro' => $intro, 'header_image' => $headerImage],
     ],
 
     'fleet' => [
         'title' => 'Fleet',
         'description' => 'The header of the Fleet page.',
-        'fields' => ['heading' => $heading, 'intro' => $intro],
+        'fields' => ['heading' => $heading, 'intro' => $intro, 'header_image' => $headerImage],
     ],
 
     'rental-policy' => [
         'title' => 'Rental policy',
         'description' => 'The header of the Rental policy page. Each policy is edited under Policies.',
-        'fields' => ['heading' => $heading, 'intro' => $intro],
+        'fields' => ['heading' => $heading, 'intro' => $intro, 'header_image' => $headerImage],
     ],
 
     'contact' => [
         'title' => 'Contact',
         'description' => 'The header of the Contact page. Phone, email, address and map come from the General settings.',
-        'fields' => ['heading' => $heading, 'intro' => $intro],
+        'fields' => ['heading' => $heading, 'intro' => $intro, 'header_image' => $headerImage],
     ],
 
     'privacy' => [

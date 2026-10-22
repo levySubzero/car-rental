@@ -48,6 +48,8 @@ return [
         'image/heic' => 'heic',
         'image/heif' => 'heic',
         'application/pdf' => 'pdf',
+        'video/mp4' => 'mp4',
+        'video/webm' => 'webm',
     ],
 
     /*
@@ -62,6 +64,9 @@ return [
     | conversions  names from `conversions`, generated for images
     | upload       who may upload: ['permission' => 'x.update'], ['token' => true]
     |              for renters with a booking token, or ['system' => true]
+    | guidance     optional advice the uploader shows: shape, recommended width and
+    |              height in pixels, and a framing tip. A page image field can give
+    |              its own in config/pages.php.
     */
     'collections' => [
 
@@ -74,6 +79,30 @@ return [
             'mimes' => ['jpg', 'png', 'webp', 'heic'],
             'conversions' => ['thumb', 'card', 'full'],
             'upload' => ['permission' => 'settings.home.update'],
+            'guidance' => [
+                'shape' => 'Wide 16:9',
+                'width' => 2400,
+                'height' => 1350,
+                'tip' => 'Keep the left half fairly plain and dark: the headline sits there. This image also shows while a video loads, on slow connections and for visitors who turn motion off.',
+            ],
+        ],
+
+        // An optional short loop over the hero image. Videos are stored as uploaded (no conversions).
+        'site.hero_video' => [
+            'label' => 'Home page hero video',
+            'owner' => null,
+            'visibility' => 'public',
+            'max_files' => 1,
+            'max_kb' => 20480,
+            'mimes' => ['mp4', 'webm'],
+            'conversions' => [],
+            'upload' => ['permission' => 'settings.home.update'],
+            'guidance' => [
+                'shape' => 'Wide 16:9',
+                'width' => 1920,
+                'height' => 1080,
+                'tip' => 'MP4 (H.264) or WebM, 10 to 20 seconds, slow and steady. It plays muted on a loop, so sound is not needed. Under 10 MB loads quickly on phones.',
+            ],
         ],
 
         // Catalog (M4). SVG logos would need sanitising, so logos are raster for now (D21).
@@ -86,6 +115,12 @@ return [
             'mimes' => ['png', 'webp'],
             'conversions' => ['thumb', 'card'],
             'upload' => ['permission' => 'brands.update'],
+            'guidance' => [
+                'shape' => 'Wide, transparent background',
+                'width' => 600,
+                'height' => 300,
+                'tip' => 'The official logo, cropped close, as a PNG or WebP with a transparent background. It shows in grey and turns to colour on hover.',
+            ],
         ],
 
         'car.gallery' => [
@@ -97,6 +132,12 @@ return [
             'mimes' => ['jpg', 'png', 'webp', 'heic'],
             'conversions' => ['thumb', 'card', 'full'],
             'upload' => ['permission' => 'cars.update'],
+            'guidance' => [
+                'shape' => 'Landscape 4:3',
+                'width' => 1600,
+                'height' => 1200,
+                'tip' => 'The first photo is the cover: a front three-quarter view. Then side, rear, dashboard, rear seats and boot. Use the same place and time of day for every car.',
+            ],
         ],
 
         // Content (M5)
@@ -109,6 +150,12 @@ return [
             'mimes' => ['jpg', 'png', 'webp', 'heic'],
             'conversions' => ['thumb', 'card', 'full'],
             'upload' => ['permission' => 'services.update'],
+            'guidance' => [
+                'shape' => 'Upright 4:5',
+                'width' => 1200,
+                'height' => 1500,
+                'tip' => 'Shown on the home page service cards and the Services page. Keep the subject in the upper half: the lower part of the card is darkened for the text.',
+            ],
         ],
 
         // Every image field of a preset page (PageRegistry); the page keeps the uuids in its content.
@@ -121,6 +168,11 @@ return [
             'mimes' => ['jpg', 'png', 'webp', 'heic'],
             'conversions' => ['thumb', 'card', 'full'],
             'upload' => ['permission' => 'pages.update'],
+            'guidance' => [
+                'shape' => 'Landscape 4:3',
+                'width' => 1600,
+                'height' => 1200,
+            ],
         ],
 
     ],

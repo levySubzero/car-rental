@@ -28,6 +28,7 @@ import type { MediaCollectionLimits, MediaItem } from '@/types';
 
 export type HomeSettings = {
     hero_media_uuid: string | null;
+    hero_video_uuid: string | null;
     headline: string;
     subline: string;
     primary_cta_label: string;
@@ -41,6 +42,8 @@ export type HomeSettings = {
 export type HomeSettingsContext = {
     hero: MediaItem | null;
     heroLimits: MediaCollectionLimits;
+    heroVideo: MediaItem | null;
+    heroVideoLimits: MediaCollectionLimits;
 };
 
 // Mirrors UpdateHomeSettingsRequest::SECTIONS.
@@ -66,6 +69,9 @@ export function HomeSettingsForm({
     const can = useCan();
     const [hero, setHero] = useState<MediaItem[]>(
         context.hero ? [context.hero] : [],
+    );
+    const [heroVideo, setHeroVideo] = useState<MediaItem[]>(
+        context.heroVideo ? [context.heroVideo] : [],
     );
     const form = useForm({
         ...values,
@@ -109,7 +115,10 @@ export function HomeSettingsForm({
                 <CardHeader>
                     <CardTitle>Hero</CardTitle>
                     <CardDescription>
-                        The first screen of the home page.
+                        The first screen of the home page. A video is optional
+                        and plays over the image; the image shows while it
+                        loads, on slow connections and for visitors who turn
+                        motion off, so set the image either way.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -125,6 +134,23 @@ export function HomeSettingsForm({
                                 setHero(items);
                                 form.setData(
                                     'hero_media_uuid',
+                                    items[0]?.uuid ?? null,
+                                );
+                            }}
+                        />
+                    </Field>
+                    <Field
+                        label="Background video (optional)"
+                        error={errors.hero_video_uuid}
+                        className="sm:col-span-2"
+                    >
+                        <MediaUploader
+                            limits={context.heroVideoLimits}
+                            value={heroVideo}
+                            onChange={(items) => {
+                                setHeroVideo(items);
+                                form.setData(
+                                    'hero_video_uuid',
                                     items[0]?.uuid ?? null,
                                 );
                             }}

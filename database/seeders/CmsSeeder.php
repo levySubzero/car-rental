@@ -6,6 +6,7 @@ use App\Enums\PolicyGroup;
 use App\Enums\ServiceCtaType;
 use App\Models\Brand;
 use App\Models\CarType;
+use App\Models\Page;
 use App\Models\PaymentMethod;
 use App\Models\Policy;
 use App\Models\PolicyVersion;
@@ -47,6 +48,7 @@ class CmsSeeder extends Seeder
 
             $created = $pages->ensureAll();
             $this->report("Pages: {$created} created");
+            $this->pageCopy($this->load('pages'), $pages);
 
             $this->policies($this->load('policies')['policies'], $policies, $bundles);
             $this->paymentMethods($this->load('pricing')['payment_methods']);
@@ -160,6 +162,39 @@ class CmsSeeder extends Seeder
         }
 
         $this->report("Services: {$created} created");
+    }
+
+    /**
+     * Starting copy for the preset pages (M7). A field is filled only while it is still
+     * completely empty, so nothing staff wrote is replaced.
+     *
+     * @param  array<string, mixed>  $data  page slug => field key => value
+     */
+    private function pageCopy(array $data, PageService $pages): void
+    {
+        $filled = 0;
+
+        foreach (Page::query()->whereIn('slug', array_keys($data))->get() as $page) {
+            $definition = $pages->definitionFor($page);
+            $content = $definition->fill($page->content);
+
+            foreach ($definition->fields as $field) {
+                $value = $data[$page->slug][$field->key] ?? null;
+                $current = $content[$field->key];
+                $empty = is_array($current)
+                    ? collect($current)->flatten()->filter(fn ($text) => filled($text))->isEmpty()
+                    : blank($current);
+
+                if ($value !== null && $empty) {
+                    $content[$field->key] = $value;
+                    $filled++;
+                }
+            }
+
+            $page->update(['content' => $definition->fill($content)]);
+        }
+
+        $this->report("Page copy: {$filled} fields filled");
     }
 
     /**

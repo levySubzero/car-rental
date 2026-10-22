@@ -74,3 +74,40 @@ it('needs the matching permission for each car type action', function () {
     $this->actingAs($viewer)->put(route('admin.car-types.reorder'), ['ids' => [$type->id]])->assertForbidden();
     $this->actingAs($viewer)->delete(route('admin.car-types.destroy', $type))->assertForbidden();
 });
+
+it('makes new car types visible on the website by default', function () {
+    expect((new CarType)->is_active)->toBeTrue()
+        ->and(CarType::create(['name' => 'Convertibles'])->fresh()->is_active)->toBeTrue();
+});
+
+it('shows and hides a car type from the list switch, independently of featured cars', function () {
+    $type = CarType::factory()->create(['is_active' => true]);
+    $car = Car::factory()->for($type)->create(['is_featured' => true]);
+    $editor = staffWith([Permission::CarTypesView, Permission::CarTypesUpdate]);
+
+    $this->actingAs($editor)
+        ->from(route('admin.car-types.index'))
+        ->put(route('admin.car-types.visibility', $type), ['value' => false])
+        ->assertRedirect(route('admin.car-types.index'));
+
+    expect($type->fresh()->is_active)->toBeFalse()
+        ->and($car->fresh()->is_featured)->toBeTrue();
+
+    $this->actingAs($editor)->put(route('admin.car-types.visibility', $type), ['value' => true]);
+
+    expect($type->fresh()->is_active)->toBeTrue();
+});
+
+it('validates and authorizes the visibility switch', function () {
+    $type = CarType::factory()->create();
+
+    $this->actingAs(staffWith([Permission::CarTypesView]))
+        ->put(route('admin.car-types.visibility', $type), ['value' => false])
+        ->assertForbidden();
+
+    $this->actingAs(staffWith([Permission::CarTypesUpdate]))
+        ->put(route('admin.car-types.visibility', $type), ['value' => 'maybe'])
+        ->assertSessionHasErrors('value');
+
+    expect($type->fresh()->is_active)->toBeTrue();
+});

@@ -124,8 +124,8 @@ export default function CarTypeForm({ type }: { type: AdminCarType | null }) {
                             />
                             <ToggleRow
                                 id="is_active"
-                                label="Active"
-                                description="Hidden types are left out of the filters and the home page."
+                                label="Shown on the website"
+                                description="When off, this type is left out of the menus, filters and home page rows, and its page is not found. Its cars stay listed in the fleet."
                                 checked={form.data.is_active}
                                 disabled={!editable}
                                 onChange={(value) =>

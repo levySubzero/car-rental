@@ -1,5 +1,5 @@
 // Shapes of the admin API Resources (app/Http/Resources/Admin). Hand-maintained (TECHNICAL_PLAN §3).
-import type { MediaItem } from './media';
+import type { MediaGuidance, MediaItem } from './media';
 
 export type PaginationLink = {
     url: string | null;
@@ -182,6 +182,8 @@ export type ContentFieldDefinition = {
     multiline: boolean;
     items: number;
     fields: ContentFieldDefinition[];
+    // Image fields only: replaces the page.image collection's guidance.
+    guidance?: MediaGuidance | null;
 };
 
 export type ContentListItem = Record<string, string | null>;

@@ -1,0 +1,57 @@
+{
+    "_meta": {
+        "notes": "Interim stock photos for the hero and the service cards until the client's own photos arrive (the photo brief sent to the client: https://claude.ai/artifact/WiAw3hJs3qHTNxrzHuLGGW). All are free to use under the Unsplash License (https://unsplash.com/license): commercial use allowed, no attribution required; credits are kept here anyway. Never use stock for fleet cars. Files were cropped, resized and had number plates blurred; the hero is mirrored. SiteMediaSeeder only fills a hero or service that has no photo yet.",
+        "retrieved": "2026-10-22"
+    },
+    "hero": {
+        "file": "site/hero.jpg",
+        "subject": "Black Mercedes-Benz S-Class on a street at night",
+        "photographer": "Ilya Godze",
+        "source": "https://unsplash.com/photos/black-luxury-sedan-parked-on-a-wet-street-at-night-9xhwtVIM0dE",
+        "licence": "Unsplash License"
+    },
+    "services": {
+        "self-drive-car-rental": {
+            "file": "services/self-drive-car-rental.jpg",
+            "subject": "Black Range Rover on a gravel road",
+            "photographer": "Sam Pearce-Warrilow",
+            "source": "https://unsplash.com/photos/a-black-range-rover-parked-on-a-gravel-road-Ho98UeVC_nQ",
+            "licence": "Unsplash License"
+        },
+        "chauffeur-driven": {
+            "file": "services/chauffeur-driven.jpg",
+            "subject": "Man in a blue suit beside a black car",
+            "photographer": "Fortune Vieyra",
+            "source": "https://unsplash.com/photos/man-in-blue-suit-standing-beside-black-car-HA4EeSly82Q",
+            "licence": "Unsplash License (listed as public domain)"
+        },
+        "airport-transfers": {
+            "file": "services/airport-transfers.jpg",
+            "subject": "Airliner landing at sunset",
+            "photographer": "Ryuta (SRTgraphy)",
+            "source": "https://unsplash.com/photos/an-airplane-lands-at-sunset-5JKIZylnIUM",
+            "licence": "Unsplash License"
+        },
+        "safaris": {
+            "file": "services/safaris.jpg",
+            "subject": "Safari Land Cruisers and cheetahs, Masai Mara",
+            "photographer": "Meektrails Safaris",
+            "source": "https://unsplash.com/photos/cheetahs-walk-near-safari-vehicles-in-grassy-savanna-GtHP9TwZPmo",
+            "licence": "Unsplash License"
+        },
+        "corporate-and-events": {
+            "file": "services/corporate-and-events.jpg",
+            "subject": "Nairobi skyline",
+            "photographer": "imsogabriel stock",
+            "source": "https://unsplash.com/photos/a-cityscape-of-nairobi-kenya-on-a-sunny-day-IaJm3mq0F5o",
+            "licence": "Unsplash License"
+        },
+        "delivery-and-collection": {
+            "file": "services/delivery-and-collection.jpg",
+            "subject": "Black Mercedes SUV in a home driveway",
+            "photographer": "Virginia Marinova",
+            "source": "https://unsplash.com/photos/a-black-car-parked-in-the-driveway-of-a-house-gy8fu_49Bwk",
+            "licence": "Unsplash License"
+        }
+    }
+}

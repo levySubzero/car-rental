@@ -20,6 +20,19 @@ class HandleInertiaRequests extends Middleware
     protected $rootView = 'app';
 
     /**
+     * Server-side rendering is for the public site only (M7.16): the admin and the sign-in
+     * pages render in the browser, where staff are already signed in.
+     *
+     * @var array<int, string>
+     */
+    protected $withoutSsr = [
+        'admin', 'admin/*',
+        'settings', 'settings/*',
+        'login', 'forgot-password', 'reset-password/*', 'two-factor-challenge',
+        'email/*', 'user/*', 'dashboard',
+    ];
+
+    /**
      * Determines the current asset version.
      *
      * @see https://inertiajs.com/asset-versioning

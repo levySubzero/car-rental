@@ -61,7 +61,11 @@ export function ContentField({
         return (
             <Field label={label} error={errors[name]} description={field.help}>
                 <MediaUploader
-                    limits={{ ...imageLimits, max_files: 1 }}
+                    limits={{
+                        ...imageLimits,
+                        max_files: 1,
+                        guidance: field.guidance ?? imageLimits.guidance,
+                    }}
                     value={current}
                     disabled={disabled}
                     onChange={(items) => {

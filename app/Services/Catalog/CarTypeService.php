@@ -52,6 +52,17 @@ class CarTypeService
     }
 
     /**
+     * `is_active` is the type's visibility on the public site (header, footer, home rows,
+     * filters). It does not hide the type's cars, and it is separate from a car's `is_featured`.
+     */
+    public function setVisibility(CarType $type, bool $visible): CarType
+    {
+        $type->update(['is_active' => $visible]);
+
+        return $type;
+    }
+
+    /**
      * @param  list<int>  $ids
      */
     public function reorder(array $ids, User $actor): void

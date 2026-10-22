@@ -3,6 +3,7 @@
 namespace App\Support\Content;
 
 use App\Enums\ContentFieldType;
+use App\Support\Media\MediaCollection;
 
 /**
  * One field of a preset page (config/pages.php).
@@ -11,6 +12,7 @@ final readonly class ContentField
 {
     /**
      * @param  list<ContentField>  $fields  subfields of a list
+     * @param  array{shape: string, width: int, height: int, tip?: string}|null  $guidance  image fields: replaces the page.image collection's
      */
     public function __construct(
         public string $key,
@@ -23,6 +25,7 @@ final readonly class ContentField
         public bool $multiline = false,
         public int $items = 0,
         public array $fields = [],
+        public ?array $guidance = null,
     ) {}
 
     /**
@@ -49,6 +52,7 @@ final readonly class ContentField
                     (array) ($definition['fields'] ?? []),
                 )
                 : [],
+            guidance: $type === ContentFieldType::Image ? MediaCollection::guidanceFrom($definition['guidance'] ?? null) : null,
         );
     }
 
@@ -101,6 +105,7 @@ final readonly class ContentField
             'multiline' => $this->multiline,
             'items' => $this->items,
             'fields' => array_map(fn (self $field) => $field->toArray(), $this->fields),
+            'guidance' => $this->guidance,
         ];
     }
 }

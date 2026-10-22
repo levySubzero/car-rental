@@ -30,8 +30,10 @@ return [
     'booking_token_length' => 64,
 
     'uploads' => [
-        // Hard ceiling for any media collection, in kilobytes.
-        'max_kb_ceiling' => 8192,
+        // Hard ceiling for any media collection, in kilobytes. Room for the hero video;
+        // images stay at 8 MB per collection. PHP's upload_max_filesize and post_max_size
+        // must be at least this large on the server.
+        'max_kb_ceiling' => 20480,
     ],
 
     // The business's local time zone. Billable days are counted in it (D30); the app and

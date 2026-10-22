@@ -50,6 +50,8 @@ class DatabaseSeeder extends Seeder
         // The client's content: safe in every environment, never overwrites admin edits.
         $this->call(CmsSeeder::class);
         $this->call(PricingSeeder::class);
+        $this->call(FleetSeeder::class);
+        $this->call(SiteMediaSeeder::class);
 
         if (app()->environment(['local', 'staging'])) {
             $this->call(DemoCatalogSeeder::class);

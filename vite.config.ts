@@ -13,8 +13,9 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             refresh: true,
             fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
+                // One family for the whole site: headings, UI, prices (M7.1).
+                bunny('Manrope', {
+                    weights: [400, 500, 600, 700],
                 }),
             ],
         }),

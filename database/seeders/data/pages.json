@@ -1,0 +1,43 @@
+{
+    "_meta": {
+        "notes": "Starting copy for preset pages (config/pages.php), from the client's information sheet (21 Oct 2026). The client asked us to write the about text; they approve it at Gate G2. Only fields still empty are filled."
+    },
+    "home": {
+        "about_heading": "Executive mobility in Nairobi since 2023",
+        "about_body": "Baines Executives was founded in 2023 by Nyaribari Issac with one idea: hiring a car should feel as considered as the journey itself.\n\nWe keep a well-maintained fleet of executive sedans, SUVs and safari Land Cruisers. We deliver to your door within 30 km of our Kilimani office and answer on WhatsApp at any hour. Whether you need a chauffeur for a board meeting, a self-drive SUV for the weekend or a Land Cruiser for the Mara, we take care of the details.",
+        "requirements": [
+            {
+                "title": "Age 23 to 70",
+                "body": "Drivers aged 24 to 70 pay a refundable security deposit of 2% of the car's value; drivers aged 23 pay 3%."
+            },
+            {
+                "title": "Driving licence",
+                "body": "A valid licence held for at least three years."
+            },
+            {
+                "title": "ID or passport",
+                "body": "Kenyan residents bring their national ID and KRA PIN. Visitors bring their passport."
+            }
+        ],
+        "why_choose_us": [
+            {
+                "title": "24/7 support",
+                "body": "Book or ask a question at any hour, on WhatsApp or by phone."
+            },
+            {
+                "title": "Delivered to your door",
+                "body": "We bring the car to you anywhere within 30 km of our Kilimani office."
+            },
+            {
+                "title": "A well-kept fleet",
+                "body": "Every car is cleaned and checked before each rental."
+            },
+            {
+                "title": "Safari expertise",
+                "body": "Land Cruisers prepared for game drives, with advice from people who know the parks."
+            }
+        ],
+        "contact_heading": "Ready when you are",
+        "contact_body": "Tell us the car and your dates. We reply on WhatsApp, day or night."
+    }
+}

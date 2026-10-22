@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CarType\ReorderCarTypesRequest;
 use App\Http\Requests\Admin\CarType\SaveCarTypeRequest;
+use App\Http\Requests\Admin\CarType\ToggleCarTypeVisibilityRequest;
 use App\Http\Resources\Admin\CarTypeResource;
 use App\Models\CarType;
 use App\Services\Catalog\CarTypeService;
@@ -62,6 +63,16 @@ class CarTypeController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Car type saved.']);
 
         return to_route('admin.car-types.index');
+    }
+
+    /**
+     * Show or hide the type on the public site. Its cars stay listed either way.
+     */
+    public function visibility(ToggleCarTypeVisibilityRequest $request, CarType $carType): RedirectResponse
+    {
+        $this->types->setVisibility($carType, $request->boolean('value'));
+
+        return back();
     }
 
     public function reorder(ReorderCarTypesRequest $request): RedirectResponse

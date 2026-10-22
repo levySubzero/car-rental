@@ -29,6 +29,7 @@ class UpdateHomeSettingsRequest extends UpdateSettingsRequest
     {
         return [
             'hero_media_uuid' => ['nullable', 'uuid', new PendingOrOwnedMedia('site.hero')],
+            'hero_video_uuid' => ['nullable', 'uuid', new PendingOrOwnedMedia('site.hero_video')],
             'headline' => ['required', 'string', 'max:120'],
             'subline' => ['required', 'string', 'max:300'],
             'primary_cta_label' => ['required', 'string', 'max:30'],

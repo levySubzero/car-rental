@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+@php($public = str_starts_with($page['component'] ?? '', 'public/'))
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => $public || ($appearance ?? 'system') == 'dark', 'public-site' => $public])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,6 +28,11 @@
 
             html.dark {
                 background-color: oklch(0.145 0 0);
+            }
+
+            /* The public site is always dark (M7.1). */
+            html.public-site {
+                background-color: #0b0b0c;
             }
         </style>
 

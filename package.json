@@ -43,6 +43,8 @@
         "clsx": "^2.1.1",
         "concurrently": "^10.0.3",
         "diff": "^8.0.4",
+        "embla-carousel-auto-scroll": "^8.6.0",
+        "embla-carousel-react": "^8.6.0",
         "input-otp": "^1.4.2",
         "laravel-vite-plugin": "^3.0.0",
         "lucide-react": "^0.475.0",

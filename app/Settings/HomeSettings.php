@@ -9,6 +9,9 @@ class HomeSettings extends Settings
 {
     public ?string $hero_media_uuid;
 
+    // Optional loop over the hero image; the image stays as its poster and fallback.
+    public ?string $hero_video_uuid;
+
     public string $headline;
 
     public string $subline;

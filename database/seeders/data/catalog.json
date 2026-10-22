@@ -1,230 +1,230 @@
 {
     "_meta": {
-        "notes": "Brand logos are not bundled: upload official brand-asset files per brand in the CMS. Cars are not seeded here; the client supplies the fleet list with values and photos (see sample_cars for the shape only)."
+        "notes": "Brand logos are not bundled: upload official brand-asset files per brand in the CMS. Cars are not seeded here; the client supplies the fleet list with values and photos (see sample_cars for the shape only). Car types and marquee brands follow the client's information sheet (Oct 2026)."
     },
     "brands": [
         {
-            "name": "Toyota",
-            "slug": "toyota",
-            "sort_order": 1,
-            "show_in_marquee": true
-        },
-        {
             "name": "Mercedes-Benz",
             "slug": "mercedes-benz",
-            "sort_order": 2,
-            "show_in_marquee": true
-        },
-        {
-            "name": "Land Rover",
-            "slug": "land-rover",
-            "sort_order": 3,
-            "show_in_marquee": true
-        },
-        {
-            "name": "Range Rover",
-            "slug": "range-rover",
-            "sort_order": 4,
-            "show_in_marquee": true
-        },
-        {
-            "name": "Lexus",
-            "slug": "lexus",
-            "sort_order": 5,
-            "show_in_marquee": true
-        },
-        {
-            "name": "Nissan",
-            "slug": "nissan",
-            "sort_order": 6,
+            "sort_order": 1,
             "show_in_marquee": true
         },
         {
             "name": "BMW",
             "slug": "bmw",
-            "sort_order": 7,
+            "sort_order": 2,
             "show_in_marquee": true
         },
         {
-            "name": "Audi",
-            "slug": "audi",
-            "sort_order": 8,
+            "name": "Toyota",
+            "slug": "toyota",
+            "sort_order": 3,
             "show_in_marquee": true
         },
         {
-            "name": "Porsche",
-            "slug": "porsche",
-            "sort_order": 9,
-            "show_in_marquee": true
-        },
-        {
-            "name": "Volkswagen",
-            "slug": "volkswagen",
-            "sort_order": 10,
-            "show_in_marquee": true
-        },
-        {
-            "name": "Mitsubishi",
-            "slug": "mitsubishi",
-            "sort_order": 11,
-            "show_in_marquee": true
-        },
-        {
-            "name": "Subaru",
-            "slug": "subaru",
-            "sort_order": 12,
-            "show_in_marquee": true
-        },
-        {
-            "name": "Mazda",
-            "slug": "mazda",
-            "sort_order": 13,
+            "name": "Nissan",
+            "slug": "nissan",
+            "sort_order": 4,
             "show_in_marquee": true
         },
         {
             "name": "Honda",
             "slug": "honda",
-            "sort_order": 14,
+            "sort_order": 5,
             "show_in_marquee": true
+        },
+        {
+            "name": "Lexus",
+            "slug": "lexus",
+            "sort_order": 6,
+            "show_in_marquee": true
+        },
+        {
+            "name": "Land Rover",
+            "slug": "land-rover",
+            "sort_order": 7,
+            "show_in_marquee": false
+        },
+        {
+            "name": "Range Rover",
+            "slug": "range-rover",
+            "sort_order": 8,
+            "show_in_marquee": false
+        },
+        {
+            "name": "Audi",
+            "slug": "audi",
+            "sort_order": 9,
+            "show_in_marquee": false
+        },
+        {
+            "name": "Porsche",
+            "slug": "porsche",
+            "sort_order": 10,
+            "show_in_marquee": false
+        },
+        {
+            "name": "Volkswagen",
+            "slug": "volkswagen",
+            "sort_order": 11,
+            "show_in_marquee": false
+        },
+        {
+            "name": "Mitsubishi",
+            "slug": "mitsubishi",
+            "sort_order": 12,
+            "show_in_marquee": false
+        },
+        {
+            "name": "Subaru",
+            "slug": "subaru",
+            "sort_order": 13,
+            "show_in_marquee": false
+        },
+        {
+            "name": "Mazda",
+            "slug": "mazda",
+            "sort_order": 14,
+            "show_in_marquee": false
         },
         {
             "name": "Isuzu",
             "slug": "isuzu",
             "sort_order": 15,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Ford",
             "slug": "ford",
             "sort_order": 16,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Jeep",
             "slug": "jeep",
             "sort_order": 17,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Hyundai",
             "slug": "hyundai",
             "sort_order": 18,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Kia",
             "slug": "kia",
             "sort_order": 19,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Suzuki",
             "slug": "suzuki",
             "sort_order": 20,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Volvo",
             "slug": "volvo",
             "sort_order": 21,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Jaguar",
             "slug": "jaguar",
             "sort_order": 22,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Bentley",
             "slug": "bentley",
             "sort_order": 23,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Rolls-Royce",
             "slug": "rolls-royce",
             "sort_order": 24,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Maserati",
             "slug": "maserati",
             "sort_order": 25,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Cadillac",
             "slug": "cadillac",
             "sort_order": 26,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Chevrolet",
             "slug": "chevrolet",
             "sort_order": 27,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Peugeot",
             "slug": "peugeot",
             "sort_order": 28,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Tesla",
             "slug": "tesla",
             "sort_order": 29,
-            "show_in_marquee": true
+            "show_in_marquee": false
         },
         {
             "name": "Lamborghini",
             "slug": "lamborghini",
             "sort_order": 30,
-            "show_in_marquee": true
+            "show_in_marquee": false
         }
     ],
     "car_types": [
         {
-            "name": "SUV",
-            "slug": "suv",
-            "description": "Spacious, comfortable SUVs for city and upcountry travel.",
+            "name": "Executive Sedans",
+            "slug": "executive-sedans",
+            "description": "Refined sedans for business travel, VIP transfers and chauffeur service.",
             "sort_order": 1
         },
         {
-            "name": "4x4 Safari",
-            "slug": "4x4-safari",
-            "description": "Rugged four-wheel-drive vehicles built for national parks and rough roads.",
+            "name": "Executive SUVs",
+            "slug": "executive-suvs",
+            "description": "Premium SUVs for executives, events and special occasions.",
             "sort_order": 2
         },
         {
-            "name": "Luxury",
-            "slug": "luxury",
-            "description": "Premium vehicles for executives, events and special occasions.",
+            "name": "SUVs",
+            "slug": "suvs",
+            "description": "Spacious, comfortable SUVs for city and upcountry travel.",
             "sort_order": 3
         },
         {
-            "name": "Executive Sedan",
-            "slug": "executive-sedan",
-            "description": "Refined sedans for business travel and airport transfers.",
+            "name": "Medium SUVs",
+            "slug": "medium-suvs",
+            "description": "Compact, efficient SUVs that handle Nairobi traffic and weekend trips.",
             "sort_order": 4
+        },
+        {
+            "name": "Safari Landcruiser",
+            "slug": "safari-landcruiser",
+            "description": "Rugged Land Cruisers built for national parks, game drives and rough roads.",
+            "sort_order": 5
+        },
+        {
+            "name": "Sports Cars",
+            "slug": "sports-cars",
+            "description": "Performance cars for the moments that call for something special.",
+            "sort_order": 6
         },
         {
             "name": "Economy",
             "slug": "economy",
             "description": "Fuel-efficient cars for everyday travel around Nairobi.",
-            "sort_order": 5
-        },
-        {
-            "name": "Van / Minibus",
-            "slug": "van-minibus",
-            "description": "People carriers for groups, families and tours.",
-            "sort_order": 6
-        },
-        {
-            "name": "Pickup",
-            "slug": "pickup",
-            "description": "Double-cabin pickups for work and adventure.",
             "sort_order": 7
         }
     ],
@@ -276,7 +276,7 @@
         {
             "_note": "Shape example only — do not seed in production. Values are placeholders.",
             "brand": "toyota",
-            "car_type": "4x4-safari",
+            "car_type": "safari-landcruiser",
             "name": "Toyota Land Cruiser Prado",
             "slug": "toyota-land-cruiser-prado",
             "engine_type": "Diesel",

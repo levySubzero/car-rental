@@ -69,6 +69,7 @@ it('saves content and an image, dropping unknown keys', function () {
     expect($page->content->getArrayCopy())->toBe([
         'heading' => 'About Baines',
         'intro' => 'Executive car hire in Nairobi.',
+        'header_image' => null,
         'body' => 'Founded in **2015**.',
         'image' => $image->uuid,
     ])
