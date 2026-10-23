@@ -2,6 +2,7 @@
 
 namespace App\Enums;
 
+use App\Http\Requests\Admin\Settings\UpdateBookingSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateFxSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateGeneralSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateHomeSettingsRequest;
@@ -86,28 +87,22 @@ enum SettingsGroup: string
     }
 
     /**
-     * The FormRequest that validates this tab, or null while the tab is still to be built:
-     * Booking (M8.8).
+     * The FormRequest that validates this tab.
      *
-     * @return class-string<UpdateSettingsRequest>|null
+     * @return class-string<UpdateSettingsRequest>
      */
-    public function requestClass(): ?string
+    public function requestClass(): string
     {
         return match ($this) {
             self::General => UpdateGeneralSettingsRequest::class,
             self::Pricing => UpdatePricingSettingsRequest::class,
+            self::Booking => UpdateBookingSettingsRequest::class,
             self::Fx => UpdateFxSettingsRequest::class,
             self::Notification => UpdateNotificationSettingsRequest::class,
             self::Home => UpdateHomeSettingsRequest::class,
             self::Retention => UpdateRetentionSettingsRequest::class,
             self::Security => UpdateSecuritySettingsRequest::class,
             self::Media => UpdateMediaSettingsRequest::class,
-            default => null,
         };
-    }
-
-    public function isEditable(): bool
-    {
-        return $this->requestClass() !== null;
     }
 }

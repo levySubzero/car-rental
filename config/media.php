@@ -175,6 +175,63 @@ return [
             ],
         ],
 
+        // Booking KYC (M8.12): private, uploaded by the renter with the booking token. Which
+        // ones a driver must give is BookingSettings::document_requirements (BookingDocument).
+        'booking.id_front' => [
+            'label' => 'ID card, front',
+            'owner' => 'booking',
+            'visibility' => 'private',
+            'max_files' => 1,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic', 'pdf'],
+            'conversions' => [],
+            'upload' => ['token' => true],
+        ],
+
+        'booking.id_back' => [
+            'label' => 'ID card, back',
+            'owner' => 'booking',
+            'visibility' => 'private',
+            'max_files' => 1,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic', 'pdf'],
+            'conversions' => [],
+            'upload' => ['token' => true],
+        ],
+
+        'booking.passport' => [
+            'label' => 'Passport photo page',
+            'owner' => 'booking',
+            'visibility' => 'private',
+            'max_files' => 1,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic', 'pdf'],
+            'conversions' => [],
+            'upload' => ['token' => true],
+        ],
+
+        'booking.kra_certificate' => [
+            'label' => 'KRA PIN certificate',
+            'owner' => 'booking',
+            'visibility' => 'private',
+            'max_files' => 1,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic', 'pdf'],
+            'conversions' => [],
+            'upload' => ['token' => true],
+        ],
+
+        'booking.licence' => [
+            'label' => 'Driving licence',
+            'owner' => 'booking',
+            'visibility' => 'private',
+            'max_files' => 1,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic', 'pdf'],
+            'conversions' => [],
+            'upload' => ['token' => true],
+        ],
+
     ],
 
 ];

@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Gate;
  * is a qualified staff member or null; a renter is the token owner in CurrentUploader.
  *
  * Attached files defer to their owner's policy: `update` to manage them, and `viewMedia`
- * (falling back to `view`) to open private ones. BookingPolicy::viewMedia will require
- * bookings.view-documents (M8).
+ * (falling back to `view`) to open private ones. BookingPolicy::viewMedia requires
+ * bookings.view-documents.
  */
 class MediaPolicy
 {

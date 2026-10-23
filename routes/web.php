@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\DevLoginController;
+use App\Http\Controllers\Public\BookingController;
 use App\Http\Controllers\Public\CarController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\CurrencyController;
@@ -26,12 +27,23 @@ Route::middleware(['currency', 'site'])->group(function () {
     Route::get('rental-policy', RentalPolicyController::class)->name('rental-policy');
     Route::get('contact', [ContactController::class, 'show'])->name('contact');
     Route::get('privacy', [PageController::class, 'privacy'])->name('privacy');
+
+    // Online booking (M8). The renter's link carries a secret token, never a booking id.
+    Route::get('cars/{car}/book', [BookingController::class, 'create'])->name('bookings.create');
+    Route::get('bookings/{token}', [BookingController::class, 'show'])->middleware('booking.token')->name('bookings.show');
+});
+
+Route::post('cars/{car}/book', [BookingController::class, 'store'])->middleware('throttle:booking-start')->name('bookings.store');
+Route::middleware(['booking.token', 'throttle:booking-step'])->prefix('bookings/{token}')->name('bookings.')->group(function () {
+    Route::put('trip', [BookingController::class, 'updateTrip'])->name('trip');
+    Route::put('driver', [BookingController::class, 'updateDriver'])->name('driver');
+    Route::post('submit', [BookingController::class, 'submit'])->name('submit');
 });
 
 Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('robots.txt', fn () => response(
-    "User-agent: *\nDisallow: /admin\nDisallow: /settings\n\nSitemap: ".route('sitemap')."\n",
+    "User-agent: *\nDisallow: /admin\nDisallow: /settings\nDisallow: /bookings\n\nSitemap: ".route('sitemap')."\n",
 )->header('Content-Type', 'text/plain; charset=UTF-8'))->name('robots');
 
 Route::post('currency', [CurrencyController::class, 'update'])->middleware('throttle:30,1')->name('currency.update');

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// End-to-end tests run against a running app (`composer dev` or Sail).
-// Not part of CI until the booking flow lands (MILESTONES M8.20).
+// End-to-end tests run against a running, seeded app (`composer dev`). Not in CI yet:
+// that needs an app server with the seed pack.
 export default defineConfig({
     testDir: './tests/e2e',
     fullyParallel: true,

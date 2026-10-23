@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Car\SaveCarBlackoutRequest;
+use App\Models\AvailabilityBlock;
 use App\Models\Car;
-use App\Models\CarBlackout;
 use App\Services\Catalog\CarBlackoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -29,7 +29,7 @@ class CarBlackoutController extends Controller
         return back();
     }
 
-    public function update(SaveCarBlackoutRequest $request, Car $car, CarBlackout $blackout): RedirectResponse
+    public function update(SaveCarBlackoutRequest $request, Car $car, AvailabilityBlock $blackout): RedirectResponse
     {
         /** @var array{starts_at: string, ends_at: string, reason: string, notes?: string|null} $data */
         $data = $request->validated();
@@ -40,7 +40,7 @@ class CarBlackoutController extends Controller
         return back();
     }
 
-    public function destroy(Car $car, CarBlackout $blackout): RedirectResponse
+    public function destroy(Car $car, AvailabilityBlock $blackout): RedirectResponse
     {
         Gate::authorize('manageAvailability', $car);
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useSite } from '@/hooks/use-site';
 import { displayPrice } from '@/lib/money';
 import { cn } from '@/lib/utils';
+import { create as book } from '@/routes/bookings';
 import { show } from '@/routes/cars';
 import type { CarCard as CarCardData } from '@/types';
 
@@ -115,7 +116,7 @@ export function CarCard({
                         <Link href={href}>View</Link>
                     </Button>
                     <Button asChild size="sm" className="flex-1 font-semibold">
-                        <Link href={`${href}#book`}>Book</Link>
+                        <Link href={book(car.slug)}>Book</Link>
                     </Button>
                     {chat && (
                         <Button

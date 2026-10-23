@@ -2,8 +2,11 @@
 
 namespace App\Services\Settings;
 
+use App\Enums\BookingDocument;
 use App\Enums\DayCountingStrategy;
 use App\Enums\FxProvider;
+use App\Enums\IdType;
+use App\Enums\KraPinRule;
 use App\Enums\MediaStatus;
 use App\Enums\RoundingMode;
 use App\Enums\SettingsGroup;
@@ -59,6 +62,11 @@ class SettingsService
                 'heroLimits' => $this->registry()->get('site.hero')->toArray(),
                 'heroVideo' => ($video = $this->hero('site.hero_video', app(HomeSettings::class)->hero_video_uuid)) ? MediaResource::make($video) : null,
                 'heroVideoLimits' => $this->registry()->get('site.hero_video')->toArray(),
+            ],
+            SettingsGroup::Booking => [
+                'idTypes' => array_map(fn (IdType $type) => ['value' => $type->value, 'label' => $type->label()], IdType::cases()),
+                'documents' => array_map(fn (BookingDocument $document) => ['value' => $document->value, 'label' => $document->label()], BookingDocument::cases()),
+                'kraPinOptions' => array_map(fn (KraPinRule $rule) => ['value' => $rule->value, 'label' => $rule->label()], KraPinRule::cases()),
             ],
             SettingsGroup::Pricing => [
                 'roundingOptions' => array_map(fn (RoundingMode $mode) => ['value' => $mode->value, 'label' => $mode->label()], RoundingMode::cases()),

@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\EnsureTwoFactor;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ResolveBookingToken;
 use App\Http\Middleware\ResolveMediaUploader;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ShareCurrency;
@@ -43,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'media.uploader' => ResolveMediaUploader::class,
             'currency' => ShareCurrency::class,
             'site' => ShareSite::class,
+            'booking.token' => ResolveBookingToken::class,
         ]);
 
         $middleware->web(append: [

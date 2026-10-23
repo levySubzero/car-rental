@@ -2,6 +2,11 @@ import { Head, Link } from '@inertiajs/react';
 import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsController';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
 import type {
+    BookingSettings,
+    BookingSettingsContext,
+} from '@/components/admin/settings/booking-settings-form';
+import { BookingSettingsForm } from '@/components/admin/settings/booking-settings-form';
+import type {
     FxSettings,
     FxSettingsContext,
 } from '@/components/admin/settings/fx-settings-form';
@@ -86,6 +91,13 @@ export default function EditSettings({
                             key={group}
                             values={values as PricingSettings}
                             context={context as PricingSettingsContext}
+                        />
+                    )}
+                    {group === 'booking' && (
+                        <BookingSettingsForm
+                            key={group}
+                            values={values as BookingSettings}
+                            context={context as BookingSettingsContext}
                         />
                     )}
                     {group === 'fx' && (

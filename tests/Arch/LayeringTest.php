@@ -43,7 +43,7 @@ arch('form requests authorize through policies')
     ->classes()
     ->toExtend('Illuminate\Foundation\Http\FormRequest')
     ->toHaveMethod('authorize')
-    ->ignoring('App\Http\Requests\Admin\User\Concerns');
+    ->ignoring(['App\Http\Requests\Admin\User\Concerns', 'App\Http\Requests\Public\Booking\Concerns']);
 
 arch('policies check permissions, never role names')
     ->expect('App\Policies')

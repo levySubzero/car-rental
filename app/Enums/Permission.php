@@ -75,6 +75,10 @@ enum Permission: string
     case ContactMessagesUpdate = 'contact-messages.update';
     case ContactMessagesDelete = 'contact-messages.delete';
 
+    // Bookings (M8). The bookings desk and its actions arrive in M11.
+    case BookingsView = 'bookings.view';
+    case BookingsViewDocuments = 'bookings.view-documents';
+
     // Pricing (M6). The PRD keeps pricing rules with the super admin by default.
     case CurrenciesView = 'currencies.view';
     case CurrenciesCreate = 'currencies.create';

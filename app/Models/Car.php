@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AvailabilityBlockType;
 use App\Enums\FuelType;
 use App\Enums\Transmission;
 use App\Models\Concerns\HasMedia;
@@ -129,11 +130,31 @@ class Car extends Model
     }
 
     /**
-     * @return HasMany<CarBlackout, $this>
+     * Staff blocks only (maintenance, private use); holds and bookings are read by AvailabilityService.
+     *
+     * @return HasMany<AvailabilityBlock, $this>
      */
     public function blackouts(): HasMany
     {
-        return $this->hasMany(CarBlackout::class);
+        return $this->hasMany(AvailabilityBlock::class)->where('type', AvailabilityBlockType::Blocked->value);
+    }
+
+    /**
+     * Every block: holds, bookings and staff blocks (D35).
+     *
+     * @return HasMany<AvailabilityBlock, $this>
+     */
+    public function availabilityBlocks(): HasMany
+    {
+        return $this->hasMany(AvailabilityBlock::class);
+    }
+
+    /**
+     * @return HasMany<Booking, $this>
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
     }
 
     /**

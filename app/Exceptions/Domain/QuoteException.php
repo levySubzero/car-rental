@@ -30,6 +30,14 @@ class QuoteException extends DomainException
         return new self('That delivery zone is not available.', 'delivery_zone_id');
     }
 
+    /**
+     * The input the message belongs to, e.g. for a booking form that names it differently.
+     */
+    public function field(): ?string
+    {
+        return $this->field;
+    }
+
     protected function errorField(): ?string
     {
         return $this->field;

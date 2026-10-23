@@ -2,12 +2,12 @@
 
 namespace App\Http\Resources\Admin;
 
-use App\Models\CarBlackout;
+use App\Models\AvailabilityBlock;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin CarBlackout
+ * @mixin AvailabilityBlock
  */
 class CarBlackoutResource extends JsonResource
 {

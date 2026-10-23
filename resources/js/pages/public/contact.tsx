@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { CheckCircle2, Mail, MapPin, Phone } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import { Field, inputClass } from '@/components/public/form-field';
 import { BrandIcon } from '@/components/public/icons';
 import { PageHeader } from '@/components/public/page-header';
 import { Seo } from '@/components/public/seo';
@@ -370,52 +371,6 @@ export default function Contact({
                 </aside>
             </div>
         </>
-    );
-}
-
-const inputClass =
-    'h-11 w-full min-w-0 rounded-md border border-white/15 bg-surface px-3 text-foreground placeholder:text-white/35 focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold/40 focus-visible:outline-none aria-[invalid=true]:border-red-400';
-
-function Field({
-    label,
-    error,
-    hint,
-    className,
-    children,
-}: {
-    label: string;
-    error?: string;
-    hint?: string;
-    className?: string;
-    children: (
-        id: string,
-        describedBy: string | undefined,
-        invalid: true | undefined,
-    ) => ReactNode;
-}) {
-    const id = `contact-${label.toLowerCase().replace(/[^a-z]+/g, '-')}`;
-    const describedBy =
-        [hint && `${id}-hint`, error && `${id}-error`]
-            .filter(Boolean)
-            .join(' ') || undefined;
-
-    return (
-        <div className={cn('grid min-w-0 gap-1.5', className)}>
-            <label htmlFor={id} className="text-sm font-medium text-white/85">
-                {label}
-            </label>
-            {children(id, describedBy, error ? true : undefined)}
-            {hint && !error && (
-                <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-                    {hint}
-                </p>
-            )}
-            {error && (
-                <p id={`${id}-error`} className="text-sm text-red-400">
-                    {error}
-                </p>
-            )}
-        </div>
     );
 }
 

@@ -14,3 +14,6 @@ Schedule::command('media:cleanup')->hourly()->withoutOverlapping()->onOneServer(
 // The command itself waits FxSettings::refresh_minutes between fetches and does nothing
 // while the provider is manual.
 Schedule::command('fx:refresh')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
+
+// Drafts lapse after PricingSettings::draft_expiry_hours, unpaid bookings when their hold ends.
+Schedule::command('bookings:expire')->everyFiveMinutes()->withoutOverlapping()->onOneServer();

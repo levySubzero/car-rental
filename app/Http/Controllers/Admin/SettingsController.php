@@ -26,8 +26,6 @@ class SettingsController extends Controller
 
     public function edit(Request $request, SettingsGroup $group): Response
     {
-        abort_unless($group->isEditable(), 404);
-
         return Inertia::render('admin/settings/edit', [
             'group' => $group->value,
             'tabs' => $this->tabsFor($request->user()),
@@ -38,10 +36,8 @@ class SettingsController extends Controller
 
     public function update(SettingsGroup $group): RedirectResponse
     {
-        abort_unless($group->isEditable(), 404);
-
         /** @var UpdateSettingsRequest $request */
-        $request = app((string) $group->requestClass());
+        $request = app($group->requestClass());
 
         $this->settings->update($group, $request->settingsData(), $request->user());
 
@@ -56,7 +52,7 @@ class SettingsController extends Controller
     private function tabsFor(?User $user): array
     {
         return collect(SettingsGroup::cases())
-            ->filter(fn (SettingsGroup $group) => $group->isEditable() && $user?->can($group->permission()))
+            ->filter(fn (SettingsGroup $group) => $user !== null && $user->can($group->permission()))
             ->map(fn (SettingsGroup $group) => ['key' => $group->value, 'label' => $group->label()])
             ->values()
             ->all();

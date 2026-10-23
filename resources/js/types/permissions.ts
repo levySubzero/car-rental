@@ -43,6 +43,8 @@ export const permissions = [
     'contact-messages.view',
     'contact-messages.update',
     'contact-messages.delete',
+    'bookings.view',
+    'bookings.view-documents',
     'currencies.view',
     'currencies.create',
     'currencies.update',

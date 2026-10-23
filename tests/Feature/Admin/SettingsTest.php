@@ -50,11 +50,8 @@ it('forbids groups without permission', function () {
     $this->actingAs($user)->put(route('admin.settings.update', 'general'), generalPayload())->assertForbidden();
 });
 
-it('404s for groups whose tab is not built yet or do not exist', function () {
-    $admin = superAdmin();
-
-    $this->actingAs($admin)->get(route('admin.settings.edit', 'booking'))->assertNotFound();
-    $this->actingAs($admin)->get(route('admin.settings.edit', 'nope'))->assertNotFound();
+it('404s for groups that do not exist', function () {
+    $this->actingAs(superAdmin())->get(route('admin.settings.edit', 'nope'))->assertNotFound();
 });
 
 it('saves general settings, drops empty socials and logs a diff', function () {

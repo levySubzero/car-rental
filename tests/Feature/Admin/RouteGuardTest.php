@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\AvailabilityBlock;
 use App\Models\Brand;
 use App\Models\CancellationTier;
 use App\Models\Car;
-use App\Models\CarBlackout;
 use App\Models\CarType;
 use App\Models\Charge;
 use App\Models\ContactMessage;
@@ -50,7 +50,7 @@ function sampleParameters(RoutingRoute $route): array
         'car_type' => fn () => CarType::factory()->create()->slug,
         'car' => fn () => Car::factory()->create()->slug,
         // Scoped to the {car} sampled before it.
-        'blackout' => fn (array $resolved) => CarBlackout::factory()
+        'blackout' => fn (array $resolved) => AvailabilityBlock::factory()
             ->for(Car::query()->where('slug', $resolved['car'])->sole())
             ->create()->id,
         'service' => fn () => Service::factory()->create()->slug,

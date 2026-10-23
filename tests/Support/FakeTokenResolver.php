@@ -6,7 +6,7 @@ use App\Services\Media\Contracts\TokenUploaderResolver;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Stands in for the booking token lookup that M8 binds.
+ * Stands in for the booking token lookup, so media tests can use any owner model.
  */
 class FakeTokenResolver implements TokenUploaderResolver
 {

@@ -9,13 +9,13 @@ import { Button } from '@/components/ui/button';
 import { useSite } from '@/hooks/use-site';
 import { displayPrice } from '@/lib/money';
 import { carJsonLd } from '@/lib/structured-data';
-import { contact, fleet, rentalPolicy } from '@/routes';
+import { fleet, rentalPolicy } from '@/routes';
+import { create as book } from '@/routes/bookings';
 import { show as carTypeShow } from '@/routes/car-types';
 import type { CarCard as CarCardData, CarDetail } from '@/types';
 
 /**
  * A car's page (M7.11, PRD F-3–F-5): photos, the information block, and the actions.
- * "Book this car" opens the enquiry form with the car chosen until online booking (M8).
  */
 export default function Car({
     car,
@@ -164,11 +164,7 @@ export default function Car({
                                     size="lg"
                                     className="h-12 text-base font-semibold"
                                 >
-                                    <Link
-                                        href={contact({
-                                            query: { car: car.slug },
-                                        })}
-                                    >
+                                    <Link href={book(car.slug)}>
                                         Book this car
                                     </Link>
                                 </Button>

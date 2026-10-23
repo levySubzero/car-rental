@@ -18,8 +18,7 @@ use Inertia\Response;
 
 /**
  * The Contact page and form (M7.15). Messages land in Admin → Contact messages, and the
- * staff emails in Notification settings get a copy. "Book this car" links here with the
- * car chosen (?car=slug) until online booking arrives (M8).
+ * staff emails in Notification settings get a copy. An enquiry can name a car (?car=slug).
  */
 class ContactController extends Controller
 {

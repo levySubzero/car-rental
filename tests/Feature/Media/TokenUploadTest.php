@@ -47,7 +47,7 @@ it('rejects collections without token uploads, and unknown tokens', function () 
         ->assertForbidden();
 });
 
-it('rejects every token by default until bookings exist', function () {
+it('rejects tokens that match no booking with the default resolver', function () {
     app()->forgetInstance(TokenUploaderResolver::class);
 
     tokenRequest($this, 'token-a')

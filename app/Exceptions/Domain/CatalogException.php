@@ -23,4 +23,9 @@ class CatalogException extends DomainException
     {
         return new self('This period overlaps another blackout for the same car.');
     }
+
+    public static function blackoutOverlapsBooking(?string $reference): self
+    {
+        return new self('This period overlaps booking '.($reference ?? 'in progress').'. Move or cancel the booking first.');
+    }
 }

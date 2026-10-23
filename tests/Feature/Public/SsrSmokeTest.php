@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Models\Booking;
 use App\Models\Brand;
 use App\Models\Car;
 use App\Models\CarType;
@@ -35,10 +36,14 @@ beforeEach(function () {
         'car_type_id' => CarType::firstWhere('slug', 'suvs')->id,
     ]);
     app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid]);
+
+    // Booking links: a draft opens the wizard, a submitted booking its status page.
+    Booking::factory()->for($this->car)->withToken(str_repeat('d', 64))->create();
+    Booking::factory()->for($this->car)->awaitingPayment()->withToken(str_repeat('s', 64))->create();
 });
 
 it('server-renders every public page', function (string $url, string $expect) {
-    $url = str_replace('{car}', $this->car->slug, $url);
+    $url = strtr($url, ['{car}' => $this->car->slug, '{draft}' => str_repeat('d', 64), '{submitted}' => str_repeat('s', 64)]);
 
     $page = $this->get($url, [
         'X-Inertia' => 'true',
@@ -65,4 +70,7 @@ it('server-renders every public page', function (string $url, string $expect) {
     'rental policy' => ['/rental-policy', 'Booking and payment'],
     'contact' => ['/contact', 'Send us a message'],
     'privacy' => ['/privacy', 'Privacy notice'],
+    'booking page' => ['/cars/{car}/book', 'Book the Toyota Prado TX'],
+    'booking wizard' => ['/bookings/{draft}', 'Book the Toyota Prado TX'],
+    'booking status' => ['/bookings/{submitted}', 'Awaiting payment'],
 ]);
