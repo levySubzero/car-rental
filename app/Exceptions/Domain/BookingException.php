@@ -49,6 +49,11 @@ class BookingException extends DomainException
         return new self('Our rental terms are being updated. Please try again shortly.');
     }
 
+    public static function requestsClosed(): self
+    {
+        return new self('This booking has ended, so it can no longer be changed. Please contact us instead.', 'message');
+    }
+
     protected function errorField(): ?string
     {
         return $this->field;

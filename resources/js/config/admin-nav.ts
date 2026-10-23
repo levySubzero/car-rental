@@ -8,6 +8,7 @@ import {
     History,
     Inbox,
     LayoutGrid,
+    MessageSquare,
     MapPin,
     Receipt,
     PanelsTopLeft,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import ActivityLogController from '@/actions/App/Http/Controllers/Admin/ActivityLogController';
 import CancellationTierController from '@/actions/App/Http/Controllers/Admin/CancellationTierController';
+import BookingRequestController from '@/actions/App/Http/Controllers/Admin/BookingRequestController';
 import BrandController from '@/actions/App/Http/Controllers/Admin/BrandController';
 import CarController from '@/actions/App/Http/Controllers/Admin/CarController';
 import CarTypeController from '@/actions/App/Http/Controllers/Admin/CarTypeController';
@@ -64,6 +66,12 @@ export const adminNav: NavGroup[] = [
                 href: PaymentSubmissionController.index(),
                 icon: Wallet,
                 permission: 'payments.view',
+            },
+            {
+                title: 'Requests',
+                href: BookingRequestController.index(),
+                icon: MessageSquare,
+                permission: 'booking-requests.view',
             },
             {
                 title: 'Messages',

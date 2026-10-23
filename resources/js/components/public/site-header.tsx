@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronDown, Menu } from 'lucide-react';
+import { CalendarCheck, ChevronDown, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { BrandIcon } from '@/components/public/icons';
 import { isActive, NAV_ITEMS } from '@/components/public/nav-items';
@@ -24,6 +24,7 @@ import { useSite } from '@/hooks/use-site';
 import { cn } from '@/lib/utils';
 import { fleet } from '@/routes';
 import { show as carTypeShow } from '@/routes/car-types';
+import { index as myBookings } from '@/routes/portal';
 
 const linkClass =
     'relative py-2 text-sm font-medium tracking-wide text-white/80 transition-colors hover:text-white focus-visible:text-gold focus-visible:outline-none';
@@ -131,6 +132,18 @@ export function SiteHeader() {
                 </nav>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        asChild
+                        variant="ghost"
+                        className="px-2 text-white/80 hover:text-white sm:px-3"
+                    >
+                        <Link href={myBookings()}>
+                            <CalendarCheck className="size-4" />
+                            <span className="sr-only sm:not-sr-only">
+                                My bookings
+                            </span>
+                        </Link>
+                    </Button>
                     {enquire && (
                         <Button
                             asChild

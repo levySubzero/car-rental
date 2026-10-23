@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AvailabilityBlock;
+use App\Models\BookingRequest;
 use App\Models\Brand;
 use App\Models\CancellationTier;
 use App\Models\Car;
@@ -36,6 +37,12 @@ const OPEN_TO_ALL_STAFF = [
     'admin.dashboard',
 ];
 
+// Each staff member's own alerts (M10B): scoped to the signed-in user, tested in AdminAlertsTest.
+const OWN_RECORDS = [
+    'admin.alerts.open',
+    'admin.alerts.read-all',
+];
+
 /**
  * Sample values for route parameters. Add one when a new binding appears.
  *
@@ -61,6 +68,7 @@ function sampleParameters(RoutingRoute $route): array
         'payment_method' => fn () => (PaymentMethod::query()->firstWhere('code', 'mpesa') ?? PaymentMethod::factory()->create())->code->value,
         'contact_message' => fn () => ContactMessage::factory()->create()->id,
         'payment' => fn () => PaymentSubmission::factory()->create()->id,
+        'booking_request' => fn () => BookingRequest::factory()->create()->id,
         // Currency codes are unique, so reuse USD once an earlier route created it.
         'currency' => fn () => (Currency::query()->firstWhere('code', 'USD') ?? Currency::factory()->code('USD')->create())->code,
         'charge' => function () {
@@ -97,7 +105,7 @@ it('refuses staff without permissions on every admin route', function () {
 
     $routes = collect(Route::getRoutes()->getRoutes())
         ->filter(fn (RoutingRoute $route) => str_starts_with((string) $route->getName(), 'admin.'))
-        ->reject(fn (RoutingRoute $route) => in_array($route->getName(), OPEN_TO_ALL_STAFF, true));
+        ->reject(fn (RoutingRoute $route) => in_array($route->getName(), [...OPEN_TO_ALL_STAFF, ...OWN_RECORDS], true));
 
     expect($routes)->not->toBeEmpty();
 

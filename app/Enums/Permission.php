@@ -85,6 +85,10 @@ enum Permission: string
     case PaymentsReject = 'payments.reject';
     case PaymentsAcceptPartial = 'payments.accept-partial';
 
+    // Booking requests (M10B): cancellation and change requests renters send from the portal.
+    case BookingRequestsView = 'booking-requests.view';
+    case BookingRequestsUpdate = 'booking-requests.update';
+
     // Pricing (M6). The PRD keeps pricing rules with the super admin by default.
     case CurrenciesView = 'currencies.view';
     case CurrenciesCreate = 'currencies.create';

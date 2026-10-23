@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\IdType;
+use App\Support\PhoneNumber;
 use Carbon\CarbonImmutable;
 use Database\Factories\BookingDriverFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable $dob
  * @property string $email
  * @property string $phone
+ * @property string $email_normalized
+ * @property string $phone_digits
  * @property string $nationality
  * @property bool $is_kenyan_resident
  * @property IdType $id_type
@@ -45,7 +48,7 @@ class BookingDriver extends Model
         'licence_expiry', 'licence_years_declared',
     ];
 
-    protected $hidden = ['id_number', 'id_number_hash', 'kra_pin', 'licence_number'];
+    protected $hidden = ['id_number', 'id_number_hash', 'kra_pin', 'licence_number', 'email_normalized', 'phone_digits'];
 
     /**
      * @return array<string, string>
@@ -70,6 +73,10 @@ class BookingDriver extends Model
             if ($driver->isDirty('id_number')) {
                 $driver->id_number_hash = self::hashIdNumber($driver->id_number);
             }
+
+            // Lookup keys for the renter portal (M10B).
+            $driver->email_normalized = mb_strtolower(trim($driver->email));
+            $driver->phone_digits = PhoneNumber::digits($driver->phone);
         });
     }
 

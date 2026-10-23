@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AdminIdleTimeout;
 use App\Http\Middleware\EnsureActiveAccount;
+use App\Http\Middleware\EnsurePortalSession;
 use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\EnsureTwoFactor;
 use App\Http\Middleware\HandleAppearance;
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'currency' => ShareCurrency::class,
             'site' => ShareSite::class,
             'booking.token' => ResolveBookingToken::class,
+            'portal' => EnsurePortalSession::class,
         ]);
 
         $middleware->web(append: [

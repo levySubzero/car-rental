@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Enums\AlertKind;
 use App\Enums\ContactMessageStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\Contact\StoreContactMessageRequest;
@@ -9,10 +10,12 @@ use App\Models\Car;
 use App\Models\ContactMessage;
 use App\Notifications\NewContactMessage;
 use App\Services\Cms\PageContent;
+use App\Services\Notifications\AdminAlerts;
 use App\Settings\NotificationSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,7 +42,7 @@ class ContactController extends Controller
         ]);
     }
 
-    public function store(StoreContactMessageRequest $request, NotificationSettings $notifications): RedirectResponse
+    public function store(StoreContactMessageRequest $request, NotificationSettings $notifications, AdminAlerts $alerts): RedirectResponse
     {
         $message = ContactMessage::create([
             ...$request->attributesForMessage(),
@@ -49,6 +52,8 @@ class ContactController extends Controller
         if ($notifications->staff_emails !== []) {
             Notification::route('mail', $notifications->staff_emails)->notify(new NewContactMessage($message));
         }
+
+        $alerts->send(AlertKind::ContactMessage, "Enquiry from {$message->name}", Str::limit($message->message, 120), route('admin.contact-messages.show', $message));
 
         return to_route('contact')->with('contact_sent', true);
     }

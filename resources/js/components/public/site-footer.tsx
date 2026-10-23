@@ -9,6 +9,7 @@ import { useSite } from '@/hooks/use-site';
 import { privacy, rentalPolicy } from '@/routes';
 import { show as brandShow } from '@/routes/car-brands';
 import { show as carTypeShow } from '@/routes/car-types';
+import { index as myBookings } from '@/routes/portal';
 
 /**
  * Footer (M7.4): about, car types, brands, links, contacts with map, payment methods.
@@ -61,6 +62,7 @@ export function SiteFooter() {
                             {item.label}
                         </FooterLink>
                     ))}
+                    <FooterLink href={myBookings().url}>My bookings</FooterLink>
                     <FooterLink href={privacy().url}>Privacy policy</FooterLink>
                 </FooterColumn>
 

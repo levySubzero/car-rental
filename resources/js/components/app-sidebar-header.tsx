@@ -1,3 +1,4 @@
+import { NotificationBell } from '@/components/admin/notification-bell';
 import { AppearanceToggle } from '@/components/appearance-toggle';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -16,7 +17,10 @@ export function AppSidebarHeader({
                     <Breadcrumbs breadcrumbs={breadcrumbs} />
                 </div>
             </div>
-            <AppearanceToggle />
+            <div className="flex shrink-0 items-center gap-1">
+                <NotificationBell />
+                <AppearanceToggle />
+            </div>
         </header>
     );
 }

@@ -46,14 +46,10 @@ class WhatsAppLinkBuilder
      */
     public static function linkTo(?string $number, string $text = ''): ?string
     {
-        $number = (string) preg_replace('/\D+/', '', (string) $number);
+        $number = PhoneNumber::digits($number);
 
         if ($number === '') {
             return null;
-        }
-
-        if (str_starts_with($number, '0')) {
-            $number = '254'.substr($number, 1);
         }
 
         return "https://wa.me/{$number}".($text === '' ? '' : '?text='.rawurlencode($text));

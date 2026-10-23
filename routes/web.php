@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\DevLoginController;
 use App\Http\Controllers\Public\BookingController;
 use App\Http\Controllers\Public\BookingPaymentController;
+use App\Http\Controllers\Public\BookingPortalController;
 use App\Http\Controllers\Public\CarController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\CurrencyController;
@@ -32,6 +33,21 @@ Route::middleware(['currency', 'site'])->group(function () {
     // Online booking (M8). The renter's link carries a secret token, never a booking id.
     Route::get('cars/{car}/book', [BookingController::class, 'create'])->name('bookings.create');
     Route::get('bookings/{token}', [BookingController::class, 'show'])->middleware('booking.token')->name('bookings.show');
+
+    // Renter portal (M10B): find bookings by email or phone with an emailed code.
+    Route::get('my-bookings', [BookingPortalController::class, 'index'])->name('portal.index');
+});
+
+Route::prefix('my-bookings')->name('portal.')->group(function () {
+    Route::post('code', [BookingPortalController::class, 'sendCode'])->middleware('throttle:portal')->name('code');
+    Route::post('verify', [BookingPortalController::class, 'verify'])->middleware('throttle:portal-verify')->name('verify');
+    Route::post('restart', [BookingPortalController::class, 'restart'])->name('restart');
+
+    Route::middleware('portal')->group(function () {
+        Route::post('{reference}/open', [BookingPortalController::class, 'open'])->name('open');
+        Route::get('{reference}/voucher', [BookingPortalController::class, 'voucher'])->name('voucher');
+        Route::post('{reference}/requests', [BookingPortalController::class, 'storeRequest'])->middleware('throttle:booking-step')->name('requests.store');
+    });
 });
 
 Route::post('cars/{car}/book', [BookingController::class, 'store'])->middleware('throttle:booking-start')->name('bookings.store');
@@ -45,7 +61,7 @@ Route::middleware(['booking.token', 'throttle:booking-step'])->prefix('bookings/
 Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('robots.txt', fn () => response(
-    "User-agent: *\nDisallow: /admin\nDisallow: /settings\nDisallow: /bookings\n\nSitemap: ".route('sitemap')."\n",
+    "User-agent: *\nDisallow: /admin\nDisallow: /settings\nDisallow: /bookings\nDisallow: /my-bookings\n\nSitemap: ".route('sitemap')."\n",
 )->header('Content-Type', 'text/plain; charset=UTF-8'))->name('robots');
 
 Route::post('currency', [CurrencyController::class, 'update'])->middleware('throttle:30,1')->name('currency.update');

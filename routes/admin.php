@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\AlertController;
+use App\Http\Controllers\Admin\BookingRequestController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CancellationTierController;
 use App\Http\Controllers\Admin\CarBlackoutController;
@@ -124,7 +126,15 @@ Route::get('payments', [PaymentSubmissionController::class, 'index'])->name('pay
 Route::post('payments/{payment}/verify', [PaymentSubmissionController::class, 'verify'])->name('payments.verify');
 Route::post('payments/{payment}/reject', [PaymentSubmissionController::class, 'reject'])->name('payments.reject');
 
+// Booking requests (M10B): cancellations and changes renters ask for in the portal.
+Route::get('booking-requests', [BookingRequestController::class, 'index'])->name('booking-requests.index');
+Route::post('booking-requests/{booking_request}/handle', [BookingRequestController::class, 'handle'])->name('booking-requests.handle');
+
 Route::post('markdown/preview', MarkdownPreviewController::class)->name('markdown.preview');
+
+// In-app alerts (M10B): the signed-in staff member's own, so no permission is needed.
+Route::post('alerts/read-all', [AlertController::class, 'readAll'])->name('alerts.read-all');
+Route::post('alerts/{alert}/open', [AlertController::class, 'open'])->whereUuid('alert')->name('alerts.open');
 
 // Settings
 Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');

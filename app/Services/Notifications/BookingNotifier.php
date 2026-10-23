@@ -2,6 +2,7 @@
 
 namespace App\Services\Notifications;
 
+use App\Enums\AlertKind;
 use App\Enums\PaymentStatus;
 use App\Models\Booking;
 use App\Notifications\Booking\BookingConfirmed;
@@ -29,21 +30,39 @@ class BookingNotifier
         private readonly NotificationSettings $settings,
         private readonly BookingTokenService $tokens,
         private readonly VoucherService $vouchers,
+        private readonly AdminAlerts $alerts,
     ) {}
 
     public function submitted(Booking $booking, string $token): void
     {
         $this->renter($booking)?->notify(new BookingReceived($booking, $token));
         $this->staff()?->notify(new StaffNewBooking($booking));
+
+        $booking->loadMissing(['car', 'driver']);
+        $this->alerts->send(
+            AlertKind::NewBooking,
+            "New booking {$booking->reference}",
+            trim(($booking->driver ? "{$booking->driver->first_name} {$booking->driver->surname}, " : '').$booking->car->name),
+            $this->queueUrl($booking),
+        );
     }
 
     public function paymentSubmitted(Booking $booking): void
     {
         $payment = $booking->payments()->where('status', PaymentStatus::Pending)->latest('id')->first();
 
-        if ($payment !== null) {
-            $this->staff()?->notify(new PaymentSubmitted($booking, $payment));
+        if ($payment === null) {
+            return;
         }
+
+        $this->staff()?->notify(new PaymentSubmitted($booking, $payment));
+
+        $this->alerts->send(
+            AlertKind::PaymentSubmitted,
+            $payment->isCash() ? "Cash coming for {$booking->reference}" : "Payment to check for {$booking->reference}",
+            $payment->isCash() ? 'The renter will pay the reservation in cash.' : 'Paid by '.($payment->method->name ?? $payment->payment_method_code->value).'. Check and verify it.',
+            $this->queueUrl($booking),
+        );
     }
 
     /**
@@ -85,6 +104,11 @@ class BookingNotifier
     private function freshToken(Booking $booking, string $event): ?string
     {
         return $this->settings->enabled($event, 'mail') ? $this->tokens->rotate($booking) : null;
+    }
+
+    private function queueUrl(Booking $booking): string
+    {
+        return route('admin.payments.index', ['search' => $booking->reference]);
     }
 
     private function renter(Booking $booking): ?AnonymousNotifiable

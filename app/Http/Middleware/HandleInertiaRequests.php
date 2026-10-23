@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Resources\Shared\AuthUserResource;
 use App\Models\User;
+use App\Services\Notifications\AdminAlerts;
 use App\Settings\GeneralSettings;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -62,6 +63,10 @@ class HandleInertiaRequests extends Middleware
                 // Permission names drive what the UI shows. The server still authorizes every request.
                 'permissions' => fn () => $this->permissionsFor($user),
             ],
+            // The bell in the admin top bar (M10B); polled with a partial reload of `alerts`.
+            'alerts' => fn () => $user !== null && $user->canAccessAdmin() && $request->is('admin', 'admin/*')
+                ? app(AdminAlerts::class)->summary($user)
+                : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Notifications\AdminAlerts;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -17,3 +18,9 @@ Schedule::command('fx:refresh')->everyFifteenMinutes()->withoutOverlapping()->on
 
 // Drafts lapse after PricingSettings::draft_expiry_hours, unpaid bookings when their hold ends.
 Schedule::command('bookings:expire')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+
+// Read staff alerts are kept for 90 days (M10B).
+Artisan::command('alerts:prune {--days=90}', function (AdminAlerts $alerts) {
+    $this->info($alerts->prune((int) $this->option('days')).' read alerts deleted.');
+})->purpose('Delete read staff alerts older than --days');
+Schedule::command('alerts:prune')->daily()->onOneServer();

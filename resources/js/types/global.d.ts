@@ -1,4 +1,5 @@
 import type { SharedCurrency } from '@/lib/money';
+import type { AdminAlerts } from '@/types/admin';
 import type { Auth } from '@/types/auth';
 import type { SharedSite } from '@/types/public';
 
@@ -14,6 +15,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            // Admin routes only (M10B).
+            alerts?: AdminAlerts | null;
             // Public routes only (ShareCurrency, ShareSite).
             currency?: SharedCurrency;
             site?: SharedSite;

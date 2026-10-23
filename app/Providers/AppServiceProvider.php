@@ -6,6 +6,7 @@ use App\Enums\FxProvider;
 use App\Enums\SettingsGroup;
 use App\Models\AvailabilityBlock;
 use App\Models\Booking;
+use App\Models\BookingRequest;
 use App\Models\Brand;
 use App\Models\CancellationTier;
 use App\Models\Car;
@@ -125,6 +126,7 @@ class AppServiceProvider extends ServiceProvider
             'cancellation_tier' => CancellationTier::class,
             'booking' => Booking::class,
             'payment_submission' => PaymentSubmission::class,
+            'booking_request' => BookingRequest::class,
         ]);
     }
 
@@ -134,6 +136,14 @@ class AppServiceProvider extends ServiceProvider
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('booking-start', fn (Request $request) => Limit::perHour(10)->by($request->ip()));
+
+        // The renter portal (M10B): codes asked for, per IP and per email or phone typed. Codes
+        // tried are limited per IP here, and to five tries per code by BookingPortalService.
+        RateLimiter::for('portal', fn (Request $request) => [
+            Limit::perHour(10)->by('ip:'.$request->ip()),
+            Limit::perHour(5)->by('id:'.hash('sha256', mb_strtolower(trim((string) $request->input('identifier'))))),
+        ]);
+        RateLimiter::for('portal-verify', fn (Request $request) => Limit::perHour(20)->by($request->ip()));
 
         RateLimiter::for('booking-step', fn (Request $request) => Limit::perMinute(30)->by(
             $request->route('token') ?? $request->ip(),

@@ -461,3 +461,43 @@ export type AdminPayment = {
         reservation: Money;
     };
 };
+
+// In-app staff alerts for the bell in the admin top bar (AdminAlerts::summary, M10B).
+export type AdminAlert = {
+    id: string;
+    kind: string;
+    icon: string;
+    title: string;
+    body: string;
+    url: string;
+    read: boolean;
+    created_at: string | null;
+};
+
+export type AdminAlerts = {
+    unread: number;
+    latest: AdminAlert[];
+};
+
+// A renter's cancellation or change request from the portal (BookingRequestResource, M10B).
+export type AdminBookingRequest = {
+    id: number;
+    type: 'cancel' | 'change';
+    type_label: string;
+    message: string;
+    status: 'open' | 'handled';
+    status_label: string;
+    staff_note: string | null;
+    handled_by: string | null;
+    handled_at: string | null;
+    created_at: string | null;
+    booking: {
+        reference: string | null;
+        status_label: string;
+        car: string;
+        pickup_at: string;
+        renter: string | null;
+        phone: string | null;
+        email: string | null;
+    };
+};
