@@ -28,6 +28,7 @@ class UpdateNotificationSettingsRequest extends UpdateSettingsRequest
             'channels.*.whatsapp' => ['required', 'boolean'],
             'voucher_email_subject' => ['required', 'string', 'max:200'],
             'voucher_email_intro' => ['required', 'string', 'max:2000'],
+            'voucher_whatsapp_text' => ['required', 'string', 'max:1000'],
         ];
     }
 

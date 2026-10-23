@@ -34,13 +34,27 @@ class WhatsAppLinkBuilder
      */
     public function link(string $template, array $values = []): ?string
     {
-        $number = preg_replace('/\D+/', '', (string) $this->settings->whatsapp_number);
+        return self::linkTo(
+            $this->settings->whatsapp_number,
+            self::fill($this->settings->whatsapp_templates[$template] ?? '', $values),
+        );
+    }
+
+    /**
+     * A chat with any number, e.g. a renter's phone (M10). Null when the number has no digits.
+     * Numbers written locally ("0712 345 678") are taken as Kenyan.
+     */
+    public static function linkTo(?string $number, string $text = ''): ?string
+    {
+        $number = (string) preg_replace('/\D+/', '', (string) $number);
 
         if ($number === '') {
             return null;
         }
 
-        $text = self::fill($this->settings->whatsapp_templates[$template] ?? '', $values);
+        if (str_starts_with($number, '0')) {
+            $number = '254'.substr($number, 1);
+        }
 
         return "https://wa.me/{$number}".($text === '' ? '' : '?text='.rawurlencode($text));
     }

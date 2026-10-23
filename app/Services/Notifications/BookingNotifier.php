@@ -1,0 +1,120 @@
+<?php
+
+namespace App\Services\Notifications;
+
+use App\Enums\PaymentStatus;
+use App\Models\Booking;
+use App\Notifications\Booking\BookingConfirmed;
+use App\Notifications\Booking\BookingReceived;
+use App\Notifications\Booking\PaymentRejected;
+use App\Notifications\Booking\PaymentSubmitted;
+use App\Notifications\Booking\StaffNewBooking;
+use App\Services\Booking\BookingTokenService;
+use App\Settings\NotificationSettings;
+use App\Support\WhatsAppLinkBuilder;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
+
+/**
+ * Who hears about what in a booking's life (M10, TECHNICAL_PLAN §13). Renters are reached
+ * at the main driver's email and phone; staff at the recipients in Notification settings.
+ *
+ * Only the token's hash is stored, so a renter link exists only where the plain token is
+ * known: on submit the renter's own, and after a staff decision a fresh one (D39). Rotating
+ * there means the mail always carries a working link, and older links stop working.
+ */
+class BookingNotifier
+{
+    public function __construct(
+        private readonly NotificationSettings $settings,
+        private readonly BookingTokenService $tokens,
+        private readonly VoucherService $vouchers,
+    ) {}
+
+    public function submitted(Booking $booking, string $token): void
+    {
+        $this->renter($booking)?->notify(new BookingReceived($booking, $token));
+        $this->staff()?->notify(new StaffNewBooking($booking));
+    }
+
+    public function paymentSubmitted(Booking $booking): void
+    {
+        $payment = $booking->payments()->where('status', PaymentStatus::Pending)->latest('id')->first();
+
+        if ($payment !== null) {
+            $this->staff()?->notify(new PaymentSubmitted($booking, $payment));
+        }
+    }
+
+    /**
+     * The voucher is generated whether or not the mail is on, so staff can always resend it.
+     */
+    public function confirmed(Booking $booking): void
+    {
+        $voucher = $this->vouchers->generate($booking);
+        $renter = $this->renter($booking);
+
+        $renter?->notify(new BookingConfirmed($booking, $this->freshToken($booking, 'booking_confirmed'), $voucher));
+    }
+
+    public function rejected(Booking $booking): void
+    {
+        $payment = $booking->payments()->where('status', PaymentStatus::Rejected)->latest('id')->first();
+        $renter = $this->renter($booking);
+
+        $renter?->notify(new PaymentRejected($booking, (string) $payment?->rejection_reason, $this->freshToken($booking, 'payment_rejected')));
+    }
+
+    /**
+     * The wa.me link staff open to send the confirmation themselves (click-to-chat). Null
+     * when the WhatsApp confirmation is turned off or the renter has no phone.
+     */
+    public function confirmationWhatsAppLink(Booking $booking): ?string
+    {
+        if (! $this->settings->enabled('booking_confirmed', 'whatsapp')) {
+            return null;
+        }
+
+        return WhatsAppLinkBuilder::linkTo($booking->driver?->phone, $this->vouchers->whatsAppText($booking));
+    }
+
+    /**
+     * A new link for a mail that will go out. Without that mail the renter's current link
+     * is left working.
+     */
+    private function freshToken(Booking $booking, string $event): ?string
+    {
+        return $this->settings->enabled($event, 'mail') ? $this->tokens->rotate($booking) : null;
+    }
+
+    private function renter(Booking $booking): ?AnonymousNotifiable
+    {
+        $driver = $booking->driver;
+
+        if ($driver === null) {
+            return null;
+        }
+
+        return Notification::route('mail', $driver->email)->route('whatsapp', $driver->phone);
+    }
+
+    private function staff(): ?AnonymousNotifiable
+    {
+        $routes = array_filter([
+            'mail' => $this->settings->staff_emails,
+            'whatsapp' => $this->settings->staff_whatsapp_number,
+        ]);
+
+        if ($routes === []) {
+            return null;
+        }
+
+        $notifiable = new AnonymousNotifiable;
+
+        foreach ($routes as $channel => $route) {
+            $notifiable->route($channel, $route);
+        }
+
+        return $notifiable;
+    }
+}

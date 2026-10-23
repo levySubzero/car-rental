@@ -525,11 +525,13 @@ Submission re-checks availability under a row lock. The admin calendar uses the 
 | Reserved          | `BookingConfirmed` (mail, voucher PDF attached; WhatsApp) | —                                    |
 | Payment rejected  | `PaymentRejected` (mail, with reason and retry link)      | —                                    |
 
-- `VoucherService` renders the voucher with dompdf from a Blade view. Fields follow PRD P-6 and the values come from the **snapshot**. The PDF is stored as `booking.voucher` media and regenerated on resend.
-- **WhatsApp channel drivers** (config `services.whatsapp.driver`):
-    - `click_to_chat` (v1): builds a `wa.me` link with prefilled text, logs it, and shows staff a "Send on WhatsApp" button.
-    - `cloud_api` (v1.1): approved templates.
-- All notifications are queued, all are logged to the activity log, and every one can be toggled in `NotificationSettings`.
+- `BookingNotifier` decides who hears what. `BookingService::submit()` calls it with the renter's token; the queued `SendBookingNotifications` listener on `BookingStatusChanged` covers payment submitted (and awaiting cash), Reserved and Payment rejected. Renters are reached at the main driver's email and phone, staff at `NotificationSettings::staff_emails` and `staff_whatsapp_number`. Mail links follow D39.
+- `VoucherService` renders the voucher with dompdf from `resources/views/pdf/voucher.blade.php`. Fields follow PRD P-6 and the values come from the **snapshot** (amount columns, `quote`, `cancellation_tiers`). The PDF is stored as `booking.voucher` media (private, system-written, one per booking, `MediaService::storeGenerated`) and replaced when regenerated. Staff who see bookings or payments can open it.
+- **WhatsApp channel drivers** (`WhatsAppChannel`, config `services.whatsapp.driver`):
+    - `click_to_chat` (v1): builds a `wa.me` link with the prefilled text and logs it (`whatsapp` activity). Nothing is pushed, so staff alerts on WhatsApp are logged only; staff alert mails link to a chat with the renter, and the verify toast offers "Send on WhatsApp" with the confirmation (`NotificationSettings::voucher_whatsapp_text`).
+    - `cloud_api` (P2.3): approved templates. Selecting it before it is built throws.
+- All notifications are queued (and encrypted on the queue: renter mails carry the token), each one sent is logged as `notifications` activity on the booking, and every one can be toggled per channel in `NotificationSettings`.
+- Mail layout: the published `vendor/mail` message view and theme (company name, contacts, brand colours).
 
 ---
 
@@ -644,5 +646,6 @@ Scheduler:
 | D36 | 2026-10-22: Booking status changes are audited in the activity log only (`log_name` = `booking-status`, properties from, to, reason, actor), with an index on `(subject_type, subject_id, log_name)`. No `booking_status_histories` table. | One audit trail; the index keeps a booking's timeline cheap. |
 | D37 | 2026-10-22: Lean booking shape. Main driver only: the additional driver stays a counter extra by charge code, with no KYC. Pickup is the office or a delivery, return the office or a collection: no locations list, so `require_flight_number_for_airport` is unused. One `quote` snapshot (it already holds the FX table, settings and their hash) plus the money columns and `cancellation_tiers`; no separate `fx` or `settings_snapshot`, no `metadata` columns. | The PRD keeps the additional driver informational in v1, and the client works from one office. |
 | D38 | 2026-10-23: Payment holds and part payments. Payment submitted keeps the hold with no expiry until staff act (a hold with no `expires_at` counts as active). Awaiting cash holds for `PricingSettings::cash_hold_hours` (24). A rejected payment gets a fresh `hold_minutes` window, and Payment rejected may move to Awaiting cash (cash on retry) or Expired (no retry). A part payment, accepted with `payments.accept-partial` and a note, is stored as `reservation_paid_minor` and moves the shortfall to the balance due at handover; there are no top-up submissions. Staff enter verified amounts in KES. | Staff can't always check a payment within the 2-hour hold, renters need time to reach the office with cash, and one payment per booking keeps the desk simple. |
+| D39 | 2026-10-23: Renter links in notification mails. Only the token's hash is stored, so a mail can link to the booking only where the plain token is known. The submit acknowledgement uses the renter's own token (passed down from the request). The confirmation and rejection mails, which follow a staff action, rotate the token and carry the new link; earlier links stop working. No token is rotated when that mail is turned off. | No plain or reversible token at rest. The renter always has one working link: the newest mail. |
 
 New decisions are appended here with a date.

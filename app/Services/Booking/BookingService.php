@@ -13,6 +13,7 @@ use App\Models\CancellationTier;
 use App\Models\Car;
 use App\Services\Cms\PolicyBundleService;
 use App\Services\Media\MediaService;
+use App\Services\Notifications\BookingNotifier;
 use App\Services\Pricing\Quote\Quote;
 use App\Services\Pricing\QuoteService;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,7 @@ class BookingService
         private readonly QuoteService $quotes,
         private readonly PolicyBundleService $bundles,
         private readonly MediaService $media,
+        private readonly BookingNotifier $notifier,
     ) {}
 
     /**
@@ -144,7 +146,11 @@ class BookingService
      *
      * @throws ValidationException
      */
-    public function submit(Booking $booking, string $ip): Booking
+    /**
+     * $token is the renter's plain token from the request: the acknowledgement mail links
+     * back with it (only its hash is stored).
+     */
+    public function submit(Booking $booking, string $ip, string $token): Booking
     {
         $this->ensureDraft($booking);
         $driver = $booking->driver ?? throw BookingException::stepsIncomplete();
@@ -165,7 +171,7 @@ class BookingService
 
         $bundle = $this->bundles->current() ?? throw BookingException::noTermsBundle();
 
-        return DB::transaction(function () use ($booking, $bundle, $ip) {
+        $booking = DB::transaction(function () use ($booking, $bundle, $ip) {
             // A double click submits twice: the second waits here, then finds it submitted.
             $locked = Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
             $this->ensureDraft($locked);
@@ -191,6 +197,10 @@ class BookingService
 
             return $this->statuses->transition($booking, BookingStatus::AwaitingPayment, 'renter');
         });
+
+        $this->notifier->submitted($booking, $token);
+
+        return $booking;
     }
 
     /**

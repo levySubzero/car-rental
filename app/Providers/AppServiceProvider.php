@@ -30,6 +30,9 @@ use App\Services\Media\Contracts\TokenUploaderResolver;
 use App\Services\Media\CurrentUploader;
 use App\Services\Media\ImageDriver;
 use App\Services\Media\MediaCollectionRegistry;
+use App\Services\Notifications\WhatsApp\Drivers\ClickToChatDriver;
+use App\Services\Notifications\WhatsApp\Drivers\CloudApiDriver;
+use App\Services\Notifications\WhatsApp\WhatsAppDriver;
 use App\Services\Pricing\Fx\FxRateProvider;
 use App\Services\Pricing\Fx\ManualProvider;
 use App\Services\Pricing\Fx\OpenExchangeRatesProvider;
@@ -66,6 +69,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FxRateProvider::class, fn ($app) => match (FxProvider::tryFrom($app->make(FxSettings::class)->provider)) {
             FxProvider::OpenExchangeRates => new OpenExchangeRatesProvider(config('services.fx.api_key')),
             default => new ManualProvider,
+        });
+
+        // WhatsApp notifications (M10.2): click-to-chat links until the Cloud API (P2.3).
+        $this->app->bind(WhatsAppDriver::class, fn () => match (config('services.whatsapp.driver')) {
+            'cloud_api' => new CloudApiDriver,
+            default => new ClickToChatDriver,
         });
 
         // Not a singleton: admins can change the overrides mid-request (settings save).

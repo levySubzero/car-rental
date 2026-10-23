@@ -11,6 +11,8 @@ export type AppVariant = 'header' | 'sidebar';
 export type FlashToast = {
     type: 'success' | 'info' | 'warning' | 'error';
     message: string;
+    // A link to open, such as the WhatsApp confirmation after a payment is verified.
+    action?: { label: string; url: string };
 };
 
 export type AuthLayoutProps = {

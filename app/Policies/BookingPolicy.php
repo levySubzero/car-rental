@@ -26,11 +26,16 @@ class BookingPolicy
 
     /**
      * Private booking files (MediaPolicy defers here): KYC documents need
-     * bookings.view-documents; payment proofs are also open to whoever checks payments.
+     * bookings.view-documents; payment proofs are also open to whoever checks payments, and
+     * the voucher to anyone who sees the booking or its payments.
      */
     public function viewMedia(User $user, Booking $booking, ?Media $media = null): bool
     {
         if ($media?->collection === BookingTokenResolver::PAYMENT_PROOF && $user->can(Permission::PaymentsView)) {
+            return true;
+        }
+
+        if ($media?->collection === 'booking.voucher' && ($user->can(Permission::BookingsView) || $user->can(Permission::PaymentsView))) {
             return true;
         }
 

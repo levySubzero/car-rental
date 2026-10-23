@@ -38,6 +38,12 @@ describe('whatsappLink', () => {
         );
     });
 
+    it('reads a local number as Kenyan', () => {
+        expect(whatsappLink('0712 345 678', 'Hello')).toBe(
+            'https://wa.me/254712345678?text=Hello',
+        );
+    });
+
     it('is null without a number', () => {
         expect(whatsappLink(null, 'Hello')).toBeNull();
     });

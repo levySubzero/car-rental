@@ -119,7 +119,7 @@ class BookingController extends Controller
 
     public function submit(SubmitBookingRequest $request): RedirectResponse
     {
-        $this->bookings->submit(ResolveBookingToken::booking($request), (string) $request->ip());
+        $this->bookings->submit(ResolveBookingToken::booking($request), (string) $request->ip(), (string) $request->route('token'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Booking received. Choose how to pay the reservation below.']);
 

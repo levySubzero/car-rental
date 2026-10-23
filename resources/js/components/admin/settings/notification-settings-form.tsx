@@ -19,6 +19,7 @@ export type NotificationSettings = {
     channels: Record<string, { mail: boolean; whatsapp: boolean }>;
     voucher_email_subject: string;
     voucher_email_intro: string;
+    voucher_whatsapp_text: string;
 };
 
 const EVENTS: Record<string, { label: string; audience: string }> = {
@@ -43,6 +44,7 @@ export function NotificationSettingsForm({
         channels: values.channels,
         voucher_email_subject: values.voucher_email_subject,
         voucher_email_intro: values.voucher_email_intro,
+        voucher_whatsapp_text: values.voucher_whatsapp_text,
     });
     const errors = form.errors as Record<string, string | undefined>;
 
@@ -106,7 +108,9 @@ export function NotificationSettingsForm({
                 <CardHeader>
                     <CardTitle>Channels</CardTitle>
                     <CardDescription>
-                        Turn each message on or off per channel.
+                        Turn each message on or off per channel. Until the
+                        WhatsApp Business API is connected, WhatsApp messages
+                        are prepared as links for staff to send.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -195,6 +199,21 @@ export function NotificationSettingsForm({
                         onChange={(event) =>
                             form.setData(
                                 'voucher_email_intro',
+                                event.target.value,
+                            )
+                        }
+                    />
+                    <TextareaField
+                        name="voucher_whatsapp_text"
+                        label="WhatsApp message"
+                        description="Prefilled when staff send the confirmation on WhatsApp. {reference}, {car} and {dates} are filled in."
+                        rows={3}
+                        required
+                        value={form.data.voucher_whatsapp_text}
+                        error={errors.voucher_whatsapp_text}
+                        onChange={(event) =>
+                            form.setData(
+                                'voucher_whatsapp_text',
                                 event.target.value,
                             )
                         }

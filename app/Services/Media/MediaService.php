@@ -111,6 +111,76 @@ class MediaService
     }
 
     /**
+     * Store a file the system made, such as a voucher PDF, straight onto its owner. It
+     * replaces the collection's current files when the collection holds one file.
+     */
+    public function storeGenerated(Model $owner, string $collection, string $contents, string $name, string $mime, ?Model $actor = null): Media
+    {
+        $definition = $this->collections->assertOwner($collection, $owner);
+        $extension = $this->extensionFor($mime, $definition);
+
+        if (strlen($contents) > $definition->maxKb * 1024) {
+            throw MediaException::tooLarge($this->formatKb($definition->maxKb));
+        }
+
+        $uuid = (string) Str::uuid();
+        $fileName = Str::random(40).'.'.$extension;
+        $path = $collection.'/'.now()->format('Y/m')."/{$uuid}/{$fileName}";
+        $disk = $definition->visibility->disk();
+
+        Storage::disk($disk)->put($path, $contents);
+
+        try {
+            return DB::transaction(function () use ($owner, $definition, $actor, $uuid, $name, $fileName, $path, $disk, $contents, $extension, $mime) {
+                $current = $this->filesOf($owner, $definition->key)->orderBy('sort_order')->get();
+                $replaced = $definition->maxFiles === 1 ? $current : new Collection;
+
+                foreach ($replaced as $media) {
+                    $media->delete();
+                }
+
+                $media = Media::create([
+                    'uuid' => $uuid,
+                    'mediable_type' => $owner->getMorphClass(),
+                    'mediable_id' => $owner->getKey(),
+                    'collection' => $definition->key,
+                    'disk' => $disk,
+                    'path' => $path,
+                    'original_name' => Str::limit($name, 250, ''),
+                    'file_name' => $fileName,
+                    'mime_type' => $mime,
+                    'extension' => $extension,
+                    'size_bytes' => strlen($contents),
+                    'checksum_sha256' => hash('sha256', $contents),
+                    'visibility' => $definition->visibility,
+                    'status' => MediaStatus::Attached,
+                    'processing' => MediaProcessing::Skipped,
+                    'metadata' => [],
+                    'sort_order' => $current->count() - $replaced->count(),
+                    'is_primary' => $current->count() === $replaced->count(),
+                    'uploaded_by_type' => $actor?->getMorphClass(),
+                    'uploaded_by_id' => $actor?->getKey(),
+                ]);
+
+                activity('media')->performedOn($owner)->causedBy($actor)
+                    ->withProperties([
+                        'collection' => $definition->key,
+                        'file' => $uuid,
+                        'removed' => $replaced->pluck('uuid')->all(),
+                    ])
+                    ->event('generated')
+                    ->log('file generated');
+
+                return $media;
+            });
+        } catch (Throwable $exception) {
+            Storage::disk($disk)->delete($path);
+
+            throw $exception;
+        }
+    }
+
+    /**
      * Write every conversion of the file's collection (ProcessMediaJob). Safe to run again.
      */
     public function generateConversions(Media $media): void

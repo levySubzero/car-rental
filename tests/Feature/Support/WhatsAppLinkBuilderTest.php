@@ -30,3 +30,9 @@ it('has no link until a WhatsApp number is set', function () {
 
     expect(app(WhatsAppLinkBuilder::class)->general())->toBeNull();
 });
+
+it('links to any number, reading a local one as Kenyan', function () {
+    expect(WhatsAppLinkBuilder::linkTo('0712 345 678', 'Hello'))->toBe('https://wa.me/254712345678?text=Hello')
+        ->and(WhatsAppLinkBuilder::linkTo('+254 724 422 051'))->toBe('https://wa.me/254724422051')
+        ->and(WhatsAppLinkBuilder::linkTo(null, 'Hello'))->toBeNull();
+});

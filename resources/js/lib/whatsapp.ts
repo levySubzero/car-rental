@@ -32,10 +32,15 @@ export function whatsappLink(
     template: string | undefined,
     values: Record<string, string | null | undefined> = {},
 ): string | null {
-    const digits = (number ?? '').replace(/\D+/g, '');
+    let digits = (number ?? '').replace(/\D+/g, '');
 
     if (digits === '') {
         return null;
+    }
+
+    // Numbers written locally ("0712 345 678") are taken as Kenyan.
+    if (digits.startsWith('0')) {
+        digits = `254${digits.slice(1)}`;
     }
 
     const text = fillTemplate(template ?? '', values);

@@ -245,6 +245,19 @@ return [
             'upload' => ['token' => true],
         ],
 
+        // Booking voucher (M10.6): the PDF VoucherService renders on confirmation. Written by
+        // the system only, replaced when regenerated.
+        'booking.voucher' => [
+            'label' => 'Booking voucher',
+            'owner' => 'booking',
+            'visibility' => 'private',
+            'max_files' => 1,
+            'max_kb' => 4096,
+            'mimes' => ['pdf'],
+            'conversions' => [],
+            'upload' => ['system' => true],
+        ],
+
     ],
 
 ];

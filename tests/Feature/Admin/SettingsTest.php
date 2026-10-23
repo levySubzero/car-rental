@@ -1,6 +1,7 @@
 <?php
 
 use App\Settings\GeneralSettings;
+use App\Settings\NotificationSettings;
 use App\Settings\RetentionSettings;
 use App\Settings\SecuritySettings;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -106,8 +107,11 @@ it('saves notification settings', function () {
             'channels' => $channels,
             'voucher_email_subject' => 'Booking {reference} confirmed',
             'voucher_email_intro' => 'Thanks.',
+            'voucher_whatsapp_text' => 'Booking {reference} for the {car} is confirmed.',
         ])
         ->assertSessionHasNoErrors();
+
+    expect(app(NotificationSettings::class)->voucher_whatsapp_text)->toBe('Booking {reference} for the {car} is confirmed.');
 });
 
 it('turns required 2FA on from the security tab', function () {

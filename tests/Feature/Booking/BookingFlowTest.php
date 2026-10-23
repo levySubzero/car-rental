@@ -10,10 +10,13 @@ use App\Models\Car;
 use App\Models\Charge;
 use App\Models\DeliveryZone;
 use App\Models\PolicyBundle;
+use App\Notifications\Booking\BookingReceived;
 use App\Services\Booking\BookingStatusService;
 use App\Services\Booking\BookingTokenService;
 use App\Settings\PricingSettings;
 use Database\Seeders\PricingSeeder;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\BookingFixtures;
@@ -138,7 +141,11 @@ it('takes a renter from the booking page to awaiting payment', function () {
     $this->put(route('bookings.driver', $token), driverPayload(uploadDocuments($token)))->assertSessionHasNoErrors();
     expect($booking->fresh()->current_step->value)->toBe('review');
 
+    Notification::fake();
     $this->post(route('bookings.submit', $token), ['accept_terms' => true])->assertSessionHasNoErrors();
+
+    Notification::assertSentTo(new AnonymousNotifiable, BookingReceived::class, fn (BookingReceived $notification, array $channels, AnonymousNotifiable $notifiable) => $notification->token === $token
+        && $notifiable->routes['mail'] === 'amina@example.test');
 
     $booking->refresh();
     expect($booking->status)->toBe(BookingStatus::AwaitingPayment)
