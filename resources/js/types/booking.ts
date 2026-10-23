@@ -73,6 +73,10 @@ export type Booking = {
     flight_number: string | null;
     submitted_at: string | null;
     expires_at: string | null;
+    // Set once staff verify the payment; a part payment leaves the rest on the balance.
+    reservation_paid: Money | null;
+    balance_due: Money | null;
+    paid_at: string | null;
     driver?: BookingDriver | null;
     // Drafts only: the attached file per document.
     documents?: Record<string, MediaItem | null>;
@@ -128,4 +132,22 @@ export type CancellationTier = {
     hours_before_pickup: number;
     refund_percent_bp: number;
     label: string | null;
+};
+
+export type PublicPaymentMethod = {
+    code: 'mpesa' | 'bank' | 'card' | 'cash';
+    name: string;
+    requires_transaction_message: boolean;
+    requires_proof: boolean;
+    instructions_html: string;
+};
+
+// The renter's latest payment attempt.
+export type BookingPayment = {
+    method: string;
+    method_name: string;
+    status: 'pending' | 'verified' | 'rejected';
+    status_label: string;
+    rejection_reason: string | null;
+    submitted_at: string | null;
 };

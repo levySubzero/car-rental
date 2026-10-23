@@ -6,6 +6,7 @@ use App\Enums\BookingDocument;
 use App\Http\Resources\Media\MediaResource;
 use App\Models\Booking;
 use App\Models\BookingDriver;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -48,6 +49,10 @@ class BookingResource extends JsonResource
             'flight_number' => $this->flight_number,
             'submitted_at' => $this->submitted_at?->toIso8601String(),
             'expires_at' => $this->expires_at?->toIso8601String(),
+            // What was paid, and the balance left: a part payment moves the shortfall to it (D38).
+            'reservation_paid' => $this->reservation_paid_minor === null ? null : new Money($this->reservation_paid_minor),
+            'balance_due' => $this->balance_minor === null ? null : new Money($this->balance_minor),
+            'paid_at' => $this->paid_at?->toIso8601String(),
             'driver' => $this->whenLoaded('driver', fn () => $this->driver ? $this->driverData($this->driver) : null),
             'documents' => $this->when($this->isDraft(), fn () => $this->documents()),
         ];

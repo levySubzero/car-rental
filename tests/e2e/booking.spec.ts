@@ -83,4 +83,26 @@ test('a renter books a car with their documents', async ({ page }) => {
 
     await expect(page.getByText('Awaiting payment').first()).toBeVisible();
     await expect(page.getByText(/Booking BE-\d{4}-\d{6}/)).toBeVisible();
+
+    // Steps 4 and 5: the instructions show once a method is chosen (P-1).
+    await expect(page.getByText('Paying by M-Pesa')).toHaveCount(0);
+    await page.getByRole('radio', { name: 'M-Pesa' }).check();
+    await expect(page.getByText('Paying by M-Pesa')).toBeVisible();
+    await page
+        .getByLabel('Confirmation message')
+        .fill('TJK1AB2CD3 Confirmed. Ksh16,588.00 sent to BAINES EXECUTIVES.');
+    await page.locator('input[type="file"]').setInputFiles({
+        name: 'mpesa.pdf',
+        mimeType: 'application/pdf',
+        buffer: PDF,
+    });
+    await expect(
+        page.getByRole('button', { name: /^Remove mpesa/ }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Send payment details' }).click();
+
+    await expect(
+        page.getByRole('heading', { name: 'We are checking your payment' }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Payment submitted').first()).toBeVisible();
 });

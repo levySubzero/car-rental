@@ -16,6 +16,7 @@ import {
     ShieldCheck,
     Tags,
     Users,
+    Wallet,
 } from 'lucide-react';
 import ActivityLogController from '@/actions/App/Http/Controllers/Admin/ActivityLogController';
 import CancellationTierController from '@/actions/App/Http/Controllers/Admin/CancellationTierController';
@@ -29,6 +30,7 @@ import CurrencyController from '@/actions/App/Http/Controllers/Admin/CurrencyCon
 import DeliveryZoneController from '@/actions/App/Http/Controllers/Admin/DeliveryZoneController';
 import DepositBandController from '@/actions/App/Http/Controllers/Admin/DepositBandController';
 import FxRateController from '@/actions/App/Http/Controllers/Admin/FxRateController';
+import PaymentSubmissionController from '@/actions/App/Http/Controllers/Admin/PaymentSubmissionController';
 import QuoteSandboxController from '@/actions/App/Http/Controllers/Admin/QuoteSandboxController';
 import RoleController from '@/actions/App/Http/Controllers/Admin/RoleController';
 import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsController';
@@ -54,9 +56,15 @@ export const adminNav: NavGroup[] = [
         ],
     },
     {
-        // Day-to-day desk work; bookings and payments join in M11.
+        // Day-to-day desk work; bookings join in M11.
         title: 'Operations',
         items: [
+            {
+                title: 'Payments',
+                href: PaymentSubmissionController.index(),
+                icon: Wallet,
+                permission: 'payments.view',
+            },
             {
                 title: 'Messages',
                 href: ContactMessageController.index(),

@@ -19,4 +19,9 @@ class FakeTokenResolver implements TokenUploaderResolver
     {
         return $this->tokens[$plainToken] ?? null;
     }
+
+    public function canUpload(Model $owner, string $collection): bool
+    {
+        return true;
+    }
 }

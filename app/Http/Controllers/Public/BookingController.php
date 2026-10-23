@@ -13,13 +13,16 @@ use App\Http\Requests\Public\Booking\StartBookingRequest;
 use App\Http\Requests\Public\Booking\SubmitBookingRequest;
 use App\Http\Resources\Public\BookingResource;
 use App\Http\Resources\Public\CarCardResource;
+use App\Http\Resources\Public\PaymentMethodResource;
 use App\Http\Resources\Public\QuoteResource;
 use App\Models\Booking;
 use App\Models\CancellationTier;
 use App\Models\Car;
 use App\Models\Charge;
 use App\Models\DeliveryZone;
+use App\Models\PaymentMethod;
 use App\Services\Booking\BookingService;
+use App\Services\Booking\BookingTokenResolver;
 use App\Services\Booking\DriverEligibilityService;
 use App\Services\Media\MediaCollectionRegistry;
 use App\Services\Pricing\DisplayCurrencyService;
@@ -32,8 +35,8 @@ use Inertia\Response;
 
 /**
  * Online booking (TECHNICAL_PLAN §11.1): the booking page starts a draft, the renter's link
- * `/bookings/{token}` shows the wizard while it is a draft and the status page after submit.
- * Payment (steps 4–5) joins in M9.
+ * `/bookings/{token}` shows the wizard while it is a draft and the status page after submit,
+ * where the renter pays (steps 4–5, M9; BookingPaymentController).
  */
 class BookingController extends Controller
 {
@@ -69,7 +72,7 @@ class BookingController extends Controller
 
     public function show(Request $request, DriverEligibilityService $eligibility, MediaCollectionRegistry $collections): Response
     {
-        $booking = ResolveBookingToken::booking($request)->load(['car.brand', 'car.carType', 'car.cover', 'driver', 'deliveryZone']);
+        $booking = ResolveBookingToken::booking($request)->load(['car.brand', 'car.carType', 'car.cover', 'driver', 'deliveryZone', 'latestPayment.method']);
         $token = (string) $request->route('token');
 
         if (! $booking->isDraft()) {
@@ -78,6 +81,11 @@ class BookingController extends Controller
                 'booking' => BookingResource::make($booking),
                 'quote' => $this->snapshotQuote($booking),
                 'cancellation_tiers' => $booking->cancellation_tiers ?? [],
+                'payment_methods' => $booking->status->acceptsPayment()
+                    ? PaymentMethodResource::collection(PaymentMethod::query()->active()->ordered()->get())
+                    : [],
+                'payment' => $this->latestPayment($booking),
+                'proof_limits' => $collections->get(BookingTokenResolver::PAYMENT_PROOF)->toArray(),
             ]);
         }
 
@@ -113,7 +121,7 @@ class BookingController extends Controller
     {
         $this->bookings->submit(ResolveBookingToken::booking($request), (string) $request->ip());
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Booking received. Payment details follow.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Booking received. Choose how to pay the reservation below.']);
 
         return back();
     }
@@ -189,6 +197,26 @@ class BookingController extends Controller
         } catch (QuoteException $exception) {
             return [null, $exception->getMessage()];
         }
+    }
+
+    /**
+     * The renter's latest payment attempt: enough to say where it stands, and why it was
+     * rejected. Staff's reference and notes stay internal.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function latestPayment(Booking $booking): ?array
+    {
+        $payment = $booking->latestPayment;
+
+        return $payment === null ? null : [
+            'method' => $payment->payment_method_code->value,
+            'method_name' => $payment->method->name ?? $payment->payment_method_code->value,
+            'status' => $payment->status->value,
+            'status_label' => $payment->status->label(),
+            'rejection_reason' => $payment->rejection_reason,
+            'submitted_at' => $payment->created_at?->toIso8601String(),
+        ];
     }
 
     /**

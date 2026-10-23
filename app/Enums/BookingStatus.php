@@ -32,7 +32,8 @@ enum BookingStatus: string
             self::AwaitingPayment => [self::PaymentSubmitted, self::AwaitingCash, self::Expired],
             self::PaymentSubmitted => [self::Reserved, self::PaymentRejected],
             self::AwaitingCash => [self::Reserved, self::Expired],
-            self::PaymentRejected => [self::PaymentSubmitted, self::Cancelled],
+            // A retry may switch to cash; an unanswered rejection lapses with its hold (D38).
+            self::PaymentRejected => [self::PaymentSubmitted, self::AwaitingCash, self::Cancelled, self::Expired],
             self::Reserved => [self::Active, self::Cancelled, self::NoShow],
             self::Active => [self::Completed],
             self::Completed, self::Cancelled, self::NoShow, self::Expired => [],
@@ -42,6 +43,14 @@ enum BookingStatus: string
     public function canTransitionTo(self $to): bool
     {
         return in_array($to, $this->transitions(), true);
+    }
+
+    /**
+     * The renter can submit a payment: the first time, or again after a rejection.
+     */
+    public function acceptsPayment(): bool
+    {
+        return $this === self::AwaitingPayment || $this === self::PaymentRejected;
     }
 
     public function isTerminal(): bool

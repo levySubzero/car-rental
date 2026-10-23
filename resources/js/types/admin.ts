@@ -429,3 +429,35 @@ export type AdminQuote = {
     settings: Record<string, string | number | null>;
     settings_hash: string;
 };
+
+// A renter payment in the staff queue (M9).
+export type AdminPayment = {
+    id: number;
+    status: 'pending' | 'verified' | 'rejected';
+    status_label: string;
+    method: string;
+    method_name: string;
+    transaction_message: string | null;
+    proof: MediaItem | null;
+    amount: Money | null;
+    reference: string | null;
+    note: string | null;
+    rejection_reason: string | null;
+    verified_by: string | null;
+    verified_at: string | null;
+    rejected_by: string | null;
+    rejected_at: string | null;
+    created_at: string | null;
+    booking: {
+        reference: string | null;
+        status: string;
+        status_label: string;
+        car: string;
+        renter: string | null;
+        phone: string | null;
+        pickup_at: string;
+        expires_at: string | null;
+        total: Money;
+        reservation: Money;
+    };
+};

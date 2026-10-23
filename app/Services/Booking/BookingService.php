@@ -204,7 +204,11 @@ class BookingService
 
         // A draft lapses that many hours after the renter last saved a step.
         $drafts = Booking::query()->where('status', BookingStatus::Draft)->where('updated_at', '<=', now()->subHours($draftHours));
-        $unpaid = Booking::query()->where('status', BookingStatus::AwaitingPayment)->where('expires_at', '<=', now());
+        // Unpaid: the hold ran out before a payment came, cash was not brought, or a rejected
+        // payment was not retried (D38). A payment being checked never lapses.
+        $unpaid = Booking::query()
+            ->whereIn('status', [BookingStatus::AwaitingPayment, BookingStatus::AwaitingCash, BookingStatus::PaymentRejected])
+            ->where('expires_at', '<=', now());
 
         foreach (['drafts' => $drafts, 'unpaid' => $unpaid] as $kind => $query) {
             $query->lazyById()->each(function (Booking $booking) use ($kind, &$counts) {

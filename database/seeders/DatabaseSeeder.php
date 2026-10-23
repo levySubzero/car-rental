@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             Permission::AvailabilityManage,
             ...Permission::forModule('contact-messages'),
             Permission::PaymentMethodsView,
+            ...Permission::forModule('payments'),
             // Pricing is the super admin's (PRD §3); the desk can see it and run quotes.
             Permission::FxRatesView,
             Permission::ChargesView,

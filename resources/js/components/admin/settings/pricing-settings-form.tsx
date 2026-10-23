@@ -21,6 +21,7 @@ export type PricingSettings = {
     daytime_window_end: string;
     rolling_grace_minutes: number;
     hold_minutes: number;
+    cash_hold_hours: number;
     draft_expiry_hours: number;
     turnaround_minutes: number;
     default_mileage_km: number;
@@ -47,6 +48,7 @@ export function PricingSettingsForm({
         daytime_window_end: values.daytime_window_end,
         rolling_grace_minutes: String(values.rolling_grace_minutes),
         hold_minutes: String(values.hold_minutes),
+        cash_hold_hours: String(values.cash_hold_hours),
         draft_expiry_hours: String(values.draft_expiry_hours),
         turnaround_minutes: String(values.turnaround_minutes),
         default_mileage_km: String(values.default_mileage_km),
@@ -163,16 +165,24 @@ export function PricingSettingsForm({
                 <CardHeader>
                     <CardTitle>Booking timings</CardTitle>
                     <CardDescription>
-                        Used by the booking flow (M8).
+                        Used by the booking flow. A payment waiting to be
+                        checked keeps its car until staff act.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-3">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <TextField
                         label="Hold while paying (minutes)"
                         type="number"
                         min={5}
                         required
                         {...field('hold_minutes')}
+                    />
+                    <TextField
+                        label="Hold for cash at the office (hours)"
+                        type="number"
+                        min={1}
+                        required
+                        {...field('cash_hold_hours')}
                     />
                     <TextField
                         label="Unfinished bookings expire (hours)"

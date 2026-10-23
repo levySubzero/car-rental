@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\Car;
 use App\Settings\PricingSettings;
 use App\Support\DateRange;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +69,16 @@ class AvailabilityService
     public function confirm(Booking $booking): void
     {
         $booking->availabilityBlocks()->update(['type' => AvailabilityBlockType::Booked->value, 'expires_at' => null]);
+    }
+
+    /**
+     * Move the hold's expiry, and the booking's with it (D38). Null keeps the car held until
+     * staff act, as while a payment waits to be checked.
+     */
+    public function extendHold(Booking $booking, ?CarbonInterface $until): void
+    {
+        $booking->availabilityBlocks()->where('type', AvailabilityBlockType::Hold->value)->update(['expires_at' => $until]);
+        $booking->forceFill(['expires_at' => $until])->save();
     }
 
     public function release(Booking $booking): void

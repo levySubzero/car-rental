@@ -232,6 +232,19 @@ return [
             'upload' => ['token' => true],
         ],
 
+        // Payment proof (M9.3): a screenshot or receipt, one per payment attempt. Uploaded with
+        // the booking token while the booking waits for payment.
+        'booking.payment_proof' => [
+            'label' => 'Payment proof',
+            'owner' => 'booking',
+            'visibility' => 'private',
+            'max_files' => 5,
+            'max_kb' => 8192,
+            'mimes' => ['jpg', 'png', 'webp', 'heic', 'pdf'],
+            'conversions' => [],
+            'upload' => ['token' => true],
+        ],
+
     ],
 
 ];

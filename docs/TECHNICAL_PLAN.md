@@ -200,7 +200,7 @@ public function create(array $data, User $actor): Car
 
 ## 5. Permissions (generated per module)
 
-**Convention:** permission names are `{module}.{ability}`, for example `cars.view`, `cars.create`, `cars.update`, `cars.delete`, `cars.view-value`, `bookings.verify-payment` and `media.view-private`.
+**Convention:** permission names are `{module}.{ability}`, for example `cars.view`, `cars.create`, `cars.update`, `cars.delete`, `cars.view-value`, `payments.verify` and `media.view-private`.
 
 **Permissions are code; roles are data** (D14, D15).
 
@@ -213,7 +213,7 @@ enum Permission: string
 {
     case CarsView = 'cars.view';
     case CarsViewValue = 'cars.view-value';
-    case BookingsVerifyPayment = 'bookings.verify-payment';
+    case PaymentsVerify = 'payments.verify';
     // each milestone adds its module's cases here
 
     public function module(): string;                               // 'cars'
@@ -408,7 +408,7 @@ We do not block on any of PRD §10. Each item ships with a setting or table and 
 
 Other settings groups:
 
-- **PricingSettings:** `reservation_percent_bp` (2500), `reservation_rounding` (`ceil_major`), `hold_minutes` (120), `draft_expiry_hours` (24), `turnaround_minutes` (0), `base_currency` (KES).
+- **PricingSettings:** `reservation_percent_bp` (2500), `reservation_rounding` (`ceil_major`), `hold_minutes` (120), `cash_hold_hours` (24, D38), `draft_expiry_hours` (24), `turnaround_minutes` (0), `base_currency` (KES).
 - **BookingSettings:** `min_licence_years` (3), `licence_must_outlive_return` (true), `require_flight_number_for_airport` (false), `max_additional_drivers` (1).
 - **GeneralSettings:** company name, legal name, phones, WhatsApp number, email, address, map embed URL, coordinates, socials, opening hours, WhatsApp message templates (with `{car}`, `{dates}` and `{reference}` placeholders).
 - **NotificationSettings:** staff alert emails, staff WhatsApp number, channel toggles per event, voucher email subject and intro copy.
@@ -486,7 +486,7 @@ Draft ─► AwaitingPayment ─► PaymentSubmitted ─► Reserved ─► Acti
 
 - All changes go through `BookingStatusService::transition($booking, $to, $actor, $reason)`. It validates against the map, writes one activity-log row (`log_name` = `booking-status`, indexed with the subject, D36) and dispatches `BookingStatusChanged`.
 - Submit creates the hold block (`AvailabilityService::lockAndHold`); Expired and Cancelled release it; Reserved turns it into `booked` (M9.7). Listeners send notifications and generate vouchers.
-- `bookings:expire` runs every 5 minutes. It expires drafts after `draft_expiry_hours` and awaiting-payment bookings after `hold_minutes`, and it releases their holds.
+- `bookings:expire` runs every 5 minutes. It expires drafts after `draft_expiry_hours`, and Awaiting payment, Awaiting cash and Payment rejected bookings once their hold's `expires_at` passes (D38), and it releases their holds. Payment submitted never expires.
 
 ### 11.3 Availability
 
@@ -508,8 +508,10 @@ Submission re-checks availability under a row lock. The admin calendar uses the 
 
 - Payment method instructions and account details live in `payment_methods` (Markdown + metadata). They are only revealed after the renter chooses a method (PRD P-1).
 - `PaymentSubmissionService::submit()` handles the transaction message and an optional proof UUID (`booking.payment_proof`). It moves the booking to Payment submitted, or to Awaiting cash for the cash method.
-- `PaymentVerificationService::verify(submission, reference, amount, actor)` records a verified payment and moves the booking to Reserved. The Reserved listener firm-blocks the dates and queues the voucher. `reject(submission, reason)` moves the booking to Payment rejected and notifies the renter.
-- If the amount is less than the reservation, verification needs the `payments.accept-partial` permission and a note.
+- `PaymentVerificationService::verify(submission, reference, amount, actor, note)` records a verified payment and moves the booking to Reserved; `BookingStatusService` firm-blocks the dates on Reserved (`AvailabilityService::confirm`). The voucher joins in M10. `reject(submission, reason, actor)` moves the booking to Payment rejected with a fresh `hold_minutes` hold; cash is never rejected. Both lock the submission, so a second click is refused.
+- If the amount is less than the reservation, verification needs the `payments.accept-partial` permission and a note. The amount is stored in `reservation_paid_minor` and the balance becomes total minus paid (D38).
+- Hold timing follows D38. Proofs upload by booking token while the booking `acceptsPayment()` (Awaiting payment or Payment rejected); KYC uploads stay drafts only. Staff with `payments.view` can open proofs.
+- Staff work from Admin → Operations → Payments (`admin.payments.*`); the dialogs in `components/admin/payments/` are reused by the bookings desk (M11.4).
 - **Phase 2 hook:** `PaymentGateway` interface (M-Pesa Daraja, Pesapal) writing to the same `payment_submissions`, auto-verified.
 
 ---
@@ -641,5 +643,6 @@ Scheduler:
 | D35 | 2026-10-22: One availability table. `car_blackouts` became `car_availability_blocks` with a `type`: `hold` (a submitted booking awaiting payment, with `expires_at`), `booked` (a reserved booking) and `blocked` (staff: maintenance, private use). No `availability_holds` table, and no `blocksAvailability()` on the status. A staff block over a booking is refused. | Availability, the calendar (M11.9) and the overlap rules read one table. |
 | D36 | 2026-10-22: Booking status changes are audited in the activity log only (`log_name` = `booking-status`, properties from, to, reason, actor), with an index on `(subject_type, subject_id, log_name)`. No `booking_status_histories` table. | One audit trail; the index keeps a booking's timeline cheap. |
 | D37 | 2026-10-22: Lean booking shape. Main driver only: the additional driver stays a counter extra by charge code, with no KYC. Pickup is the office or a delivery, return the office or a collection: no locations list, so `require_flight_number_for_airport` is unused. One `quote` snapshot (it already holds the FX table, settings and their hash) plus the money columns and `cancellation_tiers`; no separate `fx` or `settings_snapshot`, no `metadata` columns. | The PRD keeps the additional driver informational in v1, and the client works from one office. |
+| D38 | 2026-10-23: Payment holds and part payments. Payment submitted keeps the hold with no expiry until staff act (a hold with no `expires_at` counts as active). Awaiting cash holds for `PricingSettings::cash_hold_hours` (24). A rejected payment gets a fresh `hold_minutes` window, and Payment rejected may move to Awaiting cash (cash on retry) or Expired (no retry). A part payment, accepted with `payments.accept-partial` and a note, is stored as `reservation_paid_minor` and moves the shortfall to the balance due at handover; there are no top-up submissions. Staff enter verified amounts in KES. | Staff can't always check a payment within the 2-hour hold, renters need time to reach the office with cash, and one payment per booking keeps the desk simple. |
 
 New decisions are appended here with a date.

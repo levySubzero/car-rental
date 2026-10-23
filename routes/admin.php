@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\FxRateController;
 use App\Http\Controllers\Admin\MarkdownPreviewController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentMethodController;
+use App\Http\Controllers\Admin\PaymentSubmissionController;
 use App\Http\Controllers\Admin\PolicyController;
 use App\Http\Controllers\Admin\QuoteSandboxController;
 use App\Http\Controllers\Admin\RoleController;
@@ -117,6 +118,11 @@ Route::prefix('content')->group(function () {
 
 // Operations
 Route::resource('contact-messages', ContactMessageController::class)->only(['index', 'show', 'update', 'destroy']);
+
+// Payments (M9): the queue of renter payments to check.
+Route::get('payments', [PaymentSubmissionController::class, 'index'])->name('payments.index');
+Route::post('payments/{payment}/verify', [PaymentSubmissionController::class, 'verify'])->name('payments.verify');
+Route::post('payments/{payment}/reject', [PaymentSubmissionController::class, 'reject'])->name('payments.reject');
 
 Route::post('markdown/preview', MarkdownPreviewController::class)->name('markdown.preview');
 

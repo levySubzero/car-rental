@@ -27,6 +27,8 @@ class PricingSettings extends Settings
 
     public int $hold_minutes;
 
+    public int $cash_hold_hours;
+
     public int $draft_expiry_hours;
 
     public int $turnaround_minutes;

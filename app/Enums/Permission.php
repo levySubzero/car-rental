@@ -79,6 +79,12 @@ enum Permission: string
     case BookingsView = 'bookings.view';
     case BookingsViewDocuments = 'bookings.view-documents';
 
+    // Payments (M9): staff check each renter payment by hand. A partial reservation needs its own permission.
+    case PaymentsView = 'payments.view';
+    case PaymentsVerify = 'payments.verify';
+    case PaymentsReject = 'payments.reject';
+    case PaymentsAcceptPartial = 'payments.accept-partial';
+
     // Pricing (M6). The PRD keeps pricing rules with the super admin by default.
     case CurrenciesView = 'currencies.view';
     case CurrenciesCreate = 'currencies.create';

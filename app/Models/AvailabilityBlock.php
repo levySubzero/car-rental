@@ -118,7 +118,8 @@ class AvailabilityBlock extends Model
     }
 
     /**
-     * Blocks that still stop a booking: everything except holds past their expiry.
+     * Blocks that still stop a booking: everything except holds past their expiry. A hold
+     * with no expiry waits for staff (a payment being checked, D38).
      *
      * @param  Builder<self>  $query
      */
@@ -128,6 +129,7 @@ class AvailabilityBlock extends Model
 
         $query->where(fn (Builder $query) => $query
             ->where('type', '!=', AvailabilityBlockType::Hold->value)
+            ->orWhereNull('expires_at')
             ->orWhere('expires_at', '>', $at));
     }
 

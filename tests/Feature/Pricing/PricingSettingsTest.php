@@ -18,6 +18,7 @@ function pricingPayload(array $overrides = []): array
         'hold_minutes' => 90,
         'draft_expiry_hours' => 12,
         'turnaround_minutes' => 60,
+        'cash_hold_hours' => 24,
         'default_mileage_km' => 250,
         'unlimited_mileage_after_days' => 7,
         ...$overrides,

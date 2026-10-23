@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\Permission;
 use App\Models\Media;
 use App\Models\User;
+use App\Services\Media\Contracts\TokenUploaderResolver;
 use App\Services\Media\CurrentUploader;
 use App\Services\Media\MediaCollectionRegistry;
 use App\Support\Media\MediaCollection;
@@ -16,14 +17,15 @@ use Illuminate\Support\Facades\Gate;
  * is a qualified staff member or null; a renter is the token owner in CurrentUploader.
  *
  * Attached files defer to their owner's policy: `update` to manage them, and `viewMedia`
- * (falling back to `view`) to open private ones. BookingPolicy::viewMedia requires
- * bookings.view-documents.
+ * (falling back to `view`, and given the file) to open private ones. BookingPolicy::viewMedia requires
+ * bookings.view-documents, or payments.view for payment proofs.
  */
 class MediaPolicy
 {
     public function __construct(
         private readonly CurrentUploader $uploader,
         private readonly MediaCollectionRegistry $collections,
+        private readonly TokenUploaderResolver $tokens,
     ) {}
 
     public function upload(?User $user, MediaCollection $collection): bool
@@ -35,7 +37,9 @@ class MediaPolicy
         $tokenOwner = $this->uploader->tokenOwner();
 
         if ($tokenOwner !== null) {
-            return $collection->tokenUpload && $tokenOwner->getMorphClass() === $collection->owner;
+            return $collection->tokenUpload
+                && $tokenOwner->getMorphClass() === $collection->owner
+                && $this->tokens->canUpload($tokenOwner, $collection->key);
         }
 
         return $user !== null
@@ -66,7 +70,8 @@ class MediaPolicy
 
         $owner = $media->mediable;
 
-        return $owner !== null && Gate::forUser($user)->allows($this->viewAbilityFor($owner), $owner);
+        // The file goes along, so an owner can open some collections more widely than others.
+        return $owner !== null && Gate::forUser($user)->allows($this->viewAbilityFor($owner), [$owner, $media]);
     }
 
     public function download(?User $user, Media $media): bool

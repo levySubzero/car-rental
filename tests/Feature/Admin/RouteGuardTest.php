@@ -13,6 +13,7 @@ use App\Models\DepositBand;
 use App\Models\FxRate;
 use App\Models\Page;
 use App\Models\PaymentMethod;
+use App\Models\PaymentSubmission;
 use App\Models\Policy;
 use App\Models\Role;
 use App\Models\Service;
@@ -59,6 +60,7 @@ function sampleParameters(RoutingRoute $route): array
         'policy' => fn () => Policy::factory()->published()->withDraft()->create()->slug,
         'payment_method' => fn () => (PaymentMethod::query()->firstWhere('code', 'mpesa') ?? PaymentMethod::factory()->create())->code->value,
         'contact_message' => fn () => ContactMessage::factory()->create()->id,
+        'payment' => fn () => PaymentSubmission::factory()->create()->id,
         // Currency codes are unique, so reuse USD once an earlier route created it.
         'currency' => fn () => (Currency::query()->firstWhere('code', 'USD') ?? Currency::factory()->code('USD')->create())->code,
         'charge' => function () {

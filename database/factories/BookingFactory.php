@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\BookingStatus;
 use App\Enums\BookingStep;
+use App\Models\AvailabilityBlock;
 use App\Models\Booking;
 use App\Models\Car;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -46,14 +47,28 @@ class BookingFactory extends Factory
         return $this->state(fn () => ['status' => $status]);
     }
 
+    /**
+     * Submitted with the PRD worked example's amounts (66,350 / 16,588 / 49,762) and the car
+     * held for two hours, as BookingService::submit() leaves it.
+     */
     public function awaitingPayment(): static
     {
         return $this->state(fn () => [
             'status' => BookingStatus::AwaitingPayment,
             'reference' => 'BE-'.now()->year.'-'.str_pad((string) fake()->unique()->numberBetween(1, 999999), 6, '0', STR_PAD_LEFT),
             'current_step' => BookingStep::Review,
+            'total_minor' => 6_635_000,
+            'reservation_minor' => 1_658_800,
+            'balance_minor' => 4_976_200,
             'submitted_at' => now(),
             'expires_at' => now()->addHours(2),
-        ]);
+        ])->afterCreating(function (Booking $booking) {
+            AvailabilityBlock::factory()->hold($booking)->create([
+                'car_id' => $booking->car_id,
+                'starts_at' => $booking->pickup_at,
+                'ends_at' => $booking->return_at,
+                'expires_at' => $booking->expires_at,
+            ]);
+        });
     }
 }

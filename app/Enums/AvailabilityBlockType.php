@@ -7,7 +7,7 @@ namespace App\Enums;
  */
 enum AvailabilityBlockType: string
 {
-    // A submitted booking awaiting payment; lapses at expires_at.
+    // A submitted booking awaiting payment; lapses at expires_at, or waits for staff when it has none.
     case Hold = 'hold';
     // A reserved booking.
     case Booked = 'booked';

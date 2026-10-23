@@ -12,7 +12,7 @@ use Spatie\Activitylog\Models\Activity;
 
 /**
  * The only way a booking changes status (D3). Each change is one `booking-status` activity
- * row (D36); ending a booking frees its hold.
+ * row (D36); ending a booking frees its hold, and Reserved makes it a firm booking (M9.7).
  */
 class BookingStatusService
 {
@@ -37,6 +37,10 @@ class BookingStatusService
 
             if (in_array($to, [BookingStatus::Expired, BookingStatus::Cancelled, BookingStatus::NoShow], true)) {
                 $this->availability->release($booking);
+            }
+
+            if ($to === BookingStatus::Reserved) {
+                $this->availability->confirm($booking);
             }
 
             activity(self::LOG_NAME)->performedOn($booking)

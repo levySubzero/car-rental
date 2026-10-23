@@ -50,18 +50,21 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int|null $reservation_minor
  * @property int|null $balance_minor
  * @property int|null $security_deposit_minor
+ * @property int|null $reservation_paid_minor
  * @property int|null $policy_bundle_id
  * @property CarbonImmutable|null $accepted_terms_at
  * @property string|null $accepted_terms_ip
  * @property BookingStep $current_step
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable|null $submitted_at
+ * @property CarbonImmutable|null $paid_at
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read Car $car
  * @property-read BookingDriver|null $driver
  * @property-read DeliveryZone|null $deliveryZone
  * @property-read PolicyBundle|null $policyBundle
+ * @property-read PaymentSubmission|null $latestPayment
  */
 class Booking extends Model
 {
@@ -102,10 +105,12 @@ class Booking extends Model
             'reservation_minor' => 'integer',
             'balance_minor' => 'integer',
             'security_deposit_minor' => 'integer',
+            'reservation_paid_minor' => 'integer',
             'accepted_terms_at' => 'datetime',
             'current_step' => BookingStep::class,
             'expires_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'paid_at' => 'datetime',
         ];
     }
 
@@ -147,6 +152,22 @@ class Booking extends Model
     public function availabilityBlocks(): HasMany
     {
         return $this->hasMany(AvailabilityBlock::class);
+    }
+
+    /**
+     * @return HasMany<PaymentSubmission, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PaymentSubmission::class);
+    }
+
+    /**
+     * @return HasOne<PaymentSubmission, $this>
+     */
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(PaymentSubmission::class)->latestOfMany();
     }
 
     public function range(): DateRange

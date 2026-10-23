@@ -4,19 +4,32 @@ namespace App\Services\Booking;
 
 use App\Models\Booking;
 use App\Services\Media\Contracts\TokenUploaderResolver;
+use Illuminate\Database\Eloquent\Model;
 
 /**
- * Lets a renter upload KYC documents with their booking token (M8.12), while the booking is
- * still a draft. Once submitted, its documents are fixed.
+ * Lets a renter upload with their booking token: KYC documents while the booking is a draft
+ * (M8.12), and a payment proof while it waits for payment (M9.3). Once submitted, the
+ * documents are fixed.
  */
 class BookingTokenResolver implements TokenUploaderResolver
 {
+    public const PAYMENT_PROOF = 'booking.payment_proof';
+
     public function __construct(private readonly BookingTokenService $tokens) {}
 
     public function resolve(string $plainToken): ?Booking
     {
         $booking = $this->tokens->find($plainToken);
 
-        return $booking?->isDraft() ? $booking : null;
+        return $booking !== null && ($booking->isDraft() || $booking->status->acceptsPayment()) ? $booking : null;
+    }
+
+    public function canUpload(Model $owner, string $collection): bool
+    {
+        if (! $owner instanceof Booking) {
+            return false;
+        }
+
+        return $collection === self::PAYMENT_PROOF ? $owner->status->acceptsPayment() : $owner->isDraft();
     }
 }

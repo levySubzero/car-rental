@@ -19,6 +19,7 @@ use App\Models\FxRate;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\PaymentMethod;
+use App\Models\PaymentSubmission;
 use App\Models\Policy;
 use App\Models\PolicyBundle;
 use App\Models\Role;
@@ -114,6 +115,7 @@ class AppServiceProvider extends ServiceProvider
             'deposit_band' => DepositBand::class,
             'cancellation_tier' => CancellationTier::class,
             'booking' => Booking::class,
+            'payment_submission' => PaymentSubmission::class,
         ]);
     }
 

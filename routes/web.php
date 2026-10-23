@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\DevLoginController;
 use App\Http\Controllers\Public\BookingController;
+use App\Http\Controllers\Public\BookingPaymentController;
 use App\Http\Controllers\Public\CarController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\CurrencyController;
@@ -38,6 +39,7 @@ Route::middleware(['booking.token', 'throttle:booking-step'])->prefix('bookings/
     Route::put('trip', [BookingController::class, 'updateTrip'])->name('trip');
     Route::put('driver', [BookingController::class, 'updateDriver'])->name('driver');
     Route::post('submit', [BookingController::class, 'submit'])->name('submit');
+    Route::post('payment', [BookingPaymentController::class, 'store'])->name('payment');
 });
 
 Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');

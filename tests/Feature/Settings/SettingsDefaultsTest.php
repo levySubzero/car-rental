@@ -19,6 +19,7 @@ it('loads every settings group with the TECHNICAL_PLAN §9 defaults', function (
         ->and($pricing->reservation_rounding)->toBe(RoundingMode::CeilMajor)
         ->and($pricing->day_counting)->toBe(DayCountingStrategy::CalendarInclusive)
         ->and($pricing->hold_minutes)->toBe(120)
+        ->and($pricing->cash_hold_hours)->toBe(24)
         ->and($pricing->default_mileage_km)->toBe(300)
         ->and($pricing->unlimited_mileage_after_days)->toBeNull()
         ->and(app(FxSettings::class)->margin_minor)->toBe(300)
