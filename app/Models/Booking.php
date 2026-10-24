@@ -190,6 +190,25 @@ class Booking extends Model
     }
 
     /**
+     * STK pushes, Paystack attempts and matched paybill receipts (M11B).
+     *
+     * @return HasMany<GatewayTransaction, $this>
+     */
+    public function gatewayTransactions(): HasMany
+    {
+        return $this->hasMany(GatewayTransaction::class);
+    }
+
+    /**
+     * The reference as Daraja takes it: AccountReference allows 12 characters, so the dashes
+     * go (BE-2026-000123 → BE2026000123). Paybill payments are matched on the same form.
+     */
+    public function compactReference(): ?string
+    {
+        return $this->reference === null ? null : str_replace('-', '', $this->reference);
+    }
+
+    /**
      * @return HasMany<BookingRequest, $this>
      */
     public function requests(): HasMany

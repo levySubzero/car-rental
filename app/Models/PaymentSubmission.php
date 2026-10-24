@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property PaymentMethodCode $payment_method_code
  * @property string|null $transaction_message
  * @property int|null $proof_media_id
+ * @property int|null $gateway_transaction_id
  * @property PaymentStatus $status
  * @property int|null $amount_minor
  * @property string|null $reference
@@ -34,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Booking $booking
  * @property-read PaymentMethod|null $method
  * @property-read Media|null $proof
+ * @property-read GatewayTransaction|null $gatewayTransaction
  * @property-read User|null $verifier
  * @property-read User|null $rejecter
  */
@@ -87,6 +89,16 @@ class PaymentSubmission extends Model
     }
 
     /**
+     * The online payment that created this submission (M11B); null when the renter pasted a message.
+     *
+     * @return BelongsTo<GatewayTransaction, $this>
+     */
+    public function gatewayTransaction(): BelongsTo
+    {
+        return $this->belongsTo(GatewayTransaction::class);
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function verifier(): BelongsTo
@@ -105,6 +117,11 @@ class PaymentSubmission extends Model
     public function isPending(): bool
     {
         return $this->status === PaymentStatus::Pending;
+    }
+
+    public function isOnline(): bool
+    {
+        return $this->gateway_transaction_id !== null;
     }
 
     public function isCash(): bool

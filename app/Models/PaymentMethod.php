@@ -18,6 +18,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * How a renter pays the reservation (PRD P-1). The set is fixed by PaymentMethodCode (D25).
  * `instructions` is Markdown, shown only after the renter picks the method (M9).
  * `metadata` holds the details staff fill in: paybill, till, bank account, card link (D20).
+ * `online_enabled` turns on the gateway for M-Pesa or card (M11B); staff can switch it off.
  *
  * @property int $id
  * @property PaymentMethodCode $code
@@ -26,6 +27,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property bool $requires_transaction_message
  * @property bool $requires_proof
  * @property bool $is_active
+ * @property bool $online_enabled
  * @property int $sort_order
  * @property ArrayObject<string, string>|null $metadata
  * @property CarbonImmutable|null $created_at
@@ -36,7 +38,7 @@ class PaymentMethod extends Model
     /** @use HasFactory<PaymentMethodFactory> */
     use HasFactory, LogsActivity, Sortable;
 
-    protected $fillable = ['code', 'name', 'instructions', 'requires_transaction_message', 'requires_proof', 'is_active', 'metadata'];
+    protected $fillable = ['code', 'name', 'instructions', 'requires_transaction_message', 'requires_proof', 'is_active', 'online_enabled', 'metadata'];
 
     /**
      * @return array<string, string>
@@ -48,6 +50,7 @@ class PaymentMethod extends Model
             'requires_transaction_message' => 'boolean',
             'requires_proof' => 'boolean',
             'is_active' => 'boolean',
+            'online_enabled' => 'boolean',
             'sort_order' => 'integer',
             'metadata' => AsArrayObject::class,
         ];
@@ -68,7 +71,7 @@ class PaymentMethod extends Model
     {
         return LogOptions::defaults()
             ->useLogName('payment-methods')
-            ->logOnly(['name', 'instructions', 'requires_transaction_message', 'requires_proof', 'is_active', 'metadata'])
+            ->logOnly(['name', 'instructions', 'requires_transaction_message', 'requires_proof', 'is_active', 'online_enabled', 'metadata'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
