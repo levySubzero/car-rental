@@ -69,7 +69,7 @@ export default function Dashboard({
                                 href={PaymentSubmissionController.index()}
                                 className="md:col-span-2"
                             >
-                                <Card className="transition-colors hover:bg-accent">
+                                <Card className="border-l-4 border-l-primary transition-colors hover:bg-accent">
                                     <CardHeader className="flex flex-row items-center justify-between">
                                         <CardTitle>
                                             {paymentsWaiting} payment
@@ -126,7 +126,7 @@ export default function Dashboard({
                             <Card className="h-full transition-colors hover:bg-accent">
                                 <CardHeader>
                                     {item.icon && (
-                                        <item.icon className="size-5 text-muted-foreground" />
+                                        <item.icon className="size-5 text-accent-gold" />
                                     )}
                                     <CardTitle>{item.title}</CardTitle>
                                     <CardDescription>
