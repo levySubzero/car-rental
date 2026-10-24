@@ -14,4 +14,20 @@ final class PhoneNumber
 
         return str_starts_with($digits, '0') ? '254'.substr($digits, 1) : $digits;
     }
+
+    /**
+     * A Safaricom-style mobile number as M-Pesa takes it (2547XXXXXXXX or 2541XXXXXXXX), or
+     * null when the number is not a Kenyan mobile (M11B). "712 345 678" without the leading
+     * zero is accepted too.
+     */
+    public static function kenyanMobile(?string $number): ?string
+    {
+        $digits = self::digits($number);
+
+        if (preg_match('/^[71]\d{8}$/', $digits) === 1) {
+            $digits = '254'.$digits;
+        }
+
+        return preg_match('/^254[71]\d{8}$/', $digits) === 1 ? $digits : null;
+    }
 }

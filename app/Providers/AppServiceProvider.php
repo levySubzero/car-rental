@@ -34,6 +34,8 @@ use App\Services\Media\MediaCollectionRegistry;
 use App\Services\Notifications\WhatsApp\Drivers\ClickToChatDriver;
 use App\Services\Notifications\WhatsApp\Drivers\CloudApiDriver;
 use App\Services\Notifications\WhatsApp\WhatsAppDriver;
+use App\Services\Payments\Gateways\DarajaClient;
+use App\Services\Payments\Gateways\PaystackClient;
 use App\Services\Pricing\Fx\FxRateProvider;
 use App\Services\Pricing\Fx\ManualProvider;
 use App\Services\Pricing\Fx\OpenExchangeRatesProvider;
@@ -77,6 +79,10 @@ class AppServiceProvider extends ServiceProvider
             'cloud_api' => new CloudApiDriver,
             default => new ClickToChatDriver,
         });
+
+        // Online payments (M11B): read from config on each resolution, so tests can change keys.
+        $this->app->bind(DarajaClient::class, fn () => new DarajaClient((array) config('services.daraja')));
+        $this->app->bind(PaystackClient::class, fn () => new PaystackClient(config('services.paystack.public_key'), config('services.paystack.secret_key')));
 
         // Not a singleton: admins can change the overrides mid-request (settings save).
         $this->app->bind(MediaCollectionRegistry::class, fn ($app) => new MediaCollectionRegistry(
