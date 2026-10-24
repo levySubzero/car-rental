@@ -12,7 +12,8 @@ use Spatie\Activitylog\Models\Activity;
 
 /**
  * The only way a booking changes status (D3). Each change is one `booking-status` activity
- * row (D36); ending a booking frees its hold, and Reserved makes it a firm booking (M9.7).
+ * row (D36); ending a booking frees its hold and stamps `closed_at`, and Reserved makes it a
+ * firm booking (M9.7).
  */
 class BookingStatusService
 {
@@ -33,6 +34,8 @@ class BookingStatusService
 
         DB::transaction(function () use ($booking, $from, $to, $actor, $reason) {
             $booking->status = $to;
+            // KYC retention counts from here (M11.11).
+            $booking->closed_at = $to->isTerminal() ? now() : null;
             $booking->save();
 
             if (in_array($to, [BookingStatus::Expired, BookingStatus::Cancelled, BookingStatus::NoShow], true)) {

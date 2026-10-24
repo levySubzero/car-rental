@@ -81,6 +81,23 @@ class AvailabilityService
         $booking->forceFill(['expires_at' => $until])->save();
     }
 
+    /**
+     * Every live block in $range for the calendar (M11.9), optionally for one car, with its
+     * booking's reference and status.
+     *
+     * @return Collection<int, AvailabilityBlock>
+     */
+    public function calendar(DateRange $range, ?Car $car = null): Collection
+    {
+        return AvailabilityBlock::query()
+            ->active()
+            ->overlapping($range)
+            ->when($car !== null, fn (Builder $query) => $query->where('car_id', $car?->id))
+            ->with('booking:id,reference,status,pickup_at,return_at')
+            ->orderBy('starts_at')
+            ->get();
+    }
+
     public function release(Booking $booking): void
     {
         $booking->availabilityBlocks()->delete();

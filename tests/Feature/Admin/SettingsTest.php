@@ -96,7 +96,7 @@ it('saves retention settings as integers', function () {
 });
 
 it('saves notification settings', function () {
-    $channels = collect(['booking_received', 'staff_new_booking', 'payment_submitted', 'booking_confirmed', 'payment_rejected'])
+    $channels = collect(['booking_received', 'staff_new_booking', 'payment_submitted', 'booking_confirmed', 'payment_rejected', 'delivery_updated'])
         ->mapWithKeys(fn ($event) => [$event => ['mail' => true, 'whatsapp' => false]])
         ->all();
 

@@ -10,7 +10,8 @@ use App\Services\Booking\BookingTokenResolver;
 
 /**
  * Staff access to bookings. Renters reach their own booking by its token instead
- * (ResolveBookingToken), never through this policy. The desk's actions join in M11.
+ * (ResolveBookingToken), never through this policy. Each desk action (M11) also needs
+ * bookings.view.
  */
 class BookingPolicy
 {
@@ -22,6 +23,36 @@ class BookingPolicy
     public function view(User $user, Booking $booking): bool
     {
         return $user->can(Permission::BookingsView);
+    }
+
+    public function resendVoucher(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsResendVoucher);
+    }
+
+    public function recordHandover(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsRecordHandover);
+    }
+
+    public function recordReturn(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsRecordReturn);
+    }
+
+    public function cancel(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsCancel);
+    }
+
+    public function updateDelivery(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsUpdateDelivery);
+    }
+
+    public function legalHold(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsLegalHold);
     }
 
     /**
@@ -40,5 +71,10 @@ class BookingPolicy
         }
 
         return $user->can(Permission::BookingsView) && $user->can(Permission::BookingsViewDocuments);
+    }
+
+    private function desk(User $user, Permission $permission): bool
+    {
+        return $user->can(Permission::BookingsView) && $user->can($permission);
     }
 }

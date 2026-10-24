@@ -54,6 +54,51 @@ class BookingException extends DomainException
         return new self('This booking has ended, so it can no longer be changed. Please contact us instead.', 'message');
     }
 
+    public static function deliveryFeeNeeded(): self
+    {
+        return new self('Set the delivery fee before handing the car over.', 'balance_received');
+    }
+
+    public static function amountDiffersNeedsNote(): self
+    {
+        return new self('The amount differs from what is due. Add a note saying why.', 'notes');
+    }
+
+    public static function odometerBelowHandover(int $km): self
+    {
+        return new self("The reading cannot be lower than at handover ({$km} km).", 'odometer_km');
+    }
+
+    public static function refundAboveReservation(): self
+    {
+        return new self('The refund cannot be more than the reservation paid.', 'refund');
+    }
+
+    public static function refundOverrideNeedsReason(): self
+    {
+        return new self('Say why the refund differs from the suggested amount.', 'refund_override_reason');
+    }
+
+    public static function noRefundDue(): self
+    {
+        return new self('There is no refund to record for this booking.', 'reference');
+    }
+
+    public static function noDelivery(): self
+    {
+        return new self('This booking has no delivery or collection.');
+    }
+
+    public static function deliveryLocked(): self
+    {
+        return new self('The car has already been handed over, so the delivery fee can no longer change.');
+    }
+
+    public static function zoneFeeNeeded(): self
+    {
+        return new self('This zone is quoted by staff. Enter the fee.', 'fee');
+    }
+
     protected function errorField(): ?string
     {
         return $this->field;

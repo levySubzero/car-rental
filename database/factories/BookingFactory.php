@@ -71,4 +71,36 @@ class BookingFactory extends Factory
             ]);
         });
     }
+
+    /**
+     * Paid in full and firm-booked, as PaymentVerificationService::verify() leaves it, with a
+     * three-day quote snapshot (300 km a day) and a KES 160,000 security deposit.
+     */
+    public function reserved(): static
+    {
+        return $this->awaitingPayment()->state(fn () => [
+            'status' => BookingStatus::Reserved,
+            'reservation_paid_minor' => 1_658_800,
+            'security_deposit_minor' => 16_000_000,
+            'paid_at' => now(),
+            'expires_at' => null,
+            'quote' => [
+                'days' => 3,
+                'mileage_km_per_day' => 300,
+                'total' => ['minor' => 6_635_000, 'currency' => 'KES'],
+                'lines' => [],
+                'requires_staff_quote' => false,
+            ],
+        ])->afterCreating(function (Booking $booking) {
+            $booking->availabilityBlocks()->update(['type' => 'booked', 'expires_at' => null]);
+        });
+    }
+
+    /**
+     * On hire: reserved, then handed over.
+     */
+    public function active(): static
+    {
+        return $this->reserved()->state(fn () => ['status' => BookingStatus::Active]);
+    }
 }

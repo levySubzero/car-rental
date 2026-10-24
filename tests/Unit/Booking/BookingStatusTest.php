@@ -2,13 +2,13 @@
 
 use App\Enums\BookingStatus as S;
 
-// The PRD §5 lifecycle table, plus cash on a retry and a lapsed retry (D38): every edge not
-// listed here is refused.
+// The PRD §5 lifecycle table, plus cash on a retry and a lapsed retry (D38) and staff
+// cancelling an unpaid booking (D41): every edge not listed here is refused.
 const ALLOWED_BOOKING_EDGES = [
     'draft' => ['awaiting_payment', 'expired'],
-    'awaiting_payment' => ['payment_submitted', 'awaiting_cash', 'expired'],
-    'payment_submitted' => ['reserved', 'payment_rejected'],
-    'awaiting_cash' => ['reserved', 'expired'],
+    'awaiting_payment' => ['payment_submitted', 'awaiting_cash', 'cancelled', 'expired'],
+    'payment_submitted' => ['reserved', 'payment_rejected', 'cancelled'],
+    'awaiting_cash' => ['reserved', 'cancelled', 'expired'],
     'payment_rejected' => ['payment_submitted', 'awaiting_cash', 'cancelled', 'expired'],
     'reserved' => ['active', 'cancelled', 'no_show'],
     'active' => ['completed'],

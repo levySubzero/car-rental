@@ -501,3 +501,156 @@ export type AdminBookingRequest = {
         email: string | null;
     };
 };
+
+// The bookings desk (M11).
+export type BookingStatus =
+    | 'draft'
+    | 'awaiting_payment'
+    | 'payment_submitted'
+    | 'awaiting_cash'
+    | 'payment_rejected'
+    | 'reserved'
+    | 'active'
+    | 'completed'
+    | 'cancelled'
+    | 'no_show'
+    | 'expired';
+
+export type AdminBookingRow = {
+    id: number;
+    reference: string;
+    status: BookingStatus;
+    status_label: string;
+    car: string;
+    renter: string | null;
+    phone: string | null;
+    pickup_at: string;
+    return_at: string;
+    pickup_mode: 'office' | 'address';
+    return_mode: 'office' | 'address';
+    delivery_pending: boolean;
+    method: string | null;
+    total: Money;
+    balance: Money;
+};
+
+export type BookingLeg = {
+    address: string | null;
+    landmark: string | null;
+    lat: string | null;
+    lng: string | null;
+    contact_phone: string | null;
+};
+
+export type AdminHandoverRecord = {
+    odometer_km: number;
+    fuel_level: string;
+    fuel_label: string;
+    balance_received: Money | null;
+    deposit_received: Money | null;
+    deposit_refunded: Money | null;
+    excess_km: number | null;
+    extra_charges: Money | null;
+    notes: string | null;
+    recorded_by: string | null;
+    recorded_at: string;
+};
+
+export type RefundTier = {
+    label: string | null;
+    hours_before_pickup: number;
+    refund_percent_bp: number;
+};
+
+export type RefundSuggestion = {
+    notice_hours: number;
+    tier: RefundTier | null;
+    percent_bp: number;
+    amount: Money;
+};
+
+export type AdminBooking = {
+    id: number;
+    reference: string;
+    status: BookingStatus;
+    status_label: string;
+    car: { id: number; name: string; slug: string };
+    pickup_at: string;
+    return_at: string;
+    pickup_mode: 'office' | 'address';
+    pickup_mode_label: string;
+    return_mode: 'office' | 'address';
+    return_mode_label: string;
+    flight_number: string | null;
+    delivery: {
+        zone: { id: number; name: string; description: string | null } | null;
+        pickup: BookingLeg;
+        return: BookingLeg;
+        fee: Money | null;
+        pending: boolean;
+        checked_at: string | null;
+    } | null;
+    total: Money;
+    reservation: Money;
+    reservation_paid: Money | null;
+    balance: Money;
+    // Left unpaid at handover; null before handover or when paid in full.
+    balance_outstanding: Money | null;
+    security_deposit: Money | null;
+    quote: AdminQuote | null;
+    cancellation_tiers: RefundTier[];
+    driver: {
+        name: string;
+        dob: string;
+        email: string;
+        phone: string;
+        nationality: string;
+        is_kenyan_resident: boolean;
+        id_type: string;
+        id_number: string | null;
+        kra_pin: string | null;
+        licence_number: string | null;
+        licence_expiry: string;
+        licence_years: number;
+        masked: boolean;
+    } | null;
+    // Null without bookings.view-documents.
+    documents: { key: string; label: string; file: MediaItem }[] | null;
+    voucher: MediaItem | null;
+    payments: AdminPayment[];
+    handover: AdminHandoverRecord | null;
+    return: AdminHandoverRecord | null;
+    cancellation: {
+        reason: string;
+        tier: RefundTier | null;
+        suggested: Money;
+        refund: Money;
+        override_reason: string | null;
+        reference: string | null;
+        refunded_at: string | null;
+    } | null;
+    requests: {
+        id: number;
+        type_label: string;
+        message: string;
+        status: 'open' | 'handled';
+        staff_note: string | null;
+        created_at: string | null;
+    }[];
+    legal_hold: boolean;
+    kyc_purged_at: string | null;
+    submitted_at: string | null;
+    paid_at: string | null;
+    expires_at: string | null;
+    closed_at: string | null;
+    accepted_terms_at: string | null;
+};
+
+export type BookingTimelineEntry = {
+    from: string;
+    to: string;
+    reason: string | null;
+    actor: string;
+    causer: string | null;
+    at: string;
+};

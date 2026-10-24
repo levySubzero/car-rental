@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
             ...Permission::forModule('contact-messages'),
             Permission::PaymentMethodsView,
             ...Permission::forModule('payments', 'booking-requests'),
+            // The legal hold stays with the super admin.
+            ...Permission::except(Permission::forModule('bookings'), Permission::BookingsLegalHold),
             // Pricing is the super admin's (PRD §3); the desk can see it and run quotes.
             Permission::FxRatesView,
             Permission::ChargesView,

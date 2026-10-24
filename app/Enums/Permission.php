@@ -75,9 +75,17 @@ enum Permission: string
     case ContactMessagesUpdate = 'contact-messages.update';
     case ContactMessagesDelete = 'contact-messages.delete';
 
-    // Bookings (M8). The bookings desk and its actions arrive in M11.
+    // Bookings (M8) and the operations desk (M11)
     case BookingsView = 'bookings.view';
     case BookingsViewDocuments = 'bookings.view-documents';
+    case BookingsResendVoucher = 'bookings.resend-voucher';
+    case BookingsRecordHandover = 'bookings.record-handover';
+    case BookingsRecordReturn = 'bookings.record-return';
+    // Cancel, mark a no-show, and record the refund paid back (D34)
+    case BookingsCancel = 'bookings.cancel';
+    case BookingsUpdateDelivery = 'bookings.update-delivery';
+    // Keep a booking's KYC files past the retention period (M11.11)
+    case BookingsLegalHold = 'bookings.legal-hold';
 
     // Payments (M9): staff check each renter payment by hand. A partial reservation needs its own permission.
     case PaymentsView = 'payments.view';

@@ -1,4 +1,6 @@
 import {
+    CalendarCheck,
+    CalendarRange,
     ArrowLeftRight,
     Banknote,
     Calculator,
@@ -21,6 +23,8 @@ import {
 } from 'lucide-react';
 import ActivityLogController from '@/actions/App/Http/Controllers/Admin/ActivityLogController';
 import CancellationTierController from '@/actions/App/Http/Controllers/Admin/CancellationTierController';
+import AvailabilityController from '@/actions/App/Http/Controllers/Admin/AvailabilityController';
+import BookingController from '@/actions/App/Http/Controllers/Admin/BookingController';
 import BookingRequestController from '@/actions/App/Http/Controllers/Admin/BookingRequestController';
 import BrandController from '@/actions/App/Http/Controllers/Admin/BrandController';
 import CarController from '@/actions/App/Http/Controllers/Admin/CarController';
@@ -61,6 +65,18 @@ export const adminNav: NavGroup[] = [
         // Day-to-day desk work; bookings join in M11.
         title: 'Operations',
         items: [
+            {
+                title: 'Bookings',
+                href: BookingController.index(),
+                icon: CalendarCheck,
+                permission: 'bookings.view',
+            },
+            {
+                title: 'Availability',
+                href: AvailabilityController.index(),
+                icon: CalendarRange,
+                permission: ['bookings.view', 'availability.manage'],
+            },
             {
                 title: 'Payments',
                 href: PaymentSubmissionController.index(),

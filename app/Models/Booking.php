@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\BookingStatus;
 use App\Enums\BookingStep;
 use App\Enums\HandoverMode;
+use App\Enums\HandoverType;
 use App\Models\Concerns\HasMedia;
 use App\Support\DateRange;
 use Carbon\CarbonImmutable;
@@ -41,6 +42,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $return_lat
  * @property string|null $return_lng
  * @property string|null $return_contact_phone
+ * @property int|null $delivery_fee_minor
+ * @property CarbonImmutable|null $delivery_checked_at
+ * @property int|null $delivery_checked_by
  * @property list<string>|null $extras
  * @property string|null $flight_number
  * @property string|null $display_currency
@@ -58,6 +62,17 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable|null $submitted_at
  * @property CarbonImmutable|null $paid_at
+ * @property CarbonImmutable|null $closed_at
+ * @property bool $legal_hold
+ * @property CarbonImmutable|null $kyc_purged_at
+ * @property string|null $cancellation_reason
+ * @property array{label: string|null, hours_before_pickup: int, refund_percent_bp: int}|null $refund_tier
+ * @property int|null $refund_suggested_minor
+ * @property int|null $refund_minor
+ * @property string|null $refund_override_reason
+ * @property string|null $refund_reference
+ * @property CarbonImmutable|null $refunded_at
+ * @property int|null $refunded_by
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read Car $car
@@ -65,6 +80,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read DeliveryZone|null $deliveryZone
  * @property-read PolicyBundle|null $policyBundle
  * @property-read PaymentSubmission|null $latestPayment
+ * @property-read HandoverRecord|null $handover
+ * @property-read HandoverRecord|null $returnRecord
  */
 class Booking extends Model
 {
@@ -83,6 +100,7 @@ class Booking extends Model
         'pickup_mode' => 'office',
         'return_mode' => 'office',
         'current_step' => 'trip',
+        'legal_hold' => false,
     ];
 
     protected $hidden = ['access_token_hash'];
@@ -111,6 +129,15 @@ class Booking extends Model
             'expires_at' => 'datetime',
             'submitted_at' => 'datetime',
             'paid_at' => 'datetime',
+            'closed_at' => 'datetime',
+            'legal_hold' => 'boolean',
+            'kyc_purged_at' => 'datetime',
+            'delivery_fee_minor' => 'integer',
+            'delivery_checked_at' => 'datetime',
+            'refund_tier' => 'array',
+            'refund_suggested_minor' => 'integer',
+            'refund_minor' => 'integer',
+            'refunded_at' => 'datetime',
         ];
     }
 
@@ -178,6 +205,30 @@ class Booking extends Model
         return $this->hasOne(PaymentSubmission::class)->latestOfMany();
     }
 
+    /**
+     * @return HasMany<HandoverRecord, $this>
+     */
+    public function handoverRecords(): HasMany
+    {
+        return $this->hasMany(HandoverRecord::class);
+    }
+
+    /**
+     * @return HasOne<HandoverRecord, $this>
+     */
+    public function handover(): HasOne
+    {
+        return $this->hasOne(HandoverRecord::class)->where('type', HandoverType::Handover->value);
+    }
+
+    /**
+     * @return HasOne<HandoverRecord, $this>
+     */
+    public function returnRecord(): HasOne
+    {
+        return $this->hasOne(HandoverRecord::class)->where('type', HandoverType::Return->value);
+    }
+
     public function range(): DateRange
     {
         return new DateRange($this->pickup_at, $this->return_at);
@@ -191,5 +242,50 @@ class Booking extends Model
     public function needsDeliveryZone(): bool
     {
         return $this->pickup_mode === HandoverMode::Address || $this->return_mode === HandoverMode::Address;
+    }
+
+    /**
+     * The delivery amount frozen in the quote, or null when the zone was quoted by staff.
+     */
+    public function snapshotDeliveryMinor(): ?int
+    {
+        foreach ($this->quote['lines'] ?? [] as $line) {
+            if (($line['kind'] ?? null) === 'delivery') {
+                return isset($line['amount']['minor']) ? (int) $line['amount']['minor'] : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * What delivery costs now: the fee staff set (M11.13), else the quoted one.
+     */
+    public function deliveryFeeMinor(): ?int
+    {
+        return $this->delivery_fee_minor ?? $this->snapshotDeliveryMinor();
+    }
+
+    /**
+     * Delivery still waits for staff to quote its fee (D33).
+     */
+    public function deliveryPending(): bool
+    {
+        return $this->needsDeliveryZone() && $this->deliveryFeeMinor() === null;
+    }
+
+    /**
+     * What the renter still owes after handover: the balance due less what staff took. Null
+     * before handover; zero when it was paid in full or more.
+     */
+    public function balanceOutstandingMinor(): ?int
+    {
+        $handover = $this->handover;
+
+        if ($handover === null) {
+            return null;
+        }
+
+        return max(0, (int) $this->balance_minor - (int) $handover->balance_received_minor);
     }
 }

@@ -2,7 +2,13 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AlertController;
+use App\Http\Controllers\Admin\AvailabilityController;
+use App\Http\Controllers\Admin\BookingCancellationController;
+use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\BookingDeliveryController;
+use App\Http\Controllers\Admin\BookingHandoverController;
 use App\Http\Controllers\Admin\BookingRequestController;
+use App\Http\Controllers\Admin\BookingVoucherController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CancellationTierController;
 use App\Http\Controllers\Admin\CarBlackoutController;
@@ -125,6 +131,25 @@ Route::resource('contact-messages', ContactMessageController::class)->only(['ind
 Route::get('payments', [PaymentSubmissionController::class, 'index'])->name('payments.index');
 Route::post('payments/{payment}/verify', [PaymentSubmissionController::class, 'verify'])->name('payments.verify');
 Route::post('payments/{payment}/reject', [PaymentSubmissionController::class, 'reject'])->name('payments.reject');
+
+// Bookings desk (M11): bookings by reference, and the actions staff take on them.
+Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
+Route::prefix('bookings/{booking:reference}')->name('bookings.')->group(function () {
+    Route::get('/', [BookingController::class, 'show'])->name('show');
+    Route::post('handover', [BookingHandoverController::class, 'handover'])->name('handover');
+    Route::post('return', [BookingHandoverController::class, 'return'])->name('return');
+    Route::post('cancel', [BookingCancellationController::class, 'cancel'])->name('cancel');
+    Route::post('no-show', [BookingCancellationController::class, 'noShow'])->name('no-show');
+    Route::post('refunded', [BookingCancellationController::class, 'refunded'])->name('refunded');
+    Route::put('delivery', [BookingDeliveryController::class, 'update'])->name('delivery.update');
+    Route::post('delivery/checked', [BookingDeliveryController::class, 'checked'])->name('delivery.checked');
+    Route::post('voucher', [BookingVoucherController::class, 'resend'])->name('voucher.resend');
+    Route::post('link', [BookingVoucherController::class, 'rotate'])->name('link.rotate');
+    Route::put('legal-hold', [BookingController::class, 'legalHold'])->name('legal-hold');
+});
+
+// Availability calendar (M11.9)
+Route::get('availability', [AvailabilityController::class, 'index'])->name('availability.index');
 
 // Booking requests (M10B): cancellations and changes renters ask for in the portal.
 Route::get('booking-requests', [BookingRequestController::class, 'index'])->name('booking-requests.index');

@@ -7,7 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class UpdateNotificationSettingsRequest extends UpdateSettingsRequest
 {
-    public const EVENTS = ['booking_received', 'staff_new_booking', 'payment_submitted', 'booking_confirmed', 'payment_rejected'];
+    public const EVENTS = ['booking_received', 'staff_new_booking', 'payment_submitted', 'booking_confirmed', 'payment_rejected', 'delivery_updated'];
 
     public function group(): SettingsGroup
     {

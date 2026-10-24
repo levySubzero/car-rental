@@ -31,6 +31,7 @@ const EVENTS: Record<string, { label: string; audience: string }> = {
         audience: 'Renter',
     },
     payment_rejected: { label: 'Payment rejected', audience: 'Renter' },
+    delivery_updated: { label: 'Delivery fee updated', audience: 'Renter' },
 };
 
 export function NotificationSettingsForm({

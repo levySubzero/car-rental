@@ -593,6 +593,7 @@ export default function CarForm({
                                 <Card>
                                     <CardContent>
                                         <CarBlackouts
+                                            carId={car.id}
                                             carSlug={car.slug}
                                             blackouts={car.blackouts ?? []}
                                             reasons={blackoutReasons}

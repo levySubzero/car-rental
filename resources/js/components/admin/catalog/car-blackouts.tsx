@@ -1,6 +1,7 @@
-import { router, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { CalendarOff, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import AvailabilityController from '@/actions/App/Http/Controllers/Admin/AvailabilityController';
 import CarBlackoutController from '@/actions/App/Http/Controllers/Admin/CarBlackoutController';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import {
@@ -27,11 +28,13 @@ import type { AdminCarBlackout, Option } from '@/types';
  * Times are entered in the browser's time zone and sent as ISO instants.
  */
 export function CarBlackouts({
+    carId,
     carSlug,
     blackouts,
     reasons,
     editable,
 }: {
+    carId: number;
     carSlug: string;
     blackouts: AdminCarBlackout[];
     reasons: Option[];
@@ -47,7 +50,15 @@ export function CarBlackouts({
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
                     The car cannot be booked during these periods.
-                    {past > 0 && ` ${past} past period(s) are hidden.`}
+                    {past > 0 && ` ${past} past period(s) are hidden.`}{' '}
+                    <Link
+                        href={AvailabilityController.index.url({
+                            query: { car: carId },
+                        })}
+                        className="underline"
+                    >
+                        See bookings on the calendar
+                    </Link>
                 </p>
                 {editable && (
                     <NewBlackout carSlug={carSlug} reasons={reasons} />

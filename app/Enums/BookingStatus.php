@@ -29,9 +29,10 @@ enum BookingStatus: string
     {
         return match ($this) {
             self::Draft => [self::AwaitingPayment, self::Expired],
-            self::AwaitingPayment => [self::PaymentSubmitted, self::AwaitingCash, self::Expired],
-            self::PaymentSubmitted => [self::Reserved, self::PaymentRejected],
-            self::AwaitingCash => [self::Reserved, self::Expired],
+            // Staff may cancel any unpaid booking, e.g. when the renter phones to call it off (D41).
+            self::AwaitingPayment => [self::PaymentSubmitted, self::AwaitingCash, self::Cancelled, self::Expired],
+            self::PaymentSubmitted => [self::Reserved, self::PaymentRejected, self::Cancelled],
+            self::AwaitingCash => [self::Reserved, self::Cancelled, self::Expired],
             // A retry may switch to cash; an unanswered rejection lapses with its hold (D38).
             self::PaymentRejected => [self::PaymentSubmitted, self::AwaitingCash, self::Cancelled, self::Expired],
             self::Reserved => [self::Active, self::Cancelled, self::NoShow],
@@ -51,6 +52,14 @@ enum BookingStatus: string
     public function acceptsPayment(): bool
     {
         return $this === self::AwaitingPayment || $this === self::PaymentRejected;
+    }
+
+    /**
+     * Staff can cancel it from the desk (M11.8).
+     */
+    public function isCancellable(): bool
+    {
+        return $this->canTransitionTo(self::Cancelled);
     }
 
     public function isTerminal(): bool

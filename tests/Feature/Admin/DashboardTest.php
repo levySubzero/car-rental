@@ -1,9 +1,12 @@
 <?php
 
 use App\Enums\Permission;
+use App\Models\Booking;
 use App\Models\PaymentMethod;
+use App\Models\PaymentSubmission;
 use App\Models\Policy;
 use App\Services\Cms\PageService;
+use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('lists what is missing before launch, only to staff who can fix it', function () {
@@ -35,4 +38,23 @@ it('lists what is missing before launch, only to staff who can fix it', function
     $this->actingAs(staffWith())
         ->get(route('admin.dashboard'))
         ->assertInertia(fn (Assert $page) => $page->has('setupChecklist', 0));
+});
+
+it('shows the desk day to staff who see bookings, and payments waiting to those who check them', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-12-01 09:00', 'Africa/Nairobi'));
+    $pickup = Booking::factory()->reserved()->create(['pickup_at' => now()->addHours(2), 'return_at' => now()->addDays(2)]);
+    PaymentSubmission::factory()->create();
+
+    $this->actingAs(staffWith([Permission::BookingsView]))
+        ->get(route('admin.dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('today.pickups', 1)
+            ->where('today.pickups.0.reference', $pickup->reference)
+            ->where('paymentsWaiting', null));
+
+    $this->actingAs(staffWith([Permission::PaymentsView]))
+        ->get(route('admin.dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('today', null)
+            ->where('paymentsWaiting', 1));
 });

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AvailabilityBlock;
+use App\Models\Booking;
 use App\Models\BookingRequest;
 use App\Models\Brand;
 use App\Models\CancellationTier;
@@ -69,6 +70,7 @@ function sampleParameters(RoutingRoute $route): array
         'contact_message' => fn () => ContactMessage::factory()->create()->id,
         'payment' => fn () => PaymentSubmission::factory()->create()->id,
         'booking_request' => fn () => BookingRequest::factory()->create()->id,
+        'booking' => fn () => Booking::factory()->reserved()->create()->reference,
         // Currency codes are unique, so reuse USD once an earlier route created it.
         'currency' => fn () => (Currency::query()->firstWhere('code', 'USD') ?? Currency::factory()->code('USD')->create())->code,
         'charge' => function () {

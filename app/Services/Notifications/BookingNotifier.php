@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Booking;
 use App\Notifications\Booking\BookingConfirmed;
 use App\Notifications\Booking\BookingReceived;
+use App\Notifications\Booking\DeliveryUpdated;
 use App\Notifications\Booking\PaymentRejected;
 use App\Notifications\Booking\PaymentSubmitted;
 use App\Notifications\Booking\StaffNewBooking;
@@ -74,6 +75,29 @@ class BookingNotifier
         $renter = $this->renter($booking);
 
         $renter?->notify(new BookingConfirmed($booking, $this->freshToken($booking, 'booking_confirmed'), $voucher));
+    }
+
+    /**
+     * Send the confirmation again from the desk (M11.5): the stored voucher, or a new one if
+     * it is missing, and a fresh renter link. False when the mail is off or there is no renter.
+     */
+    public function resendConfirmation(Booking $booking): bool
+    {
+        $renter = $this->renter($booking);
+
+        if ($renter === null || ! $this->settings->enabled('booking_confirmed', 'mail')) {
+            return false;
+        }
+
+        $voucher = $this->vouchers->current($booking) ?? $this->vouchers->generate($booking);
+        $renter->notify(new BookingConfirmed($booking, $this->freshToken($booking, 'booking_confirmed'), $voucher));
+
+        return true;
+    }
+
+    public function deliveryUpdated(Booking $booking): void
+    {
+        $this->renter($booking)?->notify(new DeliveryUpdated($booking));
     }
 
     public function rejected(Booking $booking): void
