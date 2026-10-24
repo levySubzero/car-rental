@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\BookingStatus;
+use App\Enums\GatewayTransactionStatus;
 use App\Enums\Permission;
 use App\Models\Booking;
+use App\Models\GatewayTransaction;
 use App\Models\Media;
 use App\Models\PaymentSubmission;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -100,4 +102,22 @@ it('opens the payment proof for payment staff, not the KYC documents', function 
 
     expect($staff->can('view', $proof))->toBeTrue()
         ->and($staff->can('view', $licence))->toBeFalse();
+});
+
+it('marks payments that arrived online as verified automatically', function () {
+    $online = GatewayTransaction::factory()->paid()->create(['status' => GatewayTransactionStatus::Matched]);
+    $submission = PaymentSubmission::factory()->for($online->booking)->verified()->create(['verified_by' => null]);
+    $submission->forceFill(['gateway_transaction_id' => $online->id])->save();
+
+    $this->actingAs(staffWith([Permission::PaymentsView]))
+        ->get(route('admin.payments.index', ['status' => 'verified']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('payments.data.0.online', ['gateway' => 'mpesa_stk', 'label' => 'M-Pesa STK'])
+            ->where('payments.data.0.verified_by', 'Verified automatically'));
+
+    $this->actingAs(staffWith([Permission::BookingsView]))
+        ->get(route('admin.bookings.show', $online->booking->reference))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('booking.payments.0.online.label', 'M-Pesa STK')
+            ->where('booking.payments.0.verified_by', 'Verified automatically'));
 });

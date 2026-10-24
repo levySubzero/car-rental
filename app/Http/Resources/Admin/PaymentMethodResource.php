@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Admin;
 
 use App\Models\PaymentMethod;
+use App\Services\Payments\OnlinePaymentService;
 use App\Support\Markdown;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -27,6 +28,10 @@ class PaymentMethodResource extends JsonResource
             'requires_transaction_message' => $this->requires_transaction_message,
             'requires_proof' => $this->requires_proof,
             'is_active' => $this->is_active,
+            // Online payments (M11B.8): staff's switch, and whether the gateway's keys are set.
+            'supports_online' => $this->code->supportsOnline(),
+            'online_enabled' => $this->online_enabled,
+            'gateway_configured' => app(OnlinePaymentService::class)->gatewayConfigured($this->code),
             'sort_order' => $this->sort_order,
             'metadata' => (object) $metadata,
             // Still holds a TODO from the seed pack (D26).

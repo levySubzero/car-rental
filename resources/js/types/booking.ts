@@ -140,6 +140,30 @@ export type PublicPaymentMethod = {
     requires_transaction_message: boolean;
     requires_proof: boolean;
     instructions_html: string;
+    // Paid through the gateway from the page (M11B.7).
+    online: boolean;
+};
+
+// The renter's latest STK push or card payment (M11B.7); the page polls while it is initiated.
+export type OnlinePaymentAttempt = {
+    gateway: 'mpesa_stk' | 'paystack';
+    status:
+        | 'initiated'
+        | 'paid'
+        | 'failed'
+        | 'unmatched'
+        | 'needs_review'
+        | 'matched'
+        | 'refunded';
+    failure_reason: string | null;
+    started_at: string | null;
+};
+
+// Where to pay M-Pesa by hand: the paybill and the account that matches the booking, or a till.
+export type MpesaPayTo = {
+    number: string;
+    account: string | null;
+    till: boolean;
 };
 
 // The renter's latest payment attempt.

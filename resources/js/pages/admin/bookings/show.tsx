@@ -326,6 +326,11 @@ export default function BookingShow({
                                                 <span className="font-medium">
                                                     {payment.method_name}
                                                 </span>
+                                                {payment.online && (
+                                                    <Badge variant="outline">
+                                                        {payment.online.label}
+                                                    </Badge>
+                                                )}
                                                 <Badge
                                                     variant={
                                                         payment.status ===

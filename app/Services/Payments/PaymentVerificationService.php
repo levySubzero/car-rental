@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\Permission;
 use App\Exceptions\Domain\PaymentException;
 use App\Models\Booking;
+use App\Models\GatewayTransaction;
 use App\Models\PaymentSubmission;
 use App\Models\User;
 use App\Services\Booking\AvailabilityService;
@@ -21,7 +22,8 @@ use Illuminate\Support\Facades\DB;
  * Staff checking a renter's payment against their statement (M9.5, PRD P-4). Verifying
  * reserves the booking and firm-blocks the car; less than the reservation needs
  * payments.accept-partial and a note, and the shortfall moves to the balance (D38).
- * Rejecting gives the renter a fresh hold to try again.
+ * Rejecting gives the renter a fresh hold to try again. Online payments (M11B) are verified
+ * here too, by the system.
  */
 class PaymentVerificationService
 {
@@ -43,7 +45,7 @@ class PaymentVerificationService
     public function paginate(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         return PaymentSubmission::query()
-            ->with(['booking.car:id,name', 'booking.driver', 'method', 'proof', 'verifier:id,name', 'rejecter:id,name'])
+            ->with(['booking.car:id,name', 'booking.driver', 'method', 'proof', 'gatewayTransaction', 'verifier:id,name', 'rejecter:id,name'])
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(
                 fn (Builder $query) => $query
@@ -107,35 +109,48 @@ class PaymentVerificationService
                 throw PaymentException::carNoLongerFree();
             }
 
-            $submission->forceFill([
-                'status' => PaymentStatus::Verified,
-                'reference' => trim($reference),
-                'amount_minor' => $amount->minor,
-                'note' => $note,
-                'verified_by' => $actor->id,
-                'verified_at' => now(),
-            ])->save();
+            $this->markVerified($submission, $booking, trim($reference), $amount->minor, $actor, $note, $partial ? "Part payment: {$note}" : null);
 
-            $booking->forceFill([
-                'reservation_paid_minor' => $amount->minor,
-                'balance_minor' => max(0, (int) $booking->total_minor - $amount->minor),
-                'paid_at' => now(),
-            ])->save();
+            return $submission;
+        });
+    }
 
-            $this->statuses->transition($booking, BookingStatus::Reserved, $actor, $partial ? "Part payment: {$note}" : null);
+    /**
+     * An online payment the gateway confirmed (M11B, D42): it is recorded as a submission and
+     * verified at once by the system, walking Payment submitted → Reserved so staff still hear
+     * about it. Staff resolving a receipt by hand (M11B.9) pass themselves as the actor.
+     *
+     * @param  User|'system'  $actor
+     */
+    public function confirmOnline(Booking $booking, GatewayTransaction $transaction, User|string $actor = 'system'): PaymentSubmission
+    {
+        return DB::transaction(function () use ($booking, $transaction, $actor) {
+            $booking = Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
 
-            activity(self::LOG_NAME)->performedOn($booking)->causedBy($actor)
-                ->withProperties([
-                    'submission' => $submission->id,
-                    'method' => $submission->payment_method_code->value,
-                    'reference' => $submission->reference,
-                    'amount_minor' => $amount->minor,
-                    'reservation_minor' => $booking->reservation_minor,
-                    'partial' => $partial,
-                    'note' => $note,
-                ])
-                ->event('verified')
-                ->log('payment verified');
+            if (! $booking->status->acceptsPayment()) {
+                throw PaymentException::notAwaitingPayment($booking);
+            }
+
+            if ($booking->payments()->where('status', PaymentStatus::Pending)->exists()) {
+                throw PaymentException::alreadySubmitted();
+            }
+
+            if (! $this->availability->isAvailable($booking->car, $booking->range(), $booking)) {
+                throw PaymentException::carNoLongerFree();
+            }
+
+            $label = $transaction->gateway->label();
+            $reference = $transaction->receipt ?? $transaction->external_ref;
+
+            $submission = $booking->payments()->create([
+                'payment_method_code' => $transaction->gateway->method(),
+                'transaction_message' => "{$label}: {$reference}",
+            ]);
+            $submission->forceFill(['gateway_transaction_id' => $transaction->id])->save();
+            $submission->setRelation('gatewayTransaction', $transaction);
+
+            $this->statuses->transition($booking, BookingStatus::PaymentSubmitted, $actor, "Paid online ({$label})");
+            $this->markVerified($submission, $booking, $reference, $transaction->amount_minor, $actor, null, null, $transaction->gateway->value);
 
             return $submission;
         });
@@ -171,6 +186,46 @@ class PaymentVerificationService
 
             return $submission;
         });
+    }
+
+    /**
+     * Record the verified payment, put the shortfall (if any) on the balance and reserve the
+     * booking. Staff verify as themselves; online payments are verified by the system.
+     *
+     * @param  User|'system'  $actor
+     */
+    private function markVerified(PaymentSubmission $submission, Booking $booking, string $reference, int $amountMinor, User|string $actor, ?string $note, ?string $reason, ?string $source = null): void
+    {
+        $submission->forceFill([
+            'status' => PaymentStatus::Verified,
+            'reference' => $reference,
+            'amount_minor' => $amountMinor,
+            'note' => $note,
+            'verified_by' => $actor instanceof User ? $actor->id : null,
+            'verified_at' => now(),
+        ])->save();
+
+        $booking->forceFill([
+            'reservation_paid_minor' => $amountMinor,
+            'balance_minor' => max(0, (int) $booking->total_minor - $amountMinor),
+            'paid_at' => now(),
+        ])->save();
+
+        $this->statuses->transition($booking, BookingStatus::Reserved, $actor, $reason);
+
+        activity(self::LOG_NAME)->performedOn($booking)->causedBy($actor instanceof User ? $actor : null)
+            ->withProperties([
+                'submission' => $submission->id,
+                'method' => $submission->payment_method_code->value,
+                'reference' => $submission->reference,
+                'amount_minor' => $amountMinor,
+                'reservation_minor' => $booking->reservation_minor,
+                'partial' => $amountMinor < (int) $booking->reservation_minor,
+                'note' => $note,
+                'source' => $source ?? 'staff',
+            ])
+            ->event('verified')
+            ->log('payment verified');
     }
 
     /**

@@ -34,6 +34,7 @@ export default function PaymentMethodForm({
         requires_transaction_message: method.requires_transaction_message,
         requires_proof: method.requires_proof,
         is_active: method.is_active,
+        online_enabled: method.online_enabled,
         metadata_rows: rowsFromMetadata(method.metadata),
     });
     const errors = form.errors as Record<string, string | undefined>;
@@ -127,6 +128,38 @@ export default function PaymentMethodForm({
                             />
                         </CardContent>
                     </Card>
+
+                    {method.supports_online && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Online payments</CardTitle>
+                                <CardDescription>
+                                    {method.code === 'mpesa'
+                                        ? 'Renters get an M-Pesa prompt on their phone, and paybill payments with the booking reference are matched automatically.'
+                                        : 'Renters pay by card in a Paystack window on the booking page.'}{' '}
+                                    The booking is confirmed as soon as the
+                                    payment arrives. Turn this off to go back to
+                                    checking payments by hand.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ToggleRow
+                                    id="online_enabled"
+                                    label="Take payments online"
+                                    description={
+                                        method.gateway_configured
+                                            ? undefined
+                                            : `The ${method.code === 'mpesa' ? 'Daraja' : 'Paystack'} keys are not set on the server yet, so renters still pay by hand.`
+                                    }
+                                    checked={form.data.online_enabled}
+                                    disabled={!editable}
+                                    onChange={(value) =>
+                                        form.setData('online_enabled', value)
+                                    }
+                                />
+                            </CardContent>
+                        </Card>
+                    )}
 
                     <Card>
                         <CardHeader>

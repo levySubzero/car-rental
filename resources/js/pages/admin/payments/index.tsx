@@ -62,6 +62,11 @@ export default function PaymentsIndex({
                 <div className="grid gap-1.5">
                     <span className="text-sm">
                         {payment.method_name}
+                        {payment.online && (
+                            <Badge variant="outline" className="ml-2">
+                                {payment.online.label}
+                            </Badge>
+                        )}
                         <span className="text-muted-foreground">
                             {' '}
                             · due {payment.booking.reservation.display}

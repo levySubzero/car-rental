@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
  * Payment instructions and details (PRD P-1). The set of methods is fixed (D25): staff edit
  * the rows the seed pack created.
  *
- * @phpstan-type PaymentMethodData array{name: string, instructions: string, requires_transaction_message: bool, requires_proof: bool, is_active: bool, metadata?: array<string, string>|null}
+ * @phpstan-type PaymentMethodData array{name: string, instructions: string, requires_transaction_message: bool, requires_proof: bool, is_active: bool, online_enabled?: bool, metadata?: array<string, string>|null}
  */
 class PaymentMethodService
 {

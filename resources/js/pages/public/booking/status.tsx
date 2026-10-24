@@ -1,5 +1,6 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePoll } from '@inertiajs/react';
 import { CheckCircle2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { CancellationTerms } from '@/components/public/booking/cancellation-terms';
 import { PaymentForm } from '@/components/public/booking/payment-form';
 import { QuoteSummary } from '@/components/public/booking/quote-summary';
@@ -12,6 +13,8 @@ import type {
     BookingPayment,
     CancellationTier,
     MediaCollectionLimits,
+    MpesaPayTo,
+    OnlinePaymentAttempt,
     PublicPaymentMethod,
     PublicQuote,
 } from '@/types';
@@ -27,6 +30,8 @@ export default function BookingStatus({
     cancellation_tiers: tiers,
     payment_methods: methods,
     payment,
+    online_payment: onlinePayment,
+    mpesa_pay_to: mpesaPayTo,
     proof_limits: proofLimits,
 }: {
     token: string;
@@ -35,8 +40,11 @@ export default function BookingStatus({
     cancellation_tiers: CancellationTier[];
     payment_methods: PublicPaymentMethod[];
     payment: BookingPayment | null;
+    online_payment: OnlinePaymentAttempt | null;
+    mpesa_pay_to: MpesaPayTo | null;
     proof_limits: MediaCollectionLimits;
 }) {
+    usePollWhileWaiting(onlinePayment);
     const { site } = useSite();
     const chat = whatsappLink(
         site.whatsapp_number,
@@ -111,6 +119,10 @@ export default function BookingStatus({
                                     reference={booking.reference}
                                     methods={methods}
                                     proofLimits={proofLimits}
+                                    amount={quote?.reservation.display ?? null}
+                                    phone={booking.driver?.phone ?? null}
+                                    onlinePayment={onlinePayment}
+                                    mpesaPayTo={mpesaPayTo}
                                 />
                             </div>
                         </section>
@@ -220,6 +232,46 @@ export default function BookingStatus({
             </div>
         </>
     );
+}
+
+// The page stops asking after this long; the server's reconcile settles the rest.
+const POLL_FOR_MS = 5 * 60_000;
+
+/**
+ * While an STK push or card payment is in flight (M11B.7), reload the booking every few
+ * seconds so the renter sees it confirmed without refreshing.
+ */
+function usePollWhileWaiting(attempt: OnlinePaymentAttempt | null) {
+    const { start, stop } = usePoll(
+        3_000,
+        { only: ['booking', 'payment', 'online_payment', 'payment_methods'] },
+        { autoStart: false },
+    );
+    const waiting = attempt?.status === 'initiated';
+    const startedAt = attempt?.started_at ?? null;
+
+    useEffect(() => {
+        if (!waiting || !startedAt) {
+            stop();
+
+            return;
+        }
+
+        const remaining =
+            new Date(startedAt).getTime() + POLL_FOR_MS - Date.now();
+
+        if (remaining <= 0) {
+            return;
+        }
+
+        start();
+        const timer = window.setTimeout(stop, remaining);
+
+        return () => {
+            window.clearTimeout(timer);
+            stop();
+        };
+    }, [waiting, startedAt, start, stop]);
 }
 
 function Notice({

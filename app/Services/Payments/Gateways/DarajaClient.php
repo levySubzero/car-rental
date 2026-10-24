@@ -75,6 +75,16 @@ class DarajaClient
         return $this->isTill() ? ($this->config['till_number'] ?? null) : ($this->config['shortcode'] ?? null);
     }
 
+    /**
+     * A C2B confirmation names the shortcode paid: ours is the paybill, or the till and its store.
+     */
+    public function ownsShortcode(string $shortcode): bool
+    {
+        $ours = array_filter([$this->config['shortcode'] ?? null, $this->config['till_number'] ?? null], fn ($code) => is_string($code) && $code !== '');
+
+        return $shortcode !== '' && in_array($shortcode, $ours, true);
+    }
+
     public function callbackSecret(): ?string
     {
         return $this->config['callback_secret'] ?? null;

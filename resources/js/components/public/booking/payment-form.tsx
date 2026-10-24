@@ -1,32 +1,50 @@
 import { useForm } from '@inertiajs/react';
 import { Banknote } from 'lucide-react';
+import { useState } from 'react';
 import BookingPaymentController from '@/actions/App/Http/Controllers/Public/BookingPaymentController';
 import { MediaUploader } from '@/components/media/media-uploader';
+import {
+    CardOnline,
+    MpesaOnline,
+} from '@/components/public/booking/online-payment';
 import { Field, inputClass } from '@/components/public/form-field';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type {
     MediaCollectionLimits,
     MediaItem,
+    MpesaPayTo,
+    OnlinePaymentAttempt,
     PublicPaymentMethod,
 } from '@/types';
 
 /**
  * Steps 4 and 5 (M9.2, M9.3): choose how to pay, then send the confirmation message and a
  * proof if wanted. A method's instructions show only once it is chosen (PRD P-1). Cash
- * has nothing to send: the renter pays at the office.
+ * has nothing to send: the renter pays at the office. M-Pesa and card can be online
+ * (M11B.7): then the renter pays from the page, and sending a message by hand is the
+ * fallback for those who already paid another way.
  */
 export function PaymentForm({
     token,
     reference,
     methods,
     proofLimits,
+    amount,
+    phone,
+    onlinePayment,
+    mpesaPayTo,
 }: {
     token: string;
     reference: string | null;
     methods: PublicPaymentMethod[];
     proofLimits: MediaCollectionLimits;
+    amount: string | null;
+    phone: string | null;
+    onlinePayment: OnlinePaymentAttempt | null;
+    mpesaPayTo: MpesaPayTo | null;
 }) {
+    const [manual, setManual] = useState(false);
     const form = useForm<{
         method: string;
         transaction_message: string;
@@ -34,6 +52,8 @@ export function PaymentForm({
     }>({ method: '', transaction_message: '', proof: null });
     const chosen = methods.find((method) => method.code === form.data.method);
     const isCash = chosen?.code === 'cash';
+    const online = chosen?.online === true;
+    const showManual = chosen !== undefined && (!online || manual);
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
@@ -72,6 +92,7 @@ export function PaymentForm({
                                 onChange={() => {
                                     form.setData('method', method.code);
                                     form.clearErrors();
+                                    setManual(false);
                                 }}
                                 className="size-4 accent-[var(--color-gold)]"
                             />
@@ -84,7 +105,37 @@ export function PaymentForm({
                 )}
             </fieldset>
 
-            {chosen && (
+            {chosen && online && (
+                <div className="grid gap-4 rounded-md border border-white/10 bg-ink/40 p-4">
+                    {chosen.code === 'mpesa' ? (
+                        <MpesaOnline
+                            token={token}
+                            amount={amount}
+                            phone={phone}
+                            attempt={onlinePayment}
+                            payTo={mpesaPayTo}
+                        />
+                    ) : (
+                        <CardOnline
+                            token={token}
+                            amount={amount}
+                            attempt={onlinePayment}
+                        />
+                    )}
+                    {!manual && (
+                        <button
+                            type="button"
+                            onClick={() => setManual(true)}
+                            className="justify-self-start text-sm text-gold hover:underline"
+                        >
+                            Already paid another way? Send us the confirmation
+                            instead.
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {chosen && showManual && (
                 <div className="grid gap-6">
                     <div className="rounded-md border border-white/10 bg-ink/40 p-4">
                         <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">

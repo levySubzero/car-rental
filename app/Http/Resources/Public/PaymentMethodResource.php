@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Public;
 
 use App\Models\PaymentMethod;
+use App\Services\Payments\OnlinePaymentService;
 use App\Support\Markdown;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -26,6 +27,8 @@ class PaymentMethodResource extends JsonResource
             'requires_transaction_message' => $this->requires_transaction_message,
             'requires_proof' => $this->requires_proof,
             'instructions_html' => Markdown::toHtml($this->instructions),
+            // Paid through the gateway from the page (M11B.7): an M-Pesa prompt or the card popup.
+            'online' => app(OnlinePaymentService::class)->isOnline($this->resource),
         ];
     }
 }

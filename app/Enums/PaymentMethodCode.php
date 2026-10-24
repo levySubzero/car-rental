@@ -12,4 +12,12 @@ enum PaymentMethodCode: string
     case Bank = 'bank';
     case Card = 'card';
     case Cash = 'cash';
+
+    /**
+     * Can be paid through a gateway from the booking page (M11B): M-Pesa by Daraja, card by Paystack.
+     */
+    public function supportsOnline(): bool
+    {
+        return $this === self::Mpesa || $this === self::Card;
+    }
 }

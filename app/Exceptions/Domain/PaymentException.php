@@ -59,6 +59,31 @@ class PaymentException extends DomainException
         return new self('The hold on this car has lapsed and the dates have since been taken. The booking cannot be reserved.');
     }
 
+    public static function gatewayUnavailable(string $method): self
+    {
+        return new self("{$method} could not take the payment just now. Please try again in a moment, or pay another way.");
+    }
+
+    public static function invalidMpesaPhone(): self
+    {
+        return new self('Enter a Kenyan mobile number registered for M-Pesa, such as 0712 345 678.', 'phone');
+    }
+
+    public static function stkJustSent(): self
+    {
+        return new self('A payment request was just sent to your phone. Check it, or wait a minute before asking again.', 'phone');
+    }
+
+    public static function noRenterEmail(): self
+    {
+        return new self('This booking has no email address to send the card receipt to. Please choose another method.', 'method');
+    }
+
+    public static function unknownOnlinePayment(): self
+    {
+        return new self('We could not find that card payment for this booking.');
+    }
+
     protected function errorField(): ?string
     {
         return $this->field;

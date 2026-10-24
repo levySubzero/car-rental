@@ -9,6 +9,7 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\CurrencyController;
 use App\Http\Controllers\Public\FleetController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\OnlinePaymentController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\QuotePreviewController;
 use App\Http\Controllers\Public\RentalPolicyController;
@@ -56,6 +57,13 @@ Route::middleware(['booking.token', 'throttle:booking-step'])->prefix('bookings/
     Route::put('driver', [BookingController::class, 'updateDriver'])->name('driver');
     Route::post('submit', [BookingController::class, 'submit'])->name('submit');
     Route::post('payment', [BookingPaymentController::class, 'store'])->name('payment');
+
+    // Online payments (M11B.7).
+    Route::middleware('throttle:online-payment')->prefix('payment')->name('payment.')->group(function () {
+        Route::post('mpesa', [OnlinePaymentController::class, 'mpesa'])->name('mpesa');
+        Route::post('card', [OnlinePaymentController::class, 'card'])->name('card');
+        Route::post('card/confirm', [OnlinePaymentController::class, 'confirmCard'])->name('card.confirm');
+    });
 });
 
 Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');

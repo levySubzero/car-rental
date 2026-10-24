@@ -48,22 +48,31 @@ class BookingNotifier
         );
     }
 
+    /**
+     * A payment for staff to check, cash on its way, or (M11B) money received online and
+     * confirmed already, which staff only need to know about. By the time this queued job
+     * runs an online payment is verified, so the newest submission is taken either way.
+     */
     public function paymentSubmitted(Booking $booking): void
     {
-        $payment = $booking->payments()->where('status', PaymentStatus::Pending)->latest('id')->first();
+        $payment = $booking->payments()->with('gatewayTransaction')->latest('id')->first();
 
-        if ($payment === null) {
+        if ($payment === null || ! ($payment->isPending() || $payment->isOnline())) {
             return;
         }
 
         $this->staff()?->notify(new PaymentSubmitted($booking, $payment));
 
-        $this->alerts->send(
-            AlertKind::PaymentSubmitted,
-            $payment->isCash() ? "Cash coming for {$booking->reference}" : "Payment to check for {$booking->reference}",
-            $payment->isCash() ? 'The renter will pay the reservation in cash.' : 'Paid by '.($payment->method->name ?? $payment->payment_method_code->value).'. Check and verify it.',
-            $this->queueUrl($booking),
-        );
+        [$title, $body] = match (true) {
+            $payment->isOnline() => [
+                "Paid online for {$booking->reference}",
+                ($payment->gatewayTransaction?->gateway->label() ?? 'Online').", receipt {$payment->reference}. Confirmed automatically, nothing to check.",
+            ],
+            $payment->isCash() => ["Cash coming for {$booking->reference}", 'The renter will pay the reservation in cash.'],
+            default => ["Payment to check for {$booking->reference}", 'Paid by '.($payment->method->name ?? $payment->payment_method_code->value).'. Check and verify it.'],
+        };
+
+        $this->alerts->send(AlertKind::PaymentSubmitted, $title, $body, $this->queueUrl($booking));
     }
 
     /**

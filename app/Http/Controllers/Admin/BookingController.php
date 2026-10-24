@@ -48,7 +48,7 @@ class BookingController extends Controller
     {
         Gate::authorize('view', $booking);
 
-        $booking->load(['car', 'driver', 'deliveryZone', 'payments.method', 'payments.proof', 'payments.verifier:id,name', 'payments.rejecter:id,name', 'handover.recorder:id,name', 'returnRecord.recorder:id,name', 'requests']);
+        $booking->load(['car', 'driver', 'deliveryZone', 'payments.method', 'payments.proof', 'payments.gatewayTransaction', 'payments.verifier:id,name', 'payments.rejecter:id,name', 'handover.recorder:id,name', 'returnRecord.recorder:id,name', 'requests']);
 
         return Inertia::render('admin/bookings/show', [
             'booking' => BookingResource::make($booking),

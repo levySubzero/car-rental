@@ -13,6 +13,7 @@ enum AlertKind: string
     case PaymentSubmitted = 'payment_submitted';
     case ContactMessage = 'contact_message';
     case BookingRequest = 'booking_request';
+    case PaymentNeedsReview = 'payment_needs_review';
 
     /**
      * @return list<Permission>
@@ -24,6 +25,7 @@ enum AlertKind: string
             self::PaymentSubmitted => [Permission::PaymentsView],
             self::ContactMessage => [Permission::ContactMessagesView],
             self::BookingRequest => [Permission::BookingRequestsView],
+            self::PaymentNeedsReview => [Permission::PaymentsVerify],
         };
     }
 
@@ -37,6 +39,7 @@ enum AlertKind: string
             self::PaymentSubmitted => 'banknote',
             self::ContactMessage => 'mail',
             self::BookingRequest => 'message-square',
+            self::PaymentNeedsReview => 'circle-alert',
         };
     }
 }

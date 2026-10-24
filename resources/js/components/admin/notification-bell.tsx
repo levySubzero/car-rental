@@ -4,6 +4,7 @@ import {
     Banknote,
     Bell,
     CalendarPlus,
+    CircleAlert,
     Mail,
     MessageSquare,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ const ICONS: Record<string, LucideIcon> = {
     banknote: Banknote,
     mail: Mail,
     'message-square': MessageSquare,
+    'circle-alert': CircleAlert,
 };
 
 const RELATIVE = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });

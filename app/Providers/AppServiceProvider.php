@@ -161,6 +161,16 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('contact', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
 
+        // Online payments from the booking page (M11B.7): each try may prompt a phone or open
+        // a Paystack transaction, so per booking and per IP.
+        RateLimiter::for('online-payment', fn (Request $request) => [
+            Limit::perHour(10)->by('token:'.hash('sha256', (string) $request->route('token'))),
+            Limit::perHour(30)->by('ip:'.$request->ip()),
+        ]);
+
+        // Gateway callbacks (M11B.5): generous, since Safaricom and Paystack retry from few IPs.
+        RateLimiter::for('hooks', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
+
         // The booking form re-prices as the renter changes dates and extras.
         RateLimiter::for('quote-preview', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Enums\BookingDocument;
+use App\Enums\GatewayTransactionStatus;
 use App\Enums\IdType;
 use App\Exceptions\Domain\QuoteException;
 use App\Http\Controllers\Controller;
@@ -25,6 +26,7 @@ use App\Services\Booking\BookingService;
 use App\Services\Booking\BookingTokenResolver;
 use App\Services\Booking\DriverEligibilityService;
 use App\Services\Media\MediaCollectionRegistry;
+use App\Services\Payments\OnlinePaymentService;
 use App\Services\Pricing\DisplayCurrencyService;
 use App\Settings\GeneralSettings;
 use App\Settings\PricingSettings;
@@ -40,7 +42,10 @@ use Inertia\Response;
  */
 class BookingController extends Controller
 {
-    public function __construct(private readonly BookingService $bookings) {}
+    public function __construct(
+        private readonly BookingService $bookings,
+        private readonly OnlinePaymentService $onlinePayments,
+    ) {}
 
     public function create(Car $car, PricingSettings $pricing): Response
     {
@@ -85,6 +90,8 @@ class BookingController extends Controller
                     ? PaymentMethodResource::collection(PaymentMethod::query()->active()->ordered()->get())
                     : [],
                 'payment' => $this->latestPayment($booking),
+                'online_payment' => $this->onlinePayment($booking),
+                'mpesa_pay_to' => $booking->status->acceptsPayment() ? $this->onlinePayments->mpesaPayTo($booking) : null,
                 'proof_limits' => $collections->get(BookingTokenResolver::PAYMENT_PROOF)->toArray(),
             ]);
         }
@@ -197,6 +204,24 @@ class BookingController extends Controller
         } catch (QuoteException $exception) {
             return [null, $exception->getMessage()];
         }
+    }
+
+    /**
+     * The renter's latest online payment (M11B.7): while it is initiated the page polls; a
+     * failure says why, so they can try again.
+     *
+     * @return array{gateway: string, status: string, failure_reason: string|null, started_at: string|null}|null
+     */
+    private function onlinePayment(Booking $booking): ?array
+    {
+        $attempt = $this->onlinePayments->latestAttempt($booking);
+
+        return $attempt === null ? null : [
+            'gateway' => $attempt->gateway->value,
+            'status' => $attempt->status->value,
+            'failure_reason' => $attempt->status === GatewayTransactionStatus::Failed ? $attempt->failure_reason : null,
+            'started_at' => $attempt->created_at?->toIso8601String(),
+        ];
     }
 
     /**

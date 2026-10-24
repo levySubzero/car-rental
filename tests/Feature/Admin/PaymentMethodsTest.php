@@ -81,3 +81,36 @@ it('has no create or delete routes, and needs permission to update', function ()
         ->put(route('admin.payment-methods.update', 'card'), methodPayload())
         ->assertForbidden();
 });
+
+it('switches M-Pesa and card online, and ignores the switch for other methods', function () {
+    $mpesa = PaymentMethod::factory()->create(['code' => 'mpesa']);
+    $bank = PaymentMethod::factory()->create(['code' => 'bank', 'name' => 'Bank transfer']);
+    $editor = staffWith([Permission::PaymentMethodsView, Permission::PaymentMethodsUpdate]);
+
+    $this->actingAs($editor)->put(route('admin.payment-methods.update', 'mpesa'), methodPayload(['online_enabled' => true]))->assertSessionHasNoErrors();
+    $this->actingAs($editor)->put(route('admin.payment-methods.update', 'bank'), methodPayload(['name' => 'Bank transfer', 'online_enabled' => true]))->assertSessionHasNoErrors();
+
+    expect($mpesa->fresh()->online_enabled)->toBeTrue()
+        ->and($bank->fresh()->online_enabled)->toBeFalse();
+
+    // Leaving the field out keeps the switch as it was.
+    $this->actingAs($editor)->put(route('admin.payment-methods.update', 'mpesa'), methodPayload())->assertSessionHasNoErrors();
+    expect($mpesa->fresh()->online_enabled)->toBeTrue();
+});
+
+it('tells staff whether the gateway keys are set', function () {
+    PaymentMethod::factory()->create(['code' => 'card', 'name' => 'Card', 'online_enabled' => true]);
+    $viewer = staffWith([Permission::PaymentMethodsView]);
+    config(['services.paystack' => ['public_key' => null, 'secret_key' => null]]);
+
+    $this->actingAs($viewer)->get(route('admin.payment-methods.edit', 'card'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('method.supports_online', true)
+            ->where('method.online_enabled', true)
+            ->where('method.gateway_configured', false));
+
+    config(['services.paystack' => ['public_key' => 'pk_test_1', 'secret_key' => 'sk_test_1']]);
+
+    $this->actingAs($viewer)->get(route('admin.payment-methods.edit', 'card'))
+        ->assertInertia(fn (Assert $page) => $page->where('method.gateway_configured', true));
+});

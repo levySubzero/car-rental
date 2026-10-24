@@ -35,7 +35,12 @@ class PaymentSubmissionResource extends JsonResource
             'reference' => $this->reference,
             'note' => $this->note,
             'rejection_reason' => $this->rejection_reason,
-            'verified_by' => $this->verifier?->name,
+            // Online payments (M11B.8) are verified by the system, not a staff member.
+            'online' => $this->gatewayTransaction === null ? null : [
+                'gateway' => $this->gatewayTransaction->gateway->value,
+                'label' => $this->gatewayTransaction->gateway->label(),
+            ],
+            'verified_by' => $this->verifier->name ?? ($this->gatewayTransaction !== null ? 'Verified automatically' : null),
             'verified_at' => $this->verified_at?->toIso8601String(),
             'rejected_by' => $this->rejecter?->name,
             'rejected_at' => $this->rejected_at?->toIso8601String(),

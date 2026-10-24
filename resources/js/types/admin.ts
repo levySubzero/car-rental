@@ -250,6 +250,10 @@ export type AdminPaymentMethod = {
     requires_transaction_message: boolean;
     requires_proof: boolean;
     is_active: boolean;
+    // Online payments (M11B.8): M-Pesa and card only; the switch works once the keys are set.
+    supports_online: boolean;
+    online_enabled: boolean;
+    gateway_configured: boolean;
     sort_order: number;
     // Paybill, till, bank details, card link (D20).
     metadata: Record<string, string>;
@@ -437,6 +441,11 @@ export type AdminPayment = {
     status_label: string;
     method: string;
     method_name: string;
+    // Paid through a gateway and verified automatically (M11B.8).
+    online: {
+        gateway: 'mpesa_stk' | 'mpesa_c2b' | 'paystack';
+        label: string;
+    } | null;
     transaction_message: string | null;
     proof: MediaItem | null;
     amount: Money | null;

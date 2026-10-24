@@ -12,6 +12,7 @@ use App\Http\Middleware\ResolveMediaUploader;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ShareCurrency;
 use App\Http\Middleware\ShareSite;
+use App\Http\Middleware\VerifyDarajaCallback;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -33,6 +34,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
             Route::middleware(['web', 'media.uploader'])
                 ->group(base_path('routes/media.php'));
+
+            // Gateway callbacks (M11B.5): outside the web group, so no session or CSRF.
+            Route::middleware('throttle:hooks')
+                ->prefix('hooks')
+                ->name('hooks.')
+                ->group(base_path('routes/hooks.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -47,6 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'site' => ShareSite::class,
             'booking.token' => ResolveBookingToken::class,
             'portal' => EnsurePortalSession::class,
+            'daraja.callback' => VerifyDarajaCallback::class,
         ]);
 
         $middleware->web(append: [

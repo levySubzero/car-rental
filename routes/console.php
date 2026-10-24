@@ -2,6 +2,8 @@
 
 use App\Services\Booking\KycPurgeService;
 use App\Services\Notifications\AdminAlerts;
+use App\Services\Payments\Gateways\GatewayException;
+use App\Services\Payments\OnlinePaymentService;
 use App\Settings\RetentionSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Inspiring;
@@ -43,3 +45,25 @@ Artisan::command('activity:prune', function (RetentionSettings $retention) {
     return $this->call('activitylog:clean', ['--days' => $days, '--force' => true]);
 })->purpose('Delete activity older than the retention setting');
 Schedule::command('activity:prune')->weekly()->onOneServer();
+
+// Online payments (M11B.6): STK pushes and card payments the gateway never reported back on.
+Artisan::command('payments:reconcile', function (OnlinePaymentService $payments) {
+    $counts = $payments->reconcile();
+    $this->info("{$counts['checked']} checked: {$counts['paid']} paid, {$counts['failed']} failed, {$counts['errors']} could not be asked.");
+})->purpose('Ask the gateways about online payments still waiting for an answer');
+Schedule::command('payments:reconcile')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+
+// Once per environment, after the Daraja keys are set: Safaricom then reports paybill payments.
+Artisan::command('mpesa:register-c2b', function (OnlinePaymentService $payments) {
+    try {
+        $payments->registerC2b();
+    } catch (GatewayException $exception) {
+        $this->error($exception->getMessage());
+
+        return 1;
+    }
+
+    $this->info('C2B confirmation and validation URLs registered with Safaricom.');
+
+    return 0;
+})->purpose('Register the paybill (C2B) callback URLs with Safaricom');

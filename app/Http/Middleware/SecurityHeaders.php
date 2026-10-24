@@ -38,11 +38,12 @@ class SecurityHeaders
 
     private function contentSecurityPolicy(): string
     {
-        $script = ["'self'", 'https://challenges.cloudflare.com'];
+        // Turnstile, and Paystack's inline card popup (M11B.7).
+        $script = ["'self'", 'https://challenges.cloudflare.com', 'https://js.paystack.co'];
         $style = ["'self'", "'unsafe-inline'", 'https://fonts.bunny.net'];
         $font = ["'self'", 'data:', 'https://fonts.bunny.net'];
         $img = ["'self'", 'data:', 'blob:', 'https:'];
-        $connect = ["'self'", 'https://*.sentry.io'];
+        $connect = ["'self'", 'https://*.sentry.io', 'https://api.paystack.co'];
 
         // The Vite dev server injects inline scripts and serves every asset from another origin.
         if ($this->vite->isRunningHot()) {
@@ -62,7 +63,7 @@ class SecurityHeaders
             'img-src' => $img,
             'media-src' => ["'self'", 'blob:', 'https:'],
             'connect-src' => $connect,
-            'frame-src' => ['https://challenges.cloudflare.com', 'https://www.google.com'],
+            'frame-src' => ['https://challenges.cloudflare.com', 'https://www.google.com', 'https://checkout.paystack.com'],
             'frame-ancestors' => ["'self'"],
             'base-uri' => ["'self'"],
             'form-action' => ["'self'"],
