@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Baseline security headers. The full CSP audit is MILESTONES M12.3.
+ * Security headers and the CSP (M1.14, audited in M12.3). Inline scripts need the
+ * per-request nonce (`Vite::cspNonce()`); Vite's own tags get it automatically.
  */
 class SecurityHeaders
 {
@@ -16,6 +17,9 @@ class SecurityHeaders
 
     public function handle(Request $request, Closure $next): Response
     {
+        // Before the view renders, so the layout's inline script and Vite's tags carry it.
+        $nonce = $this->vite->useCspNonce();
+
         $response = $next($request);
 
         $headers = $response->headers;
@@ -30,13 +34,13 @@ class SecurityHeaders
         }
 
         if (! $headers->has('Content-Security-Policy')) {
-            $headers->set('Content-Security-Policy', $this->contentSecurityPolicy());
+            $headers->set('Content-Security-Policy', $this->contentSecurityPolicy($nonce));
         }
 
         return $response;
     }
 
-    private function contentSecurityPolicy(): string
+    private function contentSecurityPolicy(string $nonce): string
     {
         // Turnstile, and Paystack's inline card popup (M11B.7).
         $script = ["'self'", 'https://challenges.cloudflare.com', 'https://js.paystack.co'];
@@ -46,7 +50,10 @@ class SecurityHeaders
         $connect = ["'self'", 'https://*.sentry.io', 'https://api.paystack.co'];
 
         // The Vite dev server injects inline scripts and serves every asset from another origin.
-        if ($this->vite->isRunningHot()) {
+        // A nonce would switch 'unsafe-inline' off, so it is only sent outside dev.
+        if (! $this->vite->isRunningHot()) {
+            $script[] = "'nonce-{$nonce}'";
+        } else {
             $origin = trim((string) file_get_contents($this->vite->hotFile()));
             $script = [...$script, "'unsafe-inline'", $origin];
             $style = [...$style, $origin];
@@ -70,8 +77,16 @@ class SecurityHeaders
             'object-src' => ["'none'"],
         ];
 
+        if (app()->isProduction()) {
+            $directives['upgrade-insecure-requests'] = [];
+        }
+
+        if ($report = config('baines.csp_report_uri')) {
+            $directives['report-uri'] = [$report];
+        }
+
         return collect($directives)
-            ->map(fn (array $sources, string $directive) => $directive.' '.implode(' ', $sources))
+            ->map(fn (array $sources, string $directive) => trim($directive.' '.implode(' ', $sources)))
             ->implode('; ');
     }
 }

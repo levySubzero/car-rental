@@ -8,7 +8,7 @@ import { TripForm } from '@/components/public/booking/trip-form';
 import { Button } from '@/components/ui/button';
 import { formatBookingTime } from '@/lib/booking';
 import { cn } from '@/lib/utils';
-import { rentalPolicy } from '@/routes';
+import { privacy, rentalPolicy } from '@/routes';
 import { submit as submitBooking, trip } from '@/routes/bookings';
 import type {
     Booking,
@@ -181,7 +181,7 @@ function Review({
     tiers: CancellationTier[];
     onEdit: (step: Step) => void;
 }) {
-    const form = useForm({ accept_terms: false });
+    const form = useForm({ accept_terms: false, accept_privacy: false });
     const errors = form.errors as Record<string, string | undefined>;
     const driver = booking.driver;
     const place = (mode: string, address: string | null) =>
@@ -282,9 +282,37 @@ function Review({
                             <Link
                                 href={rentalPolicy().url}
                                 target="_blank"
-                                className="text-gold underline-offset-4 hover:underline"
+                                className="text-gold underline underline-offset-4"
                             >
                                 rental terms
+                            </Link>
+                            .
+                        </span>
+                    </label>
+                    <label className="flex gap-3 text-sm text-white/85">
+                        <input
+                            type="checkbox"
+                            checked={form.data.accept_privacy}
+                            onChange={(event) =>
+                                form.setData(
+                                    'accept_privacy',
+                                    event.target.checked,
+                                )
+                            }
+                            aria-invalid={
+                                errors.accept_privacy ? true : undefined
+                            }
+                            className="mt-0.5 size-4 accent-[var(--color-gold)]"
+                        />
+                        <span>
+                            I agree to Baines Executives keeping my details and
+                            documents to handle this booking, as set out in the{' '}
+                            <Link
+                                href={privacy().url}
+                                target="_blank"
+                                className="text-gold underline underline-offset-4"
+                            >
+                                privacy notice
                             </Link>
                             .
                         </span>

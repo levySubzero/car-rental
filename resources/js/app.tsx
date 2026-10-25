@@ -1,11 +1,16 @@
 import { createInertiaApp } from '@inertiajs/react';
+import { lazy, Suspense } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
-import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import PublicLayout from '@/layouts/public-layout';
-import SettingsLayout from '@/layouts/settings/layout';
+import { initSentry } from '@/lib/sentry';
+
+// The staff layouts load on demand, so the public site never downloads them (M12.5).
+// Admin pages are rendered in the browser only (Inertia's withoutSsr), where lazy works.
+const AppLayout = lazy(() => import('@/layouts/app-layout'));
+const SettingsLayout = lazy(() => import('@/layouts/settings/layout'));
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -27,7 +32,7 @@ void createInertiaApp({
     withApp(app) {
         return (
             <TooltipProvider delayDuration={0}>
-                {app}
+                <Suspense fallback={null}>{app}</Suspense>
                 <Toaster />
             </TooltipProvider>
         );
@@ -39,3 +44,5 @@ void createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+initSentry();

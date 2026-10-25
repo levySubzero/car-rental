@@ -21,7 +21,7 @@ beforeEach(function () {
 function fleetCar(User $staff, array $attributes = []): Car
 {
     $car = Car::factory()->published()->create($attributes);
-    app(MediaService::class)->sync($car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid]);
+    app(MediaService::class)->sync($car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid], actor: $staff);
 
     return $car;
 }

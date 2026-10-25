@@ -9,6 +9,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
@@ -96,10 +97,26 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
 
+        // Per email and IP, plus per IP alone so one address cannot try many emails (M12.2).
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
-            return Limit::perMinute(5)->by($throttleKey);
+            return [
+                Limit::perMinute(5)->by($throttleKey),
+                Limit::perMinute(20)->by('ip:'.$request->ip()),
+            ];
+        });
+
+        // Fortify gives the password reset routes no limiter of their own.
+        RateLimiter::for('password', fn (Request $request) => Limit::perHour(10)->by($request->ip()));
+
+        $this->app->booted(function (): void {
+            $routes = Route::getRoutes();
+            $routes->refreshNameLookups();
+
+            foreach (['password.email', 'password.update'] as $name) {
+                $routes->getByName($name)?->middleware('throttle:password');
+            }
         });
 
     }

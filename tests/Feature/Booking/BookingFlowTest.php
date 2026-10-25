@@ -142,7 +142,7 @@ it('takes a renter from the booking page to awaiting payment', function () {
     expect($booking->fresh()->current_step->value)->toBe('review');
 
     Notification::fake();
-    $this->post(route('bookings.submit', $token), ['accept_terms' => true])->assertSessionHasNoErrors();
+    $this->post(route('bookings.submit', $token), ['accept_terms' => true, 'accept_privacy' => true])->assertSessionHasNoErrors();
 
     Notification::assertSentTo(new AnonymousNotifiable, BookingReceived::class, fn (BookingReceived $notification, array $channels, AnonymousNotifiable $notifiable) => $notification->token === $token
         && $notifiable->routes['mail'] === 'amina@example.test');
@@ -156,6 +156,7 @@ it('takes a renter from the booking page to awaiting payment', function () {
         ->and($booking->security_deposit_minor)->toBe(16_000_000)
         ->and($booking->policy_bundle_id)->toBe($this->bundle->id)
         ->and($booking->accepted_terms_ip)->toBe('127.0.0.1')
+        ->and($booking->accepted_privacy_at?->toIso8601String())->toBe(now()->toIso8601String())
         ->and($booking->cancellation_tiers)->toBe([['hours_before_pickup' => 72, 'refund_percent_bp' => 5000, 'label' => null]])
         ->and($booking->quote['settings_hash'])->toBeString()
         ->and($booking->expires_at->toIso8601String())->toBe(now()->addMinutes(120)->toIso8601String())
@@ -287,8 +288,8 @@ it('lets only one of two renters submit the same dates', function () {
         $this->put(route('bookings.driver', $token), driverPayload(uploadDocuments($token)))->assertSessionHasNoErrors();
     }
 
-    $this->post(route('bookings.submit', $first), ['accept_terms' => true])->assertSessionHasNoErrors();
-    $this->post(route('bookings.submit', $second), ['accept_terms' => true]);
+    $this->post(route('bookings.submit', $first), ['accept_terms' => true, 'accept_privacy' => true])->assertSessionHasNoErrors();
+    $this->post(route('bookings.submit', $second), ['accept_terms' => true, 'accept_privacy' => true]);
 
     expect(app(BookingTokenService::class)->find($second)->status)->toBe(BookingStatus::Draft)
         ->and(AvailabilityBlock::count())->toBe(1)
@@ -299,10 +300,11 @@ it('submits once, refuses edits afterwards, and needs the terms accepted', funct
     $token = startBooking();
     $this->put(route('bookings.driver', $token), driverPayload(uploadDocuments($token)));
 
-    $this->post(route('bookings.submit', $token), [])->assertSessionHasErrors('accept_terms');
+    $this->post(route('bookings.submit', $token), [])->assertSessionHasErrors(['accept_terms', 'accept_privacy']);
+    $this->post(route('bookings.submit', $token), ['accept_terms' => true])->assertSessionHasErrors('accept_privacy');
 
-    $this->post(route('bookings.submit', $token), ['accept_terms' => true]);
-    $this->post(route('bookings.submit', $token), ['accept_terms' => true]);
+    $this->post(route('bookings.submit', $token), ['accept_terms' => true, 'accept_privacy' => true]);
+    $this->post(route('bookings.submit', $token), ['accept_terms' => true, 'accept_privacy' => true]);
     $this->put(route('bookings.trip', $token), tripPayload());
 
     expect(Booking::sole()->reference)->toBe('BE-2026-000001')
@@ -317,7 +319,7 @@ it('books a staff-quoted zone with delivery left out of the reservation', functi
     $outside = DeliveryZone::firstWhere('name', 'Outside Nairobi');
     $token = startBooking(['delivery_zone_id' => $outside->id, 'extras' => []]);
     $this->put(route('bookings.driver', $token), driverPayload(uploadDocuments($token)));
-    $this->post(route('bookings.submit', $token), ['accept_terms' => true])->assertSessionHasNoErrors();
+    $this->post(route('bookings.submit', $token), ['accept_terms' => true, 'accept_privacy' => true])->assertSessionHasNoErrors();
 
     $booking = Booking::sole();
     $delivery = collect($booking->quote['lines'])->firstWhere('kind', 'delivery');
@@ -334,7 +336,7 @@ it('books a staff-quoted zone with delivery left out of the reservation', functi
 it('keeps the snapshot when settings, rates, charges or tiers change', function () {
     $token = startBooking();
     $this->put(route('bookings.driver', $token), driverPayload(uploadDocuments($token)));
-    $this->post(route('bookings.submit', $token), ['accept_terms' => true]);
+    $this->post(route('bookings.submit', $token), ['accept_terms' => true, 'accept_privacy' => true]);
     $before = Booking::sole()->only(['quote', 'cancellation_tiers', 'total_minor', 'reservation_minor', 'balance_minor']);
 
     $pricing = app(PricingSettings::class);
@@ -355,7 +357,7 @@ it('expires stale drafts and unpaid bookings, freeing the car', function () {
     $draft = startBooking();
     $unpaid = startBooking(['pickup_at' => '2026-12-02T10:00:00+03:00', 'return_at' => '2026-12-04T10:00:00+03:00']);
     $this->put(route('bookings.driver', $unpaid), driverPayload(uploadDocuments($unpaid)));
-    $this->post(route('bookings.submit', $unpaid), ['accept_terms' => true]);
+    $this->post(route('bookings.submit', $unpaid), ['accept_terms' => true, 'accept_privacy' => true]);
 
     $this->travel(119)->minutes();
     $this->artisan('bookings:expire')->assertSuccessful();
@@ -381,4 +383,15 @@ it('stores the renter\'s Nairobi times in UTC', function () {
 
 it('keeps booking links out of search engines', function () {
     $this->get(route('robots'))->assertSee('Disallow: /bookings');
+});
+
+it('never flashes identity numbers back into the session (M12.4)', function () {
+    $token = startBooking();
+
+    $this->put(route('bookings.driver', $token), driverPayload([], ['dob' => 'not-a-date']))
+        ->assertSessionHasErrors('dob')
+        ->assertSessionHasInput('surname')
+        ->assertSessionMissing('_old_input.id_number')
+        ->assertSessionMissing('_old_input.kra_pin')
+        ->assertSessionMissing('_old_input.licence_number');
 });

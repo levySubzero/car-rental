@@ -35,6 +35,8 @@ class ImageProcessor
      */
     public function sanitize(string $path, string $extension): ProcessedImage
     {
+        $this->assertPixelLimit($path);
+
         $image = $this->decode($path);
 
         [$target, $encoder, $mime] = match ($extension) {
@@ -60,6 +62,19 @@ class ImageProcessor
             'jpg' => $this->encode($image, new JpegEncoder(quality: $quality, strip: true), 'jpg', 'image/jpeg'),
             default => $this->encode($image, new WebpEncoder(quality: $quality, strip: true), 'webp', 'image/webp'),
         };
+    }
+
+    /**
+     * Reads the dimensions from the header only. Formats getimagesize cannot read (HEIC)
+     * are left to the decoder, whose own resource limits apply.
+     */
+    private function assertPixelLimit(string $path): void
+    {
+        $size = @getimagesize($path);
+
+        if ($size !== false && (int) config('media.max_pixels') < $size[0] * $size[1]) {
+            throw MediaException::tooManyPixels();
+        }
     }
 
     private function decode(string $source, bool $binary = false): ImageInterface

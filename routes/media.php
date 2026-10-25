@@ -13,7 +13,9 @@ Route::post('media', [MediaController::class, 'store'])
     ->middleware('throttle:media-upload')
     ->name('media.store');
 
-Route::post('media/reorder', [MediaController::class, 'reorder'])->name('media.reorder');
+Route::post('media/reorder', [MediaController::class, 'reorder'])
+    ->middleware('throttle:media-upload')
+    ->name('media.reorder');
 
 Route::get('media/s/{media}/{conversion?}', [MediaController::class, 'signed'])
     ->middleware('signed')
@@ -25,6 +27,10 @@ Route::get('media/{media}/{conversion?}', [MediaController::class, 'show'])
     ->whereIn('conversion', array_keys((array) config('media.conversions')))
     ->name('media.show');
 
-Route::patch('media/{media}', [MediaController::class, 'update'])->name('media.update');
+Route::patch('media/{media}', [MediaController::class, 'update'])
+    ->middleware('throttle:media-upload')
+    ->name('media.update');
 
-Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+Route::delete('media/{media}', [MediaController::class, 'destroy'])
+    ->middleware('throttle:media-upload')
+    ->name('media.destroy');

@@ -151,13 +151,13 @@ class Media extends Model
 
     /**
      * Whether this file may be saved into $owner's collection (a null owner: a standalone
-     * collection): a pending upload by $actor (any uploader when null), or a file
-     * already attached there.
+     * collection): a pending upload by $actor, or a file already attached there. Only
+     * $system code (seeders) may take anyone's pending upload.
      */
-    public function isAttachableTo(?Model $owner, ?Model $actor): bool
+    public function isAttachableTo(?Model $owner, ?Model $actor, bool $system = false): bool
     {
         if ($this->isPending()) {
-            return $actor === null || $this->wasUploadedBy($actor);
+            return $system || $this->wasUploadedBy($actor);
         }
 
         return $owner === null

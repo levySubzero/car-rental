@@ -17,7 +17,7 @@ beforeEach(function () {
         'damage_excess_minor' => 100_000_00,
         'damage_excess_currency' => 'USD',
     ]);
-    app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid]);
+    app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid], actor: $staff);
     $this->car->load(['brand.logo', 'carType', 'cover', 'gallery']);
 });
 

@@ -202,15 +202,17 @@ it('keeps one voucher when it is generated again', function () {
 it('logs each booking notification that goes out', function () {
     app(PaymentVerificationService::class)->verify($this->submission, 'REF1', Money::fromMajor('16588'), $this->staff);
 
-    $sent = Activity::query()->where('log_name', 'notifications')->get();
+    $sent = Activity::query()->with('subject')->where('log_name', 'notifications')->get();
 
     expect($sent->map(fn (Activity $activity) => $activity->getProperty('notification').':'.$activity->getProperty('channel'))->all())
         ->toEqualCanonicalizing(['booking_confirmed:mail', 'booking_confirmed:whatsapp'])
         ->and($sent->first()->subject->is($this->booking))->toBeTrue();
 
     $link = Activity::query()->where('log_name', 'whatsapp')->sole();
+    // The link holds the renter's phone and the message, so only the fact is logged (M12.4).
     expect($link->event)->toBe('link-built')
-        ->and($link->getProperty('link'))->toStartWith('https://wa.me/254712345678?text=');
+        ->and($link->getProperty('notification'))->toBe('booking_confirmed')
+        ->and($link->getProperty('link'))->toBeNull();
 });
 
 it('builds click-to-chat links and refuses the unbuilt Cloud API driver', function () {

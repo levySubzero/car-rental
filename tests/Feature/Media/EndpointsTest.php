@@ -128,7 +128,7 @@ describe('viewing', function () {
 
     it('guards private files and logs each authorized view', function () {
         $doc = $this->service->upload(MediaFixtures::pdf(), 'gadget.docs', $this->uploader);
-        $this->service->sync($this->gadget, 'gadget.docs', [$doc->uuid]);
+        $this->service->sync($this->gadget, 'gadget.docs', [$doc->uuid], system: true);
 
         $this->get(route('media.show', $doc->uuid))->assertForbidden();
         $this->actingAs(staffWith())->get(route('media.show', $doc->uuid))->assertForbidden();
@@ -206,13 +206,13 @@ describe('managing', function () {
     });
 
     it('lets the owner\'s editors delete attached files', function () {
-        $this->service->sync($this->gadget, 'gadget.photos', [$this->a->uuid]);
+        $this->service->sync($this->gadget, 'gadget.photos', [$this->a->uuid], system: true);
 
         $this->actingAs(staffWith(['users.update']))->deleteJson(route('media.destroy', $this->a->uuid))->assertNoContent();
     });
 
     it('reorders an owner\'s files', function () {
-        $this->service->sync($this->gadget, 'gadget.photos', [$this->a->uuid, $this->b->uuid]);
+        $this->service->sync($this->gadget, 'gadget.photos', [$this->a->uuid, $this->b->uuid], system: true);
 
         $payload = ['collection' => 'gadget.photos', 'owner_type' => 'gadget', 'owner_id' => $this->gadget->id, 'uuids' => [$this->b->uuid, $this->a->uuid]];
 

@@ -49,7 +49,7 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | M11 | Operations desk                                                | In review   | 13/14    | **G4**               |
 | M11B | Online payments (Daraja and Paystack) and Resend mail         | Done        | 11/13    | —                    |
 | M11C | Finance and dashboard                                         | In progress | 6/7      | —                    |
-| M12 | Hardening (security, performance, SEO, a11y)                   | Not started | 0/17     | —                    |
+| M12 | Hardening (security, performance, SEO, a11y)                   | In progress | 12/18    | —                    |
 | M12B | Integrations: keys, configuration and live tests              | Not started | 0/14     | —                    |
 | M13 | UAT and launch                                                 | Not started | 0/10     | **G5**               |
 | P2  | Post-launch backlog                                            | Not started | 0/9      | —                    |
@@ -333,25 +333,26 @@ Status: **In progress**, M11C.7's browser check left · Added before M12 at the 
 
 ## M12 — Hardening
 
-Status: **Not started** · PRD: §7 non-functional
+Status: **In progress** · PRD: §7 non-functional · Hosting is a Docker VPS or cPanel (D44); backups are host snapshots (D45). Order: M12.15 first (unblocks M5.13), then security (M12.18, .3, .2, .1, .4, .16, .17), performance (.6, .7, .5), a11y and SEO (.8, .9), ops (.10, .11, .13, .14) and the load test (.12) last. Lighthouse, axe and k6 are run by hand on staging and recorded here; only the axe spec joins CI.
 
-- [ ] M12.1 Security review of the upload and document endpoints: MIME bypass, path traversal, IDOR on UUIDs, token brute force.
-- [ ] M12.2 Rate limiter and Turnstile verification on every public POST.
-- [ ] M12.3 CSP, HSTS and the security headers audit.
-- [ ] M12.4 Encrypted-field audit: no plain identifiers in logs, exceptions or Sentry breadcrumbs.
-- [ ] M12.5 Lighthouse mobile at least 85 on home and fleet; LCP under 2.5 s on throttled 4G.
-- [ ] M12.6 Query audit (N+1 checks, indexes on bookings, holds and media lookups) with `preventLazyLoading` in non-prod.
-- [ ] M12.7 Caching: settings, nav data, FX table and the marquee, with cache busting on admin save.
-- [ ] M12.8 WCAG 2.1 AA pass: contrast, keyboard gallery and forms, alt text enforced on media.
-- [ ] M12.9 SEO verification: sitemap, structured data validator, OG previews.
-- [ ] M12.10 Sentry for PHP and JS, Horizon alerts, and the uptime check on the booking endpoint.
-- [ ] M12.11 Backups: daily DB and media dumps with 30-day retention, plus a **tested restore**.
-- [ ] M12.12 Load test of booking submit and the media upload path.
-- [ ] M12.13 Staff and renter privacy notice and consent text in place (Data Protection Act 2019).
-- [ ] M12.14 Runbook: deploy, rollback, rotate keys, restore, switch media disk.
-- [ ] M12.15 Dockerfiles (php-fpm + nginx, SSR node, Horizon, scheduler) and the staging deploy pipeline (moved from M0.9). **Pull forward before M5.13**: Gate G1 runs on staging.
-- [ ] M12.16 Webhook review (M11B): Paystack signature, Daraja secret paths and IP allowlist, replayed and out-of-order callbacks, idempotency under concurrent delivery, no PII in logged payloads.
-- [ ] M12.17 Payment abuse checks: the `online-payment` limiter, STK push spam to third-party phones, amount tampering on the card confirm.
+- [x] M12.1 Security review of the upload and document endpoints: MIME bypass, path traversal, IDOR on UUIDs, token brute force.
+- [x] M12.2 Rate limiter and Turnstile verification on every public POST.
+- [x] M12.3 CSP, HSTS and the security headers audit.
+- [x] M12.4 Encrypted-field audit: no plain identifiers in logs, exceptions or Sentry breadcrumbs.
+- [~] M12.5 Lighthouse mobile at least 85 on home and fleet; LCP under 2.5 s on throttled 4G. *Code done (staff layouts load on demand: the home page's JS went from 834 to 638 KB raw). The Lighthouse run waits for staging.*
+- [x] M12.6 Query audit (N+1 checks, indexes on bookings, holds and media lookups) with `preventLazyLoading` in non-prod.
+- [x] M12.7 Caching: settings, nav data, FX table and the marquee, with cache busting on admin save.
+- [x] M12.8 WCAG 2.1 AA pass: contrast, keyboard gallery and forms, alt text enforced on media.
+- [~] M12.9 SEO verification: sitemap, structured data validator, OG previews. *Tests and `twitter:image` done; Rich Results, OG previews and Search Console wait for a public staging URL.*
+- [x] M12.10 Sentry for PHP and JS, Horizon alerts, and the uptime check on the booking endpoint.
+- [~] M12.11 Backups: daily DB and media dumps with 30-day retention, plus a **tested restore**. *Documented in RUNBOOK §7 (D45); the restore drill waits for staging.*
+- [~] M12.12 Load test of booking submit and the media upload path. *`tests/load/booking.k6.js` written; the run waits for staging.*
+- [~] M12.13 Staff and renter privacy notice and consent text in place (Data Protection Act 2019). *Consent at booking and the staff notice done; the notice text itself is the client's (`[CONFIRM]`, listed in Before launch).*
+- [x] M12.14 Runbook: deploy, rollback, rotate keys, restore, switch media disk.
+- [~] M12.15 Dockerfiles (php-fpm + nginx, SSR node, Horizon, scheduler) and the staging deploy pipeline (moved from M0.9), plus a cPanel release path (artifact, `scripts/deploy-cpanel.sh`, cron scheduler, database queue, SSR off) per D44. **Pull forward before M5.13**: Gate G1 runs on staging. *Images, compose file, both deploy scripts and the workflow done; images build and the SSR container answers. A full-stack run waits for staging (the local run stopped on disk space).*
+- [x] M12.16 Webhook review (M11B): Paystack signature, Daraja secret paths and IP allowlist, replayed and out-of-order callbacks, idempotency under concurrent delivery, no PII in logged payloads.
+- [x] M12.17 Payment abuse checks: the `online-payment` limiter, STK push spam to third-party phones, amount tampering on the card confirm.
+- [x] M12.18 Trusted proxies (`TRUSTED_PROXIES`) so per-IP limiters, Turnstile's `remoteip` and the Daraja IP allowlist see the client's address; secure and encrypted session cookies on staging and production.
 
 ## M12B — Integrations: keys, configuration and live tests
 
@@ -411,6 +412,12 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-25 | M12.5, M12.9, M12.11, M12.12, M12.13, M12.15 | Partial | Code for each is done; what is left needs staging: Lighthouse (M12.5), Rich Results and OG checks (M12.9), the restore drill (M12.11), the k6 run (M12.12), the client's privacy text (M12.13) and a first deploy (M12.15, then M5.13). |
+| 2026-10-25 | M12.14, M12.10, M12.8 | Done | `docs/RUNBOOK.md`: both hosts, env keys, first deploy, deploy, rollback, health, key rotation (the `APP_KEY` caveat: `id_number_hash` is keyed on it), backups and the restore drill, media disk switch. Monitoring: `/health` (database, cache, scheduler heartbeat, database-queue backlog; 503 on failure; outside the web group), browser Sentry loaded on demand when `VITE_SENTRY_DSN` is set (built in, with the release), Horizon mail alerts to `OPS_ALERT_EMAIL`, `horizon:snapshot` (Redis only), `queue:prune-failed` weekly. Accessibility: a description (alt) field under each image in staff uploaders, saved on blur; axe (`tests/e2e/a11y.spec.ts`, WCAG 2.1 AA) clean on 9 public pages, desktop and mobile, after fixing in-text links (always underlined), the gallery slides (divs, not list items with a role) and the policy tables (focusable when they scroll). Contrast passes. Alt text is not required to publish: empty descriptions fall back to the car or page name. New CI job `a11y` runs the spec on a seeded SQLite app. |
+| 2026-10-25 | M12.6, M12.7 | Done | `preventLazyLoading` outside production: the suite found one lazy load, in a test. Indexes `(status, pickup_at)` and `(status, return_at)` on bookings; EXPLAIN: today's returns use the new index, the desk's multi-status sort still filesorts (fine at this size), fleet scans 13 rows. Caching (`App\Support\PublicCache`): the public header and footer lists and the display currencies, 5 minutes, cleared by saves of brands, car types, payment methods, currencies, rates and the home, FX and pricing settings; `SETTINGS_CACHE_ENABLED` on staging and production, cleared by the deploy scripts. The FX table itself is not cached (quotes snapshot it). |
+| 2026-10-25 | M12.1–M12.4, M12.16–M12.18 | Done | Trusted proxies from `TRUSTED_PROXIES` (config/trustedproxy.php). CSP: a per-request nonce for the layout's inline theme script (it was blocked in production), `upgrade-insecure-requests` in production, optional `CSP_REPORT_URI`; the appearance cookie is checked. Limiters: every public write is throttled (route test), booking and media limiters keyed by hashed token plus IP, `booking-view`, `portal-session`, per-IP login, `password` on the reset routes. Media: 50 MP ceiling read from the header before decoding; a pending file can only be attached by its uploader unless `system: true` (seeders). PII: ID, KRA PIN and licence numbers never flashed; the WhatsApp activity row no longer holds the link; `SentryScrubber` drops request bodies and masks tokens and the Daraja secret. C2B `payer_name` stays plain: staff search by it and it is a first name. Webhooks: production Daraja callbacks need `DARAJA_ALLOWED_IPS` (CIDR allowed); replay test for Paystack. Payments: STK pushes to at most 3 phones per booking; a card attempt from the last 15 minutes is reopened instead of starting a new Paystack transaction. |
+| 2026-10-25 | M12.15 | Partial | `docker/Dockerfile` (targets `app`, `web`, `ssr`), `compose.prod.yaml`, `scripts/deploy-docker.sh`, `scripts/deploy-cpanel.sh` (releases, shared storage and .env, atomic switch), `.github/workflows/deploy.yml` (staging after ci on a push to main, production by hand; Docker or cPanel by the environment's `DEPLOY_TARGET`). `INERTIA_SSR_ENABLED`, `QUEUE_VIA_SCHEDULER` (cPanel drains the database queue every minute), Horizon `staging`, `build:ssr` in CI. Built locally: the app image has the extensions and the build, the SSR container reports healthy. The full local stack did not start: the disk filled up. |
+| 2026-10-25 | M12 | In progress | Hardening planned from a code audit. Gaps found: the production CSP blocks the inline theme script (nonce needed); no trusted proxies; some public writes unthrottled and token limiters keyed by the raw token; no image pixel ceiling; KYC fields can be flashed to the session; the WhatsApp log line holds the phone; C2B relies on the secret path when no IP allowlist is set; no strict mode, no caching of site chrome, settings or FX; alt text not editable; no frontend Sentry, health check, privacy consent or runbook. Added M12.18 (proxies and session). Decisions D44 (Docker VPS or cPanel) and D45 (host snapshots for backups). |
 | 2026-10-25 | M11C.7 | Partial | Tests done: `FinanceServiceTest` (day edges at Nairobi midnight, every channel, pending and rejected left out, deposits held, balances due, empty days, ledger order), `FinanceTest` (default range, range, bad ranges, 403, guest, CSV rows and headers, export permission, operations role), `DashboardTest` (widget permission matrix, figures, 5-minute cache, queues live); `RouteGuardTest` covers the new routes. 951 Pest tests (1 skipped, HEIC); Pint, Larastan, `vp check`, `tsc`, `vp build` and `build:ssr` green. Left: the browser check at 390 px and 1440 px, light and dark. |
 | 2026-10-25 | M11C.6 | Done | Dashboard rebuilt: a `widgets` prop, each null without its permission: revenue and collected chart (`finance.view`); bookings, bookings chart, utilisation and top cars (`bookings.view`); payments to check and receipts to resolve (`payments.view`); open requests (`booking-requests.view`); new messages (`contact-messages.view`). Tiles link to their menus; today's lists stay; the menu shortcut grid is gone; staff with nothing to see get an empty state. `paymentsWaiting` moved into `widgets`. |
 | 2026-10-25 | M11C.5 | Done | `recharts` 2.15 and shadcn `components/ui/chart.tsx`; `DailyChart` (one bar a day, `--chart-1`, gold in both themes) and `StatTile` in `components/admin/finance`. `build:ssr` green; not yet looked at in a browser. |

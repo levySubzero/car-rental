@@ -21,7 +21,7 @@ beforeEach(function () {
     RateLimiter::clear('contact');
     $staff = User::factory()->staff()->create();
     $this->car = Car::factory()->published()->create(['name' => 'Toyota Prado TX']);
-    app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid]);
+    app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid], actor: $staff);
 });
 
 it('shows the form with the car chosen from a "Book this car" link', function () {

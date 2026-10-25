@@ -36,16 +36,16 @@ it('attaches pending uploads in order and sets the cover', function () {
 it('makes the first file the cover by default', function () {
     [$a, $b] = [($this->upload)(), ($this->upload)()];
 
-    $this->media->sync($this->gadget, 'gadget.photos', [$b->uuid, $a->uuid]);
+    $this->media->sync($this->gadget, 'gadget.photos', [$b->uuid, $a->uuid], actor: $this->staff);
 
     expect($this->gadget->primaryMedia('gadget.photos')->first()->uuid)->toBe($b->uuid);
 });
 
 it('deletes files that are left out', function () {
     [$a, $b] = [($this->upload)(), ($this->upload)()];
-    $this->media->sync($this->gadget, 'gadget.photos', [$a->uuid, $b->uuid]);
+    $this->media->sync($this->gadget, 'gadget.photos', [$a->uuid, $b->uuid], actor: $this->staff);
 
-    $this->media->sync($this->gadget, 'gadget.photos', [$b->uuid]);
+    $this->media->sync($this->gadget, 'gadget.photos', [$b->uuid], actor: $this->staff);
 
     expect($this->gadget->mediaIn('gadget.photos')->pluck('uuid')->all())->toBe([$b->uuid])
         ->and(Media::withTrashed()->firstWhere('uuid', $a->uuid)->trashed())->toBeTrue();
@@ -54,7 +54,7 @@ it('deletes files that are left out', function () {
 it('enforces the collection maximum', function () {
     $uuids = collect(range(1, 4))->map(fn () => ($this->upload)()->uuid)->all();
 
-    $this->media->sync($this->gadget, 'gadget.photos', $uuids);
+    $this->media->sync($this->gadget, 'gadget.photos', $uuids, actor: $this->staff);
 })->throws(MediaException::class, 'at most 3');
 
 it('refuses another uploader\'s pending file', function () {
@@ -63,11 +63,25 @@ it('refuses another uploader\'s pending file', function () {
     $this->media->sync($this->gadget, 'gadget.photos', [$other->uuid], actor: $this->staff);
 })->throws(MediaException::class, 'not available');
 
-it('refuses a file attached to another owner', function () {
+it('refuses a pending file when no actor is given (M12.1)', function () {
     $file = ($this->upload)();
-    $this->media->sync(Gadget::create(['name' => 'Other']), 'gadget.photos', [$file->uuid]);
 
     $this->media->sync($this->gadget, 'gadget.photos', [$file->uuid]);
+})->throws(MediaException::class, 'not available');
+
+it('lets system code attach anyone\'s pending file', function () {
+    $file = ($this->upload)(User::factory()->staff()->create());
+
+    $this->media->sync($this->gadget, 'gadget.photos', [$file->uuid], system: true);
+
+    expect($file->fresh()->status)->toBe(MediaStatus::Attached);
+});
+
+it('refuses a file attached to another owner', function () {
+    $file = ($this->upload)();
+    $this->media->sync(Gadget::create(['name' => 'Other']), 'gadget.photos', [$file->uuid], actor: $this->staff);
+
+    $this->media->sync($this->gadget, 'gadget.photos', [$file->uuid], actor: $this->staff);
 })->throws(MediaException::class, 'not available');
 
 it('refuses files from another collection or the wrong owner type', function () {
@@ -93,7 +107,7 @@ it('claims files for a standalone collection and replaces the previous one', fun
 
 it('reorders exactly the current files', function () {
     [$a, $b] = [($this->upload)(), ($this->upload)()];
-    $this->media->sync($this->gadget, 'gadget.photos', [$a->uuid, $b->uuid]);
+    $this->media->sync($this->gadget, 'gadget.photos', [$a->uuid, $b->uuid], actor: $this->staff);
 
     $this->media->reorder($this->gadget, 'gadget.photos', [$b->uuid, $a->uuid], $this->staff);
 
@@ -103,8 +117,8 @@ it('reorders exactly the current files', function () {
 
 it('appends with attach and passes the cover on when the cover is deleted', function () {
     [$a, $b] = [($this->upload)(), ($this->upload)()];
-    $this->media->sync($this->gadget, 'gadget.photos', [$a->uuid]);
-    $this->media->attach($this->gadget, 'gadget.photos', $b->uuid);
+    $this->media->sync($this->gadget, 'gadget.photos', [$a->uuid], actor: $this->staff);
+    $this->media->attach($this->gadget, 'gadget.photos', $b->uuid, actor: $this->staff);
 
     expect($this->gadget->mediaIn('gadget.photos')->pluck('uuid')->all())->toBe([$a->uuid, $b->uuid]);
 
@@ -115,7 +129,7 @@ it('appends with attach and passes the cover on when the cover is deleted', func
 
 it('soft-deletes an owner\'s files with it', function () {
     $file = ($this->upload)();
-    $this->media->sync($this->gadget, 'gadget.photos', [$file->uuid]);
+    $this->media->sync($this->gadget, 'gadget.photos', [$file->uuid], actor: $this->staff);
 
     $this->gadget->delete();
 

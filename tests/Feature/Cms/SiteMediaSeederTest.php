@@ -31,11 +31,11 @@ it('adds the hero and a photo to every service, once', function () {
 it('leaves a hero or service photo staff already set', function () {
     $own = CatalogFixtures::photo($this->staff, 'service.image');
     $safaris = Service::firstWhere('slug', 'safaris');
-    app(MediaService::class)->sync($safaris, 'service.image', [$own->uuid]);
+    app(MediaService::class)->sync($safaris, 'service.image', [$own->uuid], actor: $this->staff);
 
     $home = app(HomeSettings::class);
     $hero = CatalogFixtures::photo($this->staff, 'site.hero');
-    app(MediaService::class)->claim('site.hero', [$hero->uuid]);
+    app(MediaService::class)->claim('site.hero', [$hero->uuid], actor: $this->staff);
     $home->hero_media_uuid = $hero->uuid;
     $home->save();
 

@@ -2,12 +2,14 @@
 
 use App\Services\Booking\KycPurgeService;
 use App\Services\Notifications\AdminAlerts;
+use App\Services\Ops\HealthCheck;
 use App\Services\Payments\Gateways\GatewayException;
 use App\Services\Payments\OnlinePaymentService;
 use App\Settings\RetentionSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -52,6 +54,23 @@ Artisan::command('payments:reconcile', function (OnlinePaymentService $payments)
     $this->info("{$counts['checked']} checked: {$counts['paid']} paid, {$counts['failed']} failed, {$counts['errors']} could not be asked.");
 })->purpose('Ask the gateways about online payments still waiting for an answer');
 Schedule::command('payments:reconcile')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+
+// Monitoring (M12.10): /health reports the scheduler down when this stops; Horizon's graphs
+// need snapshots; failed jobs are kept a week.
+Schedule::call(fn () => Cache::put(HealthCheck::SCHEDULER_KEY, now()->getTimestamp()))
+    ->everyMinute()->name('health:heartbeat')->onOneServer();
+Schedule::command('queue:prune-failed --hours=168')->daily()->onOneServer();
+
+if (config('queue.default') === 'redis') {
+    Schedule::command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
+}
+
+// cPanel and other hosts without Horizon (D44): drain the database queue each minute.
+// --max-time keeps a run inside its minute so the next one does not overlap.
+if (config('baines.queue_via_scheduler')) {
+    Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=1')
+        ->everyMinute()->withoutOverlapping()->onOneServer();
+}
 
 // Once per environment, after the Daraja keys are set: Safaricom then reports paybill payments.
 Artisan::command('mpesa:register-c2b', function (OnlinePaymentService $payments) {

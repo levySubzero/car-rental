@@ -614,7 +614,7 @@ Submission re-checks availability under a row lock. The admin calendar uses the 
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Local | `composer dev` on the host against the host MySQL. Database drivers for cache, queue and session; mail goes to the log; `MEDIA_*_DISK=*-local`. No Redis, Horizon or Docker locally (D12). |
 | Staging             | Same images as production, S3 disks, seeded via `CmsSeeder`                                                                     |
-| Production          | Docker images: php-fpm + nginx, SSR node, Horizon, scheduler. Single VPS, or the existing k3s/Argo CD setup.                    |
+| Production          | Docker VPS (php-fpm + nginx, SSR node, Horizon, scheduler) or cPanel (cron scheduler, database queue, no SSR), D44.             |
 | CI (GitHub Actions) | Pint, Larastan, ESLint, tsc, Pest, Vitest, build, Playwright (on main and release), image push, deploy staging → manual promote |
 
 Scheduler:
@@ -626,7 +626,7 @@ Scheduler:
 | `media:cleanup`     | hourly          |
 | `kyc:purge`         | daily           |
 | `activity:prune`    | weekly (runs `activitylog:clean` with `activity_log_retention_months`) |
-| backups             | daily           |
+| backups             | daily, by the host's snapshots (D45) |
 
 ---
 
@@ -678,5 +678,7 @@ Scheduler:
 | D41 | 2026-10-24: Operations desk. Staff may cancel a booking that is Awaiting payment, Payment submitted or Awaiting cash, as well as Reserved and Payment rejected; a payment still pending is closed as rejected ("Booking cancelled") with no renter mail. Handover and return are rows in `handover_records`; the cancellation and refund are columns on `bookings` (one per booking). D34 is built as written: 0% below every tier and for a no-show, refunds are a share of the reservation paid, and staff may override with a reason. The legal hold is a booking flag, not `media.metadata.legal_hold`, so it also covers the encrypted driver fields; KYC retention counts from `closed_at`, stamped on every end state. The availability calendar is a hand-built grid, with no calendar library. Staff who take the deposit at handover see its amount, but the deposit band only with `cars.view-value`. | One place to work a booking from payment to return, with the least new schema, and nothing that hides money staff must collect. |
 | D42 | 2026-10-24: Online payments before launch (pulls P2.1 and P2.2 forward). Daraja takes M-Pesa (STK push and C2B paybill matching), Paystack takes cards; bank and cash stay manual. Gateways collect the reservation only; the balance and refunds stay manual. A paid gateway transaction becomes an ordinary `PaymentSubmission` verified by `system`, walking Payment submitted → Reserved so staff still get the payment mail. Anything that does not settle cleanly (late, short, expired, already pending, unknown reference) waits for staff as `needs_review` or `unmatched`; nothing is refunded automatically. STK results are re-queried before they are trusted; C2B relies on a secret URL, an IP allowlist and the reference and amount match. | Renters pay without waiting for staff, while the desk, voucher and refund flows stay one pipeline. Money that cannot be matched safely is never applied by guesswork. |
 | D43 | 2026-10-24: Finance and dashboard. Finance figures are derived from payment submissions, handover records and booking refunds, with no ledger table. The dashboard shows permission-gated KPIs and charts linking to their menus, in place of the grid of menu shortcuts. The before-launch checklist keeps its items, its payments part asks only for Daraja and Paystack setup, and it is shown as a dialog that stays closed for the session once dismissed. | Staff see revenue and activity at a glance without a second source of truth to keep in step. |
+| D44 | 2026-10-25: Hosting is a Docker VPS or cPanel, not yet chosen, so the app runs on both from one codebase. VPS: images for php-fpm + nginx, SSR node, Horizon and the scheduler, with Redis. cPanel: no daemons; cron runs `schedule:run` every minute, the scheduler drains the database queue (`queue:work --stop-when-empty`, behind `baines.queue_via_scheduler`), SSR is off (`INERTIA_SSR_ENABLED=false`) and cache and sessions use the database. Env flags pick the mode. | The client can choose the host late without a rewrite, and the cheaper host stays possible. |
+| D45 | 2026-10-25: Backups are provider snapshots: daily database snapshots kept 30 days (VPS provider, managed MySQL or cPanel/JetBackup), S3 versioning with a 30-day lifecycle for media, and local private media inside the host backup on cPanel. No backup package in the app. The restore is still tested and recorded (M12.11). | Less to run and monitor in the app; the host already does it. |
 
 New decisions are appended here with a date.

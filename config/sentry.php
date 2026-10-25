@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\SentryScrubber;
+
 /**
  * Sentry Laravel SDK configuration file.
  *
@@ -58,6 +60,11 @@ return [
 
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#ignore_exceptions
     // 'ignore_exceptions' => [],
+
+    // Booking tokens, the Daraja secret and request bodies never leave the app (M12.4).
+    'before_send' => [SentryScrubber::class, 'beforeSend'],
+    'before_send_transaction' => [SentryScrubber::class, 'beforeSend'],
+    'before_breadcrumb' => [SentryScrubber::class, 'beforeBreadcrumb'],
 
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#ignore_transactions
     'ignore_transactions' => [

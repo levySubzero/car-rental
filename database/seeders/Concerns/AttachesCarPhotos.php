@@ -36,7 +36,7 @@ trait AttachesCarPhotos
         $uploads = array_map(fn (string $file) => $this->uploadSeedFile($file, 'car.gallery', $uploader), $files);
         $uuids = array_map(fn ($upload) => $upload->uuid, $uploads);
 
-        app(MediaService::class)->sync($car, 'car.gallery', $uuids, $uuids[0]);
+        app(MediaService::class)->sync($car, 'car.gallery', $uuids, $uuids[0], system: true);
         $this->convertSeedMedia($uploads);
 
         app(CarService::class)->publish($car);

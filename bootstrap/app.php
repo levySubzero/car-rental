@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HealthController;
 use App\Http\Middleware\AdminIdleTimeout;
 use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsurePortalSession;
@@ -35,6 +36,9 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::middleware(['web', 'media.uploader'])
                 ->group(base_path('routes/media.php'));
 
+            // Uptime monitor (M12.10): outside the web group, so no session row per probe.
+            Route::get('health', HealthController::class)->middleware('throttle:health')->name('health');
+
             // Gateway callbacks (M11B.5): outside the web group, so no session or CSRF.
             Route::middleware('throttle:hooks')
                 ->prefix('hooks')
@@ -67,6 +71,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);
+
+        // Never flashed back into the session after a validation error (M12.4).
+        $exceptions->dontFlash(['id_number', 'kra_pin', 'licence_number', 'current_password', 'password', 'password_confirmation']);
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

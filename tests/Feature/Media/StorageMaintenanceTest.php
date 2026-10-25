@@ -18,7 +18,7 @@ describe('media:cleanup', function () {
         $expired = $this->service->upload(MediaFixtures::jpeg(), 'gadget.photos', $this->staff);
         $fresh = $this->service->upload(MediaFixtures::jpeg(), 'gadget.photos', $this->staff);
         $attached = $this->service->upload(MediaFixtures::jpeg(), 'gadget.photos', $this->staff);
-        $this->service->sync(Gadget::create(['name' => 'Kept']), 'gadget.photos', [$attached->uuid]);
+        $this->service->sync(Gadget::create(['name' => 'Kept']), 'gadget.photos', [$attached->uuid], system: true);
 
         $expired->update(['expires_at' => now()->subMinute()]);
         $disk = Storage::disk('media-public-local');

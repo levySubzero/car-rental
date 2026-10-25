@@ -18,7 +18,7 @@ beforeEach(function () {
     $service = app(MediaService::class);
 
     $this->doc = $service->upload(MediaFixtures::pdf(), 'gadget.docs', staffWith());
-    $service->sync($gadget, 'gadget.docs', [$this->doc->uuid]);
+    $service->sync($gadget, 'gadget.docs', [$this->doc->uuid], system: true);
 
     $this->payloads = [
         'media.store' => ['collection' => 'gadget.docs', 'file' => MediaFixtures::pdf()],

@@ -43,4 +43,14 @@ return [
     // Admin sessions are logged out after this many minutes without a request.
     'admin_idle_minutes' => (int) env('ADMIN_IDLE_MINUTES', 30),
 
+    // Who hears about operational trouble: Horizon's long-wait and failure mails (M12.10).
+    'ops_alert_email' => env('OPS_ALERT_EMAIL'),
+
+    // Where browsers report CSP violations (a Sentry security endpoint), or null (M12.3).
+    'csp_report_uri' => env('CSP_REPORT_URI'),
+
+    // Hosts without a long-running worker (cPanel, D44): the scheduler drains the
+    // database queue every minute instead of Horizon.
+    'queue_via_scheduler' => (bool) env('QUEUE_VIA_SCHEDULER', false),
+
 ];

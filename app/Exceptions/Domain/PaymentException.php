@@ -69,6 +69,11 @@ class PaymentException extends DomainException
         return new self('Enter a Kenyan mobile number registered for M-Pesa, such as 0712 345 678.', 'phone');
     }
 
+    public static function tooManyMpesaPhones(): self
+    {
+        return new self('Payment requests have already gone to several numbers for this booking. Use one of them, or pay by paybill.', 'phone');
+    }
+
     public static function stkJustSent(): self
     {
         return new self('A payment request was just sent to your phone. Check it, or wait a minute before asking again.', 'phone');

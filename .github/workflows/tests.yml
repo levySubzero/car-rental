@@ -151,8 +151,51 @@ jobs:
           composer install --no-interaction --prefer-dist --no-progress
           npm ci
 
-      - name: Build assets
+      - name: Build assets (client and SSR)
         run: |
           cp .env.example .env
           php artisan key:generate
+          npm run build:ssr
+
+  a11y:
+    name: Accessibility (axe on the public pages)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          extensions: imagick
+          coverage: none
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # The seeded app on SQLite, client-rendered (no SSR server), served by artisan.
+      - name: Prepare app
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=sqlite/; s/^DB_DATABASE=.*/DB_DATABASE=database\/ci.sqlite/; s/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=sync/; s/^INERTIA_SSR_ENABLED=.*/INERTIA_SSR_ENABLED=false/' .env
+          touch database/ci.sqlite
+          php artisan migrate --seed --force
+          php artisan storage:link
           npm run build
+
+      - name: axe (WCAG 2.1 AA)
+        run: |
+          php artisan serve --port=8000 > /dev/null 2>&1 &
+          timeout 30 bash -c 'until curl -sf http://127.0.0.1:8000/up > /dev/null; do sleep 1; done'
+          E2E_BASE_URL=http://127.0.0.1:8000 npx playwright test tests/e2e/a11y.spec.ts

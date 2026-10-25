@@ -92,6 +92,12 @@ it('rejects files whose bytes are not an allowed type', function ($file) {
     'pdf in an image collection' => fn () => fn () => MediaFixtures::pdf('scan.jpg'),
 ]);
 
+it('rejects images over the pixel ceiling before decoding them (M12.1)', function () {
+    config(['media.max_pixels' => 1200 * 600 - 1]);
+
+    $this->media->upload(MediaFixtures::jpeg(width: 1200, height: 600), 'gadget.photos', $this->uploader);
+})->throws(MediaException::class, 'too large to process');
+
 it('rejects damaged images', function () {
     $this->media->upload(MediaFixtures::brokenJpeg(), 'gadget.photos', $this->uploader);
 })->throws(MediaException::class, 'could not be read');

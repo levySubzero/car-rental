@@ -190,6 +190,7 @@ class BookingService
                 'policy_bundle_id' => $bundle->id,
                 'accepted_terms_at' => now(),
                 'accepted_terms_ip' => $ip,
+                'accepted_privacy_at' => now(),
                 'submitted_at' => now(),
                 'expires_at' => $hold->expires_at,
                 'current_step' => BookingStep::Review,

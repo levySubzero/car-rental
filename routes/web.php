@@ -33,7 +33,7 @@ Route::middleware(['currency', 'site'])->group(function () {
 
     // Online booking (M8). The renter's link carries a secret token, never a booking id.
     Route::get('cars/{car}/book', [BookingController::class, 'create'])->name('bookings.create');
-    Route::get('bookings/{token}', [BookingController::class, 'show'])->middleware('booking.token')->name('bookings.show');
+    Route::get('bookings/{token}', [BookingController::class, 'show'])->middleware(['booking.token', 'throttle:booking-view'])->name('bookings.show');
 
     // Renter portal (M10B): find bookings by email or phone with an emailed code.
     Route::get('my-bookings', [BookingPortalController::class, 'index'])->name('portal.index');
@@ -42,10 +42,10 @@ Route::middleware(['currency', 'site'])->group(function () {
 Route::prefix('my-bookings')->name('portal.')->group(function () {
     Route::post('code', [BookingPortalController::class, 'sendCode'])->middleware('throttle:portal')->name('code');
     Route::post('verify', [BookingPortalController::class, 'verify'])->middleware('throttle:portal-verify')->name('verify');
-    Route::post('restart', [BookingPortalController::class, 'restart'])->name('restart');
+    Route::post('restart', [BookingPortalController::class, 'restart'])->middleware('throttle:portal-session')->name('restart');
 
     Route::middleware('portal')->group(function () {
-        Route::post('{reference}/open', [BookingPortalController::class, 'open'])->name('open');
+        Route::post('{reference}/open', [BookingPortalController::class, 'open'])->middleware('throttle:portal-session')->name('open');
         Route::get('{reference}/voucher', [BookingPortalController::class, 'voucher'])->name('voucher');
         Route::post('{reference}/requests', [BookingPortalController::class, 'storeRequest'])->middleware('throttle:booking-step')->name('requests.store');
     });

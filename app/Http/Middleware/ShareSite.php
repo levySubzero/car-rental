@@ -9,6 +9,7 @@ use App\Models\PaymentMethod;
 use App\Services\Media\MediaUrlGenerator;
 use App\Settings\GeneralSettings;
 use App\Settings\HomeSettings;
+use App\Support\PublicCache;
 use Closure;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,11 +27,19 @@ class ShareSite
         Inertia::share('site', function () {
             $settings = app(GeneralSettings::class);
 
+            // Cleared when staff save a brand, car type, payment method or the home hero.
+            $lists = PublicCache::remember(PublicCache::SITE, fn () => [
+                'share_image' => $this->shareImage(),
+                'car_types' => CarType::query()->active()->ordered()->get(['name', 'slug'])->toArray(),
+                'brands' => Brand::query()->inMarquee()->get(['name', 'slug'])->toArray(),
+                'payment_methods' => PaymentMethod::query()->active()->ordered()->pluck('name')->all(),
+            ]);
+
             return [
                 'company_name' => $settings->company_name,
                 // Absolute, for canonical links, Open Graph and structured data (M7.17).
                 'url' => rtrim((string) config('app.url'), '/'),
-                'share_image' => $this->shareImage(),
+                'share_image' => $lists['share_image'],
                 'latitude' => $settings->latitude,
                 'longitude' => $settings->longitude,
                 'phones' => $settings->phones,
@@ -40,9 +49,9 @@ class ShareSite
                 'map_embed_url' => $settings->map_embed_url,
                 'socials' => $settings->socials,
                 'whatsapp_templates' => $settings->whatsapp_templates,
-                'car_types' => CarType::query()->active()->ordered()->get(['name', 'slug']),
-                'brands' => Brand::query()->inMarquee()->get(['name', 'slug']),
-                'payment_methods' => PaymentMethod::query()->active()->ordered()->pluck('name'),
+                'car_types' => $lists['car_types'],
+                'brands' => $lists['brands'],
+                'payment_methods' => $lists['payment_methods'],
             ];
         });
 

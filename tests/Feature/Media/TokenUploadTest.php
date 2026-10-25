@@ -68,7 +68,7 @@ it('lets a token see and delete only its own files', function () {
 
     // A file attached to the token owner stays visible to it.
     $attached = $service->upload(MediaFixtures::pdf(), 'gadget.docs', staffWith());
-    $service->sync($this->mine, 'gadget.docs', [$attached->uuid]);
+    $service->sync($this->mine, 'gadget.docs', [$attached->uuid], system: true);
 
     tokenRequest($this, 'token-a')->get(route('media.show', $attached->uuid))->assertRedirect();
     tokenRequest($this, 'token-a')->patchJson(route('media.update', $attached->uuid), ['alt' => 'x'])->assertForbidden();
@@ -82,4 +82,12 @@ it('rate limits token uploads', function () {
     tokenRequest($this, 'token-a')
         ->post(route('media.store'), ['collection' => 'gadget.docs', 'file' => MediaFixtures::pdf()])
         ->assertTooManyRequests();
+});
+
+it('rate limits token deletes and edits with the same budget (M12.2)', function () {
+    foreach (range(1, 30) as $attempt) {
+        tokenRequest($this, 'token-a')->deleteJson(route('media.destroy', 'no-such-file'));
+    }
+
+    tokenRequest($this, 'token-a')->deleteJson(route('media.destroy', 'no-such-file'))->assertTooManyRequests();
 });

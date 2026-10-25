@@ -3,10 +3,12 @@
 use App\Http\Middleware\AdminIdleTimeout;
 use App\Models\User;
 use App\Support\Rules\Turnstile;
+use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\HtmlString;
 
 describe('security headers', function () {
     it('are sent on every web response', function () {
@@ -19,6 +21,49 @@ describe('security headers', function () {
         expect($response->headers->get('Content-Security-Policy'))
             ->toContain("frame-ancestors 'self'")
             ->toContain("object-src 'none'");
+    });
+
+    it('allow the layout inline script by nonce, never unsafe-inline', function () {
+        // As in production: no Vite dev server (withoutVite's fake ignores useHotFile).
+        app()->instance(Vite::class, new class extends Vite
+        {
+            public function isRunningHot()
+            {
+                return false;
+            }
+
+            public function __invoke($entrypoints, $buildDirectory = null)
+            {
+                return new HtmlString('');
+            }
+        });
+
+        $response = $this->get(route('home'));
+
+        $csp = (string) $response->headers->get('Content-Security-Policy');
+        preg_match('/script-src ([^;]+)/', $csp, $script);
+        preg_match("/'nonce-([^']+)'/", $script[1], $nonce);
+
+        expect($script[1])->not->toContain("'unsafe-inline'")
+            ->and($nonce[1] ?? '')->not->toBe('');
+        $response->assertSee('<script nonce="'.$nonce[1].'">', false);
+    });
+
+    it('fall back to the system theme for an unknown appearance cookie', function () {
+        $this->withUnencryptedCookie('appearance', "dark';alert(1);'")
+            ->get(route('login'))
+            ->assertDontSee('alert(1)', false)
+            ->assertSee("const appearance = 'system'", false);
+    });
+
+    it('upgrade insecure requests in production only', function () {
+        expect($this->get(route('login'))->headers->get('Content-Security-Policy'))
+            ->not->toContain('upgrade-insecure-requests');
+
+        app()->detectEnvironment(fn () => 'production');
+
+        expect($this->get(route('login'))->headers->get('Content-Security-Policy'))
+            ->toContain('upgrade-insecure-requests');
     });
 
     it('add HSTS in production only', function () {
@@ -43,6 +88,28 @@ describe('rate limiters', function () {
         }
 
         $this->post('/_test/contact')->assertTooManyRequests();
+    });
+});
+
+describe('trusted proxies', function () {
+    beforeEach(fn () => Route::get('/_test/ip', fn () => request()->ip())->middleware('web'));
+
+    it('use the forwarded address from a trusted proxy', function () {
+        config(['trustedproxy.proxies' => '10.0.0.0/8']);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.5'])
+            ->withHeader('X-Forwarded-For', '203.0.113.7')
+            ->get('/_test/ip')
+            ->assertSee('203.0.113.7');
+    });
+
+    it('ignore forwarded headers from anyone else', function () {
+        config(['trustedproxy.proxies' => '10.0.0.0/8']);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.9'])
+            ->withHeader('X-Forwarded-For', '203.0.113.7')
+            ->get('/_test/ip')
+            ->assertSee('198.51.100.9');
     });
 });
 

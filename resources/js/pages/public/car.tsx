@@ -212,7 +212,7 @@ export default function Car({
                                 handover, with a refundable security deposit.{' '}
                                 <Link
                                     href={rentalPolicy()}
-                                    className="text-gold underline-offset-4 hover:underline"
+                                    className="text-gold underline underline-offset-4"
                                 >
                                     Rental policy
                                 </Link>

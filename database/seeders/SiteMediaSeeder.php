@@ -33,7 +33,7 @@ class SiteMediaSeeder extends Seeder
 
         if ($home->hero_media_uuid === null) {
             $hero = $this->uploadSeedFile($stock['hero']['file'], 'site.hero', $uploader);
-            $media->claim('site.hero', [$hero->uuid]);
+            $media->claim('site.hero', [$hero->uuid], system: true);
             $this->convertSeedMedia([$hero]);
             $home->hero_media_uuid = $hero->uuid;
             $home->save();
@@ -46,7 +46,7 @@ class SiteMediaSeeder extends Seeder
             }
 
             $photo = $this->uploadSeedFile($stock['services'][$service->slug]['file'], 'service.image', $uploader);
-            $media->sync($service, 'service.image', [$photo->uuid]);
+            $media->sync($service, 'service.image', [$photo->uuid], system: true);
             $this->convertSeedMedia([$photo]);
             $added++;
         }

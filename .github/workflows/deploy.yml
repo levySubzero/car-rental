@@ -1,0 +1,128 @@
+name: deploy
+
+# Staging deploys after ci passes on main; production is a manual promote (M12.15, D44).
+# Each GitHub environment (staging, production) sets:
+#   vars:    DEPLOY_TARGET (docker | cpanel), DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH,
+#            SENTRY_JS_DSN (optional; built into the browser assets)
+#   secrets: DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS (the `ssh-keyscan` line for the host)
+# docker: images are pushed to GHCR and DEPLOY_PATH holds compose.prod.yaml and .env.
+# cpanel: a release archive is copied up and DEPLOY_PATH is the base for releases/ and shared/.
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-${{ inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment || 'staging' }}
+    # workflow_run also fires for pull requests whose head branch is called main (forks
+    # included), so only a push to this repository counts.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'staging' }}
+    env:
+      RELEASE: ${{ github.event.workflow_run.head_sha || github.sha }}
+      TARGET: ${{ vars.DEPLOY_TARGET }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      VITE_SENTRY_DSN: ${{ vars.SENTRY_JS_DSN }}
+      VITE_SENTRY_ENVIRONMENT: ${{ inputs.environment || 'staging' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE }}
+          persist-credentials: false
+
+      - name: SSH key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host deploy\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/id_deploy\n' \
+            "$DEPLOY_HOST" "$DEPLOY_USER" > ~/.ssh/config
+
+      # Docker VPS: build the three images, push them, pull them on the server.
+      - name: Build and push images
+        if: env.TARGET == 'docker'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          for target in app web ssr; do
+            suffix=$([ "$target" = app ] && echo "" || echo "-$target")
+            docker build -f docker/Dockerfile --target "$target" --build-arg RELEASE="$RELEASE" \
+              --build-arg VITE_SENTRY_DSN --build-arg VITE_SENTRY_ENVIRONMENT \
+              --cache-from "$IMAGE$suffix:latest" -t "$IMAGE$suffix:$RELEASE" -t "$IMAGE$suffix:latest" .
+            docker push --all-tags "$IMAGE$suffix"
+          done
+
+      - name: Deploy (docker)
+        if: env.TARGET == 'docker'
+        run: |
+          scp compose.prod.yaml scripts/deploy-docker.sh "deploy:$DEPLOY_PATH/"
+          ssh deploy "cd '$DEPLOY_PATH' && bash deploy-docker.sh '$RELEASE' '${GITHUB_REPOSITORY,,}'"
+
+      # cPanel: no Docker or node on the server, so the archive carries vendor and the build.
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        if: env.TARGET == 'cpanel'
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: env.TARGET == 'cpanel'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Build release archive
+        if: env.TARGET == 'cpanel'
+        run: |
+          composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+          npm ci
+          cp .env.example .env
+          php artisan key:generate
+          VITE_SENTRY_RELEASE="$RELEASE" npm run build
+          rm .env bootstrap/cache/*.php
+          tar -czf "/tmp/release.tar.gz" \
+            --exclude=./.git --exclude=./node_modules --exclude=./tests --exclude=./docs \
+            --exclude=./storage --exclude=./bootstrap/ssr --exclude=./public/hot .
+
+      - name: Deploy (cpanel)
+        if: env.TARGET == 'cpanel'
+        run: |
+          scp /tmp/release.tar.gz "deploy:$DEPLOY_PATH/release-$RELEASE.tar.gz"
+          scp scripts/deploy-cpanel.sh "deploy:$DEPLOY_PATH/"
+          ssh deploy "BAINES_BASE='$DEPLOY_PATH' bash '$DEPLOY_PATH/deploy-cpanel.sh' '$DEPLOY_PATH/release-$RELEASE.tar.gz' '$RELEASE'"

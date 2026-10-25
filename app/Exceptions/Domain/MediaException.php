@@ -32,6 +32,11 @@ class MediaException extends DomainException
         return new self("This file is too large. The limit is {$limit}.");
     }
 
+    public static function tooManyPixels(): self
+    {
+        return new self('This image is too large to process. Resize it and try again.');
+    }
+
     public static function unreadableImage(): self
     {
         return new self('This image could not be read. It may be damaged; try another file.');

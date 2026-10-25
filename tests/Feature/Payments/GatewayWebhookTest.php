@@ -92,6 +92,24 @@ it('needs the secret in the Daraja callback URL, and an allowed IP when a list i
     expect(GatewayTransaction::count())->toBe(0);
 });
 
+it('refuses Daraja callbacks in production until the IP allowlist is set (M12.16)', function () {
+    config(['services.daraja.env' => 'production']);
+
+    $this->postJson(route('hooks.mobile.c2b.confirm', 'cb-secret'), c2bConfirmation())->assertNotFound();
+    expect(GatewayTransaction::count())->toBe(0)
+        ->and($this->booking->fresh()->status)->toBe(BookingStatus::AwaitingPayment);
+
+    // Safaricom publishes ranges as well as single addresses.
+    config(['services.daraja.allowed_ips' => ['196.201.214.0/24']]);
+
+    $this->withServerVariables(['REMOTE_ADDR' => '196.201.215.1'])
+        ->postJson(route('hooks.mobile.c2b.confirm', 'cb-secret'), c2bConfirmation())->assertNotFound();
+    $this->withServerVariables(['REMOTE_ADDR' => '196.201.214.17'])
+        ->postJson(route('hooks.mobile.c2b.confirm', 'cb-secret'), c2bConfirmation())->assertOk();
+
+    expect($this->booking->fresh()->status)->toBe(BookingStatus::Reserved);
+});
+
 it('refuses Daraja callbacks entirely when no secret is configured', function () {
     config(['services.daraja.callback_secret' => null]);
 
@@ -209,6 +227,20 @@ it('confirms a signed charge.success with Paystack before applying it', function
     paystackPost(['event' => 'charge.success', 'data' => ['reference' => $transaction->external_ref]])->assertOk();
 
     expect($transaction->fresh()->status)->toBe(GatewayTransactionStatus::Matched)
+        ->and($this->booking->fresh()->status)->toBe(BookingStatus::Reserved);
+});
+
+it('applies a replayed Paystack event only once', function () {
+    $transaction = GatewayTransaction::factory()->paystack()->for($this->booking)->create();
+    Http::fake([PaystackClient::URL.'/transaction/verify/*' => Http::response(['status' => true, 'data' => [
+        'id' => 7, 'status' => 'success', 'reference' => $transaction->external_ref, 'amount' => 1_658_800, 'currency' => 'KES',
+    ]])]);
+    $event = ['event' => 'charge.success', 'data' => ['reference' => $transaction->external_ref]];
+
+    paystackPost($event)->assertOk();
+    paystackPost($event)->assertOk();
+
+    expect(PaymentSubmission::count())->toBe(1)
         ->and($this->booking->fresh()->status)->toBe(BookingStatus::Reserved);
 });
 

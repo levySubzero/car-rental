@@ -60,6 +60,13 @@ export function Seo({
                 name="twitter:card"
                 content={shareImage ? 'summary_large_image' : 'summary'}
             />
+            {shareImage && (
+                <meta
+                    head-key="twitter:image"
+                    name="twitter:image"
+                    content={shareImage}
+                />
+            )}
             {jsonLd && (
                 <script
                     head-key="json-ld"

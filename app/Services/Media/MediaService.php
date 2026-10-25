@@ -221,12 +221,13 @@ class MediaService
      * files left out are deleted, and the cover (or the first file) becomes primary.
      * A null owner syncs a standalone collection such as site.hero.
      *
-     * When $actor is given, pending files must have been uploaded by it.
+     * Pending files must have been uploaded by $actor. Only $system code (seeders) may
+     * attach anyone's pending upload (M12.1).
      *
      * @param  list<string>  $uuids
      * @return Collection<int, Media>
      */
-    public function sync(?Model $owner, string $collection, array $uuids, ?string $cover = null, ?Model $actor = null): Collection
+    public function sync(?Model $owner, string $collection, array $uuids, ?string $cover = null, ?Model $actor = null, bool $system = false): Collection
     {
         $definition = $this->collections->assertOwner($collection, $owner);
         $uuids = array_values(array_unique($uuids));
@@ -237,7 +238,7 @@ class MediaService
 
         $cover = in_array($cover, $uuids, true) ? $cover : ($uuids[0] ?? null);
 
-        return DB::transaction(function () use ($owner, $definition, $uuids, $cover, $actor) {
+        return DB::transaction(function () use ($owner, $definition, $uuids, $cover, $actor, $system) {
             $requested = Media::query()
                 ->whereIn('uuid', $uuids)
                 ->where('collection', $definition->key)
@@ -248,7 +249,7 @@ class MediaService
             foreach ($uuids as $uuid) {
                 $media = $requested->get($uuid);
 
-                if ($media === null || ! $media->isAttachableTo($owner, $actor)) {
+                if ($media === null || ! $media->isAttachableTo($owner, $actor, $system)) {
                     throw MediaException::notAvailable();
                 }
             }
@@ -295,9 +296,9 @@ class MediaService
      * @param  list<string>  $uuids
      * @return Collection<int, Media>
      */
-    public function claim(string $collection, array $uuids, ?Model $actor = null): Collection
+    public function claim(string $collection, array $uuids, ?Model $actor = null, bool $system = false): Collection
     {
-        return $this->sync(null, $collection, $uuids, actor: $actor);
+        return $this->sync(null, $collection, $uuids, actor: $actor, system: $system);
     }
 
     /**

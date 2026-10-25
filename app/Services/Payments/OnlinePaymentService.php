@@ -41,6 +41,14 @@ class OnlinePaymentService
     // A second STK push this soon after the first is refused, so a double tap prompts once.
     private const STK_COOLDOWN_SECONDS = 60;
 
+    // STK pushes for one booking go to at most this many phones, so the page cannot be used
+    // to prompt strangers' phones (M12.17).
+    public const MAX_STK_PHONES = 3;
+
+    // A card attempt this recent is reopened rather than starting another Paystack
+    // transaction (M12.17).
+    private const CARD_REUSE_MINUTES = 15;
+
     // Reconcile asks about attempts this old, and gives up on them after the second.
     public const RECONCILE_AFTER_MINUTES = 2;
 
@@ -114,7 +122,19 @@ class OnlinePaymentService
     public function startMpesa(Booking $booking, string $phone): GatewayTransaction
     {
         $msisdn = PhoneNumber::kenyanMobile($phone) ?? throw PaymentException::invalidMpesaPhone();
-        $booking = $this->prepare($booking, PaymentMethodCode::Mpesa, function (Booking $booking) {
+        $booking = $this->prepare($booking, PaymentMethodCode::Mpesa, function (Booking $booking) use ($msisdn) {
+            // The phone is encrypted, so the comparison happens here, over a handful of rows.
+            $phones = $booking->gatewayTransactions()
+                ->where('gateway', PaymentGateway::MpesaStk)
+                ->get(['id', 'payer_phone'])
+                ->pluck('payer_phone')
+                ->filter()
+                ->unique();
+
+            if (! $phones->contains($msisdn) && $phones->count() >= self::MAX_STK_PHONES) {
+                throw PaymentException::tooManyMpesaPhones();
+            }
+
             $recent = $booking->gatewayTransactions()
                 ->where('gateway', PaymentGateway::MpesaStk)
                 ->where('status', GatewayTransactionStatus::Initiated)
@@ -162,6 +182,18 @@ class OnlinePaymentService
             throw PaymentException::noRenterEmail();
         }
 
+        $open = $booking->gatewayTransactions()
+            ->where('gateway', PaymentGateway::Paystack)
+            ->where('status', GatewayTransactionStatus::Initiated)
+            ->where('amount_minor', (int) $booking->reservation_minor)
+            ->where('created_at', '>', now()->subMinutes(self::CARD_REUSE_MINUTES))
+            ->latest('id')
+            ->first();
+
+        if (is_string($open?->payload['access_code'] ?? null)) {
+            return ['access_code' => $open->payload['access_code'], 'reference' => $open->external_ref, 'public_key' => (string) $this->paystack->publicKey()];
+        }
+
         $reference = $booking->compactReference().'-'.Str::upper(Str::random(8));
 
         try {
@@ -179,6 +211,7 @@ class OnlinePaymentService
             'external_ref' => $reference,
             'amount_minor' => (int) $booking->reservation_minor,
             'status' => GatewayTransactionStatus::Initiated,
+            'payload' => ['access_code' => $accessCode],
         ]);
 
         return ['access_code' => $accessCode, 'reference' => $reference, 'public_key' => (string) $this->paystack->publicKey()];

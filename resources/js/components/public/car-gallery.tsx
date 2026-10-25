@@ -62,9 +62,10 @@ export function CarGallery({
                 onKeyDown={keys}
             >
                 <div ref={viewport} className="overflow-hidden">
-                    <ul className="flex touch-pan-y">
+                    {/* Slides are groups (APG carousel), so divs: an li with a role is no list item. */}
+                    <div className="flex touch-pan-y">
                         {photos.map((photo, i) => (
-                            <li
+                            <div
                                 key={photo.uuid}
                                 className="relative min-w-0 shrink-0 basis-full"
                                 role="group"
@@ -93,9 +94,9 @@ export function CarGallery({
                                         className="aspect-4/3 w-full object-cover"
                                     />
                                 </button>
-                            </li>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </div>
 
                 <span className="pointer-events-none absolute top-3 left-3 rounded bg-ink/80 px-2.5 py-1 text-xs font-semibold text-white tabular-nums backdrop-blur">

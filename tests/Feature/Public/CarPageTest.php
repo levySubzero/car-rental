@@ -16,7 +16,7 @@ function pagedCar(User $staff, array $attributes = [], int $photos = 1): Car
 {
     $car = Car::factory()->published()->withValue()->create($attributes);
     $uuids = array_map(fn () => CatalogFixtures::photo($staff)->uuid, range(1, $photos));
-    app(MediaService::class)->sync($car, 'car.gallery', $uuids);
+    app(MediaService::class)->sync($car, 'car.gallery', $uuids, actor: $staff);
 
     return $car;
 }

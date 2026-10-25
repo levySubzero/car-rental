@@ -58,6 +58,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int|null $policy_bundle_id
  * @property CarbonImmutable|null $accepted_terms_at
  * @property string|null $accepted_terms_ip
+ * @property CarbonImmutable|null $accepted_privacy_at
  * @property BookingStep $current_step
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable|null $submitted_at
@@ -125,6 +126,7 @@ class Booking extends Model
             'security_deposit_minor' => 'integer',
             'reservation_paid_minor' => 'integer',
             'accepted_terms_at' => 'datetime',
+            'accepted_privacy_at' => 'datetime',
             'current_step' => BookingStep::class,
             'expires_at' => 'datetime',
             'submitted_at' => 'datetime',

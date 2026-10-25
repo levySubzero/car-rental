@@ -326,3 +326,27 @@ it('only confirms card payments that belong to the booking', function () {
     expect(fn () => $this->service->confirmCard($this->booking, $other->external_ref))->toThrow(PaymentException::class, 'could not find');
     Http::assertNothingSent();
 });
+
+it('pushes to at most three phones per booking (M12.17)', function () {
+    fakeGateways();
+    foreach (['254711000001', '254711000002', '254711000003'] as $phone) {
+        GatewayTransaction::factory()->for($this->booking)->create(['payer_phone' => $phone, 'status' => GatewayTransactionStatus::Failed, 'created_at' => now()->subMinutes(5)]);
+    }
+
+    expect(fn () => $this->service->startMpesa($this->booking, '0711 000 004'))->toThrow(PaymentException::class, 'several numbers')
+        ->and($this->service->startMpesa($this->booking, '0711 000 002')->external_ref)->toBe('ws_CO_1');
+});
+
+it('reopens a recent card attempt instead of starting another (M12.17)', function () {
+    fakeGateways();
+
+    $first = $this->service->startCard($this->booking);
+    $second = $this->service->startCard($this->booking);
+
+    expect($second)->toBe($first);
+    Http::assertSentCount(1);
+
+    $this->travel(16)->minutes();
+
+    expect($this->service->startCard($this->booking)['reference'])->not->toBe($first['reference']);
+});

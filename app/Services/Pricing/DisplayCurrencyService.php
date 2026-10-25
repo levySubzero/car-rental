@@ -3,6 +3,7 @@
 namespace App\Services\Pricing;
 
 use App\Models\Currency;
+use App\Support\PublicCache;
 
 /**
  * The currencies a renter can switch to (M6.13): the base plus every active currency that
@@ -24,6 +25,15 @@ class DisplayCurrencyService
      * @return list<DisplayCurrency>
      */
     public function options(): array
+    {
+        // Shared on every public page; cleared when rates, currencies or FX settings change.
+        return PublicCache::remember(PublicCache::CURRENCIES, fn () => $this->build());
+    }
+
+    /**
+     * @return list<DisplayCurrency>
+     */
+    private function build(): array
     {
         $table = $this->fx->table();
         $base = $this->currencies->baseCode();

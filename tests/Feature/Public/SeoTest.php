@@ -13,7 +13,7 @@ beforeEach(function () {
     $this->brand = Brand::factory()->create(['slug' => 'toyota']);
     $this->type = CarType::factory()->create(['slug' => 'suvs']);
     $this->car = Car::factory()->published()->create(['slug' => 'toyota-prado-tx', 'brand_id' => $this->brand->id, 'car_type_id' => $this->type->id]);
-    app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid]);
+    app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid], actor: $staff);
     $this->draft = Car::factory()->create(['slug' => 'draft-car']);
     $this->hidden = CarType::factory()->create(['slug' => 'hidden-type', 'is_active' => false]);
     Car::factory()->published()->create(['car_type_id' => $this->hidden->id]);

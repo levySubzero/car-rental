@@ -35,7 +35,7 @@ beforeEach(function () {
         'brand_id' => Brand::firstWhere('slug', 'toyota')->id,
         'car_type_id' => CarType::firstWhere('slug', 'suvs')->id,
     ]);
-    app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid]);
+    app(MediaService::class)->sync($this->car, 'car.gallery', [CatalogFixtures::photo($staff)->uuid], actor: $staff);
 
     // Booking links: a draft opens the wizard, a submitted booking its status page.
     Booking::factory()->for($this->car)->withToken(str_repeat('d', 64))->create();

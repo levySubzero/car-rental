@@ -23,6 +23,8 @@ class SubmitBookingRequest extends FormRequest
     {
         return [
             'accept_terms' => ['accepted'],
+            // Consent under the Data Protection Act 2019 (M12.13).
+            'accept_privacy' => ['accepted'],
         ];
     }
 
@@ -33,6 +35,7 @@ class SubmitBookingRequest extends FormRequest
     {
         return [
             'accept_terms.accepted' => 'Please accept the rental terms to continue.',
+            'accept_privacy.accepted' => 'Please agree to how we handle your details to continue.',
         ];
     }
 }

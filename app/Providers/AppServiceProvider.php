@@ -43,8 +43,10 @@ use App\Services\Pricing\Fx\OpenExchangeRatesProvider;
 use App\Settings\FxSettings;
 use App\Settings\MediaSettings;
 use App\Support\Content\PageRegistry;
+use App\Support\PublicCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -103,6 +105,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureMorphMap();
         $this->configureAuthorization();
         $this->configureRateLimiting();
+        PublicCache::register();
     }
 
     /**
@@ -153,13 +156,27 @@ class AppServiceProvider extends ServiceProvider
         ]);
         RateLimiter::for('portal-verify', fn (Request $request) => Limit::perHour(20)->by($request->ip()));
 
-        RateLimiter::for('booking-step', fn (Request $request) => Limit::perMinute(30)->by(
-            $request->route('token') ?? $request->ip(),
-        ));
+        // Portal sign-out and opening a booking (which rotates its link), per IP.
+        RateLimiter::for('portal-session', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
+
+        // Booking pages and steps: per booking and per IP, so guessing tokens is limited too.
+        // Tokens are hashed so the plain value never lands in a cache key (M12.2).
+        RateLimiter::for('booking-view', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
+        RateLimiter::for('booking-step', function (Request $request) {
+            $token = $request->route('token');
+
+            return [
+                Limit::perMinute(30)->by('token:'.hash('sha256', is_string($token) ? $token : (string) $request->ip())),
+                Limit::perMinute(60)->by('ip:'.$request->ip()),
+            ];
+        });
 
         RateLimiter::for('media-upload', fn (Request $request) => $request->user()
             ? Limit::perMinute(60)->by('user:'.$request->user()->getAuthIdentifier())
-            : Limit::perHour(30)->by('token:'.($request->header('X-Booking-Token') ?? $request->ip())));
+            : [
+                Limit::perHour(30)->by('token:'.hash('sha256', (string) ($request->header('X-Booking-Token') ?? $request->ip()))),
+                Limit::perHour(60)->by('ip:'.$request->ip()),
+            ]);
 
         RateLimiter::for('contact', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
 
@@ -169,6 +186,9 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(10)->by('token:'.hash('sha256', (string) $request->route('token'))),
             Limit::perHour(30)->by('ip:'.$request->ip()),
         ]);
+
+        // The uptime monitor's /health (M12.10).
+        RateLimiter::for('health', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
 
         // Gateway callbacks (M11B.5): generous, since Safaricom and Paystack retry from few IPs.
         RateLimiter::for('hooks', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
@@ -201,6 +221,9 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
         );
+
+        // N+1 queries fail loudly in development and tests; production only loads lazily (M12.6).
+        Model::preventLazyLoading(! app()->isProduction());
 
         Password::defaults(fn (): ?Password => app()->isProduction()
             ? Password::min(12)

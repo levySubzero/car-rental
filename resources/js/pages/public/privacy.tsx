@@ -37,7 +37,7 @@ export default function Privacy({
                                 For any question about your personal data, email{' '}
                                 <a
                                     href={`mailto:${site.email}`}
-                                    className="text-gold underline-offset-4 hover:underline"
+                                    className="text-gold underline underline-offset-4"
                                 >
                                     {site.email}
                                 </a>

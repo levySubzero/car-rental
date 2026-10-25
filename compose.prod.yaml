@@ -1,0 +1,55 @@
+# Staging and production on a Docker VPS (M12.15, D44). Not for local development (D12).
+# On the server, next to a filled-in .env:
+#   BAINES_TAG=<git sha> docker compose -f compose.prod.yaml up -d
+# scripts/deploy-docker.sh does this plus migrations. MySQL is external (managed or on the
+# host); set DB_HOST in .env. Redis runs here unless REDIS_HOST points elsewhere.
+# The .env for this stack: QUEUE_CONNECTION=redis, CACHE_STORE=redis, REDIS_HOST=redis,
+# INERTIA_SSR_URL=http://ssr:13714. `web` listens on BAINES_HTTP_PORT; TLS ends at the
+# host's reverse proxy or Cloudflare in front of it (TRUSTED_PROXIES, M12.18).
+
+x-app: &app
+    image: ghcr.io/${BAINES_IMAGE:-levysubzero/car-rental}:${BAINES_TAG:-latest}
+    restart: unless-stopped
+    volumes:
+        - ./.env:/var/www/html/.env:ro
+        - storage:/var/www/html/storage
+    depends_on:
+        - redis
+
+services:
+    app:
+        <<: *app
+
+    horizon:
+        <<: *app
+        command: ['php', 'artisan', 'horizon']
+        stop_grace_period: 70s
+
+    scheduler:
+        <<: *app
+        command: ['php', 'artisan', 'schedule:work']
+
+    ssr:
+        image: ghcr.io/${BAINES_IMAGE:-levysubzero/car-rental}-ssr:${BAINES_TAG:-latest}
+        restart: unless-stopped
+
+    web:
+        image: ghcr.io/${BAINES_IMAGE:-levysubzero/car-rental}-web:${BAINES_TAG:-latest}
+        restart: unless-stopped
+        ports:
+            - '${BAINES_HTTP_PORT:-8080}:80'
+        volumes:
+            - storage:/var/www/html/storage:ro
+        depends_on:
+            - app
+
+    redis:
+        image: redis:7-alpine
+        restart: unless-stopped
+        command: ['redis-server', '--appendonly', 'yes']
+        volumes:
+            - redis:/data
+
+volumes:
+    storage:
+    redis:

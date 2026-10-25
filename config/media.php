@@ -30,6 +30,11 @@ return [
     // Public files: `redirect` to the disk or CDN URL, or `stream` through the app.
     'serve_public_via' => env('MEDIA_PUBLIC_SERVE', 'redirect'),
 
+    // Largest image accepted, in pixels (width × height), checked from the file's header
+    // before it is decoded, so a small file cannot expand into gigabytes (M12.1). 50 MP
+    // covers every phone camera, including 48 MP full-resolution shots.
+    'max_pixels' => (int) env('MEDIA_MAX_PIXELS', 50_000_000),
+
     // `imagick` or `gd`. Null picks Imagick when the extension is loaded.
     // HEIC uploads are only accepted when Imagick can decode them.
     'image_driver' => env('MEDIA_IMAGE_DRIVER'),

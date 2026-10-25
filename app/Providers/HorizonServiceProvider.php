@@ -17,9 +17,10 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     {
         parent::boot();
 
-        // Horizon::routeSmsNotificationsTo('15556667777');
-        // Horizon::routeMailNotificationsTo('example@example.com');
-        // Horizon::routeSlackNotificationsTo('slack-webhook-url', '#channel');
+        // Long queue waits and failing supervisors (M12.10).
+        if ($email = config('baines.ops_alert_email')) {
+            Horizon::routeMailNotificationsTo($email);
+        }
     }
 
     /**

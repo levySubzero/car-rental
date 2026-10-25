@@ -51,6 +51,8 @@ type Queued = { key: string; file: File };
  *
  * Removing a pending upload deletes it on the server. Removing a saved file only
  * drops it from the list; the owning service detaches it when the form is saved.
+ * Staff forms show a description (alt text) field under each image, saved as soon as
+ * it is left (M12.8); renter uploads are documents and have none.
  */
 export function MediaUploader({
     limits,
@@ -181,6 +183,20 @@ export function MediaUploader({
                             >
                                 <SavedTile
                                     item={item}
+                                    onDescribed={
+                                        bookingToken || disabled
+                                            ? undefined
+                                            : (described) =>
+                                                  emit(
+                                                      latest.current.map(
+                                                          (entry) =>
+                                                              entry.uuid ===
+                                                              described.uuid
+                                                                  ? described
+                                                                  : entry,
+                                                      ),
+                                                  )
+                                    }
                                     isCover={
                                         coverable && item.uuid === currentCover
                                     }
@@ -298,86 +314,154 @@ function SavedTile({
     isCover,
     onCover,
     onRemove,
+    onDescribed,
 }: {
     item: MediaItem;
     isCover: boolean;
     onCover?: () => void;
     onRemove?: () => void;
+    onDescribed?: (item: MediaItem) => void;
 }) {
     const thumbnail = item.urls.thumb ?? item.urls.original;
+    const describable = onDescribed && thumbnail && isImage(item);
 
     return (
-        <div
-            className={cn(
-                'relative aspect-[4/3] overflow-hidden rounded-md border bg-muted',
-                isCover && 'ring-2 ring-primary',
-            )}
-        >
-            {item.mime.startsWith('video/') && item.urls.original ? (
-                <video
-                    src={item.urls.original}
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    aria-label={item.name}
-                    className="h-full w-full object-cover"
-                    onMouseEnter={(event) =>
-                        void event.currentTarget.play().catch(() => undefined)
-                    }
-                    onMouseLeave={(event) => event.currentTarget.pause()}
-                />
-            ) : thumbnail && isImage(item) ? (
-                <img
-                    src={thumbnail}
-                    alt={item.alt ?? ''}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                />
-            ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs text-muted-foreground">
-                    <FileText className="size-8" />
-                    <span className="w-full truncate" title={item.name}>
-                        {item.name}
-                    </span>
-                    <span>{formatBytes(item.size)}</span>
-                </div>
-            )}
-
-            <div className="absolute top-1 right-1 flex gap-1">
-                {onCover && (
-                    <Button
-                        type="button"
-                        size="icon"
-                        variant={isCover ? 'default' : 'secondary'}
-                        className="size-7"
-                        onClick={onCover}
-                        aria-pressed={isCover}
-                        aria-label={isCover ? 'Cover image' : 'Use as cover'}
-                    >
-                        <Star
-                            className={cn('size-4', isCover && 'fill-current')}
-                        />
-                    </Button>
+        <div className="grid gap-1">
+            <div
+                className={cn(
+                    'relative aspect-[4/3] overflow-hidden rounded-md border bg-muted',
+                    isCover && 'ring-2 ring-primary',
                 )}
-                {onRemove && (
-                    <Button
-                        type="button"
-                        size="icon"
-                        variant="secondary"
-                        className="size-7"
-                        onClick={onRemove}
-                        aria-label={`Remove ${item.name}`}
-                    >
-                        <X className="size-4" />
-                    </Button>
+            >
+                {item.mime.startsWith('video/') && item.urls.original ? (
+                    <video
+                        src={item.urls.original}
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        aria-label={item.name}
+                        className="h-full w-full object-cover"
+                        onMouseEnter={(event) =>
+                            void event.currentTarget
+                                .play()
+                                .catch(() => undefined)
+                        }
+                        onMouseLeave={(event) => event.currentTarget.pause()}
+                    />
+                ) : thumbnail && isImage(item) ? (
+                    <img
+                        src={thumbnail}
+                        alt={item.alt ?? ''}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                    />
+                ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs text-muted-foreground">
+                        <FileText className="size-8" />
+                        <span className="w-full truncate" title={item.name}>
+                            {item.name}
+                        </span>
+                        <span>{formatBytes(item.size)}</span>
+                    </div>
+                )}
+
+                <div className="absolute top-1 right-1 flex gap-1">
+                    {onCover && (
+                        <Button
+                            type="button"
+                            size="icon"
+                            variant={isCover ? 'default' : 'secondary'}
+                            className="size-7"
+                            onClick={onCover}
+                            aria-pressed={isCover}
+                            aria-label={
+                                isCover ? 'Cover image' : 'Use as cover'
+                            }
+                        >
+                            <Star
+                                className={cn(
+                                    'size-4',
+                                    isCover && 'fill-current',
+                                )}
+                            />
+                        </Button>
+                    )}
+                    {onRemove && (
+                        <Button
+                            type="button"
+                            size="icon"
+                            variant="secondary"
+                            className="size-7"
+                            onClick={onRemove}
+                            aria-label={`Remove ${item.name}`}
+                        >
+                            <X className="size-4" />
+                        </Button>
+                    )}
+                </div>
+
+                {isCover && (
+                    <span className="absolute bottom-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                        Cover
+                    </span>
                 )}
             </div>
+            {describable && <AltField item={item} onSaved={onDescribed} />}
+        </div>
+    );
+}
 
-            {isCover && (
-                <span className="absolute bottom-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                    Cover
-                </span>
+/**
+ * The image's description for screen readers and search engines, saved on blur. Left
+ * empty, the site falls back to the car or page name.
+ */
+function AltField({
+    item,
+    onSaved,
+}: {
+    item: MediaItem;
+    onSaved: (item: MediaItem) => void;
+}) {
+    const id = useId();
+    const http = useHttp<{ alt: string }, MediaItem>({ alt: item.alt ?? '' });
+
+    const save = async () => {
+        const alt = http.data.alt.trim();
+
+        if (alt === (item.alt ?? '')) {
+            return;
+        }
+
+        const updated = await http
+            .patch(MediaController.update.url(item.uuid))
+            .catch(() => undefined);
+
+        if (updated) {
+            onSaved(updated);
+        }
+    };
+
+    return (
+        <div className="grid gap-0.5">
+            <label htmlFor={id} className="sr-only">
+                Describe {item.name}
+            </label>
+            <input
+                id={id}
+                type="text"
+                maxLength={250}
+                placeholder="Describe photo"
+                value={http.data.alt}
+                onChange={(event) => http.setData('alt', event.target.value)}
+                onBlur={() => void save()}
+                aria-invalid={Boolean(http.errors.alt)}
+                className="h-7 w-full rounded-md border bg-background px-2 text-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            />
+            {http.errors.alt && (
+                <p className="text-xs text-destructive" role="alert">
+                    {http.errors.alt}
+                </p>
             )}
         </div>
     );

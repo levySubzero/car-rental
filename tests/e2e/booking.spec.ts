@@ -79,6 +79,9 @@ test('a renter books a car with their documents', async ({ page }) => {
     ).toBeVisible();
 
     await page.getByLabel(/I have read and accept/).check();
+    await page
+        .getByLabel(/I agree to Baines Executives keeping my details/)
+        .check();
     await page.getByRole('button', { name: 'Submit booking' }).click();
 
     await expect(page.getByText('Awaiting payment').first()).toBeVisible();

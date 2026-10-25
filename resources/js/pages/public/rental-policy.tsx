@@ -275,7 +275,13 @@ function RateTable({
             {note && (
                 <p className="mt-1 text-sm text-muted-foreground">{note}</p>
             )}
-            <div className="mt-4 overflow-x-auto rounded-lg border border-white/10">
+            {/* Scrolls sideways on phones, so keyboard users can focus it to scroll. */}
+            <div
+                className="mt-4 overflow-x-auto rounded-lg border border-white/10 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
+                role="region"
+                aria-label={title}
+                tabIndex={0}
+            >
                 <table className="w-full min-w-[28rem] text-left text-sm text-white/80 [&_td]:border-t [&_td]:border-white/10 [&_td]:px-4 [&_td]:py-3 [&_td]:align-top">
                     <thead className="bg-surface text-xs text-muted-foreground">
                         <tr>

@@ -15,9 +15,11 @@ return [
     |
     */
 
+    // Off on cPanel, which cannot keep the node renderer running (D44); pages then
+    // render in the browser.
     'ssr' => [
-        'enabled' => true,
-        'url' => 'http://127.0.0.1:13714',
+        'enabled' => (bool) env('INERTIA_SSR_ENABLED', true),
+        'url' => env('INERTIA_SSR_URL', 'http://127.0.0.1:13714'),
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
     ],

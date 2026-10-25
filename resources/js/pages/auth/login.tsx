@@ -101,6 +101,13 @@ export default function Login({ status, canResetPassword, devUsers }: Props) {
                     {status}
                 </div>
             )}
+
+            {/* Staff notice under the Data Protection Act 2019 (M12.13). */}
+            <p className="text-center text-xs text-muted-foreground">
+                For Baines Executives staff only. Sign-ins and every view of a
+                renter's documents are logged. Renters' details are
+                confidential: use them only to handle their bookings.
+            </p>
         </>
     );
 }
