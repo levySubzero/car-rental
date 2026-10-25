@@ -10,6 +10,7 @@ import {
     History,
     Inbox,
     LayoutGrid,
+    LineChart,
     MessageSquare,
     MapPin,
     Receipt,
@@ -37,6 +38,7 @@ import CurrencyController from '@/actions/App/Http/Controllers/Admin/CurrencyCon
 import DeliveryZoneController from '@/actions/App/Http/Controllers/Admin/DeliveryZoneController';
 import DepositBandController from '@/actions/App/Http/Controllers/Admin/DepositBandController';
 import GatewayReceiptController from '@/actions/App/Http/Controllers/Admin/GatewayReceiptController';
+import FinanceController from '@/actions/App/Http/Controllers/Admin/FinanceController';
 import FxRateController from '@/actions/App/Http/Controllers/Admin/FxRateController';
 import PaymentSubmissionController from '@/actions/App/Http/Controllers/Admin/PaymentSubmissionController';
 import QuoteSandboxController from '@/actions/App/Http/Controllers/Admin/QuoteSandboxController';
@@ -86,13 +88,6 @@ export const adminNav: NavGroup[] = [
                 permission: 'payments.view',
             },
             {
-                // Online payments staff resolve by hand (M11B.9); moves under Finance in M11C.
-                title: 'Online receipts',
-                href: GatewayReceiptController.index(),
-                icon: ReceiptText,
-                permission: 'payments.view',
-            },
-            {
                 title: 'Requests',
                 href: BookingRequestController.index(),
                 icon: MessageSquare,
@@ -103,6 +98,25 @@ export const adminNav: NavGroup[] = [
                 href: ContactMessageController.index(),
                 icon: Inbox,
                 permission: 'contact-messages.view',
+            },
+        ],
+    },
+    {
+        // Money in and out (M11C).
+        title: 'Finance',
+        items: [
+            {
+                title: 'Revenue',
+                href: FinanceController.index(),
+                icon: LineChart,
+                permission: 'finance.view',
+            },
+            {
+                // Online payments staff resolve by hand (M11B.9).
+                title: 'Online receipts',
+                href: GatewayReceiptController.index(),
+                icon: ReceiptText,
+                permission: 'payments.view',
             },
         ],
     },

@@ -93,6 +93,10 @@ enum Permission: string
     case PaymentsReject = 'payments.reject';
     case PaymentsAcceptPartial = 'payments.accept-partial';
 
+    // Finance (M11C): revenue worked out from payments, handovers and refunds; the ledger export.
+    case FinanceView = 'finance.view';
+    case FinanceExport = 'finance.export';
+
     // Booking requests (M10B): cancellation and change requests renters send from the portal.
     case BookingRequestsView = 'booking-requests.view';
     case BookingRequestsUpdate = 'booking-requests.update';

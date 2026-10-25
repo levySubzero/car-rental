@@ -2,6 +2,7 @@
 
 use App\Enums\Permission;
 use App\Models\Booking;
+use App\Models\Car;
 use App\Models\PaymentMethod;
 use App\Models\PaymentSubmission;
 use App\Models\Policy;
@@ -53,13 +54,13 @@ it('shows the desk day to staff who see bookings, and payments waiting to those 
         ->assertInertia(fn (Assert $page) => $page
             ->has('today.pickups', 1)
             ->where('today.pickups.0.reference', $pickup->reference)
-            ->where('paymentsWaiting', null));
+            ->where('widgets.paymentsWaiting', null));
 
     $this->actingAs(staffWith([Permission::PaymentsView]))
         ->get(route('admin.dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('today', null)
-            ->where('paymentsWaiting', 1));
+            ->where('widgets.paymentsWaiting', 1));
 });
 
 it('asks only for the payment gateways, not every method\'s details', function () {
@@ -109,4 +110,56 @@ it('opens the before-launch popup until it is closed for the session', function 
     $this->flushSession();
     $this->actingAs($staff)->get(route('admin.dashboard'))
         ->assertInertia(fn (Assert $page) => $page->where('setupReminderDismissed', false));
+});
+
+it('sends each widget only to staff with its permission', function (array $permissions, array $visible) {
+    $all = ['revenue', 'collected', 'bookings', 'bookingsSeries', 'utilisation', 'topCars', 'paymentsWaiting', 'receiptsOpen', 'openRequests', 'newMessages'];
+    $widgets = $this->actingAs(staffWith($permissions))
+        ->get(route('admin.dashboard'))
+        ->viewData('page')['props']['widgets'];
+
+    expect(array_keys(array_filter($widgets, fn ($widget) => $widget !== null)))->toBe($visible)
+        ->and(array_keys($widgets))->toBe($all);
+})->with([
+    'no permissions' => [[], []],
+    'finance' => [[Permission::FinanceView], ['revenue', 'collected']],
+    'bookings' => [[Permission::BookingsView], ['bookings', 'bookingsSeries', 'utilisation', 'topCars']],
+    'payments' => [[Permission::PaymentsView], ['paymentsWaiting', 'receiptsOpen']],
+    'requests' => [[Permission::BookingRequestsView], ['openRequests']],
+    'messages' => [[Permission::ContactMessagesView], ['newMessages']],
+]);
+
+it('works out the figures and keeps them for five minutes', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-12-15 09:00', 'Africa/Nairobi'));
+    $car = Car::factory()->published()->create(['name' => 'Prado']);
+    Car::factory()->published()->create();
+    // Ten booked days inside the last 30, and one booking that expired unpaid.
+    $booking = Booking::factory()->reserved()->create([
+        'car_id' => $car->id,
+        'pickup_at' => now()->subDays(12),
+        'return_at' => now()->subDays(2),
+        'submitted_at' => now()->subDays(14),
+    ]);
+    Booking::factory()->awaitingPayment()->create(['car_id' => $car->id, 'status' => 'expired', 'submitted_at' => now()->subDay()]);
+    PaymentSubmission::factory()->verified(1_000_000)->create(['booking_id' => $booking->id, 'verified_at' => now()->subDays(3)]);
+
+    $props = fn () => $this->actingAs(superAdmin())->get(route('admin.dashboard'))->viewData('page')['props']['widgets'];
+    $widgets = $props();
+
+    expect($widgets['revenue'])->toBe(['this_month_minor' => 1_000_000, 'last_month_minor' => 0])
+        ->and($widgets['bookings'])->toBe(['this_month' => 1, 'last_month' => 0])
+        ->and($widgets['utilisation'])->toBe(['percent' => 17, 'booked_days' => 10.0, 'car_days' => 60])
+        ->and($widgets['topCars'])->toBe([['car_id' => $car->id, 'car' => 'Prado', 'days' => 10.0]])
+        ->and($widgets['collected'])->toHaveCount(30)
+        ->and(collect($widgets['collected'])->sum('value'))->toBe(1_000_000)
+        ->and(collect($widgets['bookingsSeries'])->sum('value'))->toBe(1);
+
+    // A new payment shows after the cache expires, not before; queues stay live.
+    PaymentSubmission::factory()->verified(500_000)->create(['booking_id' => $booking->id, 'verified_at' => now()]);
+    PaymentSubmission::factory()->create(['booking_id' => $booking->id]);
+    expect($props()['revenue']['this_month_minor'])->toBe(1_000_000)
+        ->and($props()['paymentsWaiting'])->toBe(1);
+
+    $this->travel(6)->minutes();
+    expect($props()['revenue']['this_month_minor'])->toBe(1_500_000);
 });

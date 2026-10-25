@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\CurrencyController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeliveryZoneController;
 use App\Http\Controllers\Admin\DepositBandController;
+use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\FxRateController;
 use App\Http\Controllers\Admin\GatewayReceiptController;
 use App\Http\Controllers\Admin\MarkdownPreviewController;
@@ -141,6 +142,10 @@ Route::post('payments/{payment}/reject', [PaymentSubmissionController::class, 'r
 Route::get('receipts', [GatewayReceiptController::class, 'index'])->name('receipts.index');
 Route::post('receipts/{receipt}/attach', [GatewayReceiptController::class, 'attach'])->name('receipts.attach');
 Route::post('receipts/{receipt}/resolve', [GatewayReceiptController::class, 'resolve'])->name('receipts.resolve');
+
+// Finance (M11C): revenue for a date range, and the ledger as CSV.
+Route::get('finance', [FinanceController::class, 'index'])->name('finance.index');
+Route::get('finance/export', [FinanceController::class, 'export'])->name('finance.export');
 
 // Bookings desk (M11): bookings by reference, and the actions staff take on them.
 Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');

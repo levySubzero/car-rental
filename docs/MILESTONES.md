@@ -48,7 +48,7 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | M10B | In-app alerts and renter portal                               | Done        | 10/10    | —                    |
 | M11 | Operations desk                                                | In review   | 13/14    | **G4**               |
 | M11B | Online payments (Daraja and Paystack) and Resend mail         | Done        | 11/13    | —                    |
-| M11C | Finance and dashboard                                         | Not started | 0/7      | —                    |
+| M11C | Finance and dashboard                                         | In progress | 6/7      | —                    |
 | M12 | Hardening (security, performance, SEO, a11y)                   | Not started | 0/17     | —                    |
 | M12B | Integrations: keys, configuration and live tests              | Not started | 0/14     | —                    |
 | M13 | UAT and launch                                                 | Not started | 0/10     | **G5**               |
@@ -321,15 +321,15 @@ Status: **Done** (M11B.12 and the live part of M11B.13 moved to M12B.13 and M12B
 
 ## M11C — Finance and dashboard
 
-Status: **Not started** · Added before M12 at the client's request (D43).
+Status: **In progress**, M11C.7's browser check left · Added before M12 at the client's request (D43).
 
-- [ ] M11C.1 `FinanceService`: collected, refunds, net, deposits held, outstanding balances and channels, derived from existing rows, Nairobi days; unit tests against a hand-built fixture.
-- [ ] M11C.2 Finance → Revenue (`finance.view`): date range, KPI tiles, daily chart, by channel and by car, paginated ledger.
-- [ ] M11C.3 CSV export of the ledger (`finance.export`), streamed.
-- [ ] M11C.4 `DashboardStatsService`: KPIs, 30-day series, utilisation, top cars; aggregated in PHP and cached for 5 minutes.
-- [ ] M11C.5 shadcn `chart` component (recharts), checked in light and dark mode.
-- [ ] M11C.6 Dashboard rebuild: permission-gated KPI tiles and charts linking to their menus, today's lists, receipts needing review; the menu shortcut grid removed.
-- [ ] M11C.7 Tests: totals and day edges, widget permission matrix, export, route guard; checked in a browser at 390 px and 1440 px.
+- [x] M11C.1 `FinanceService`: collected, refunds, net, deposits held, outstanding balances and channels, derived from existing rows, Nairobi days; unit tests against a hand-built fixture.
+- [x] M11C.2 Finance → Revenue (`finance.view`): date range, KPI tiles, daily chart, by channel and by car, paginated ledger.
+- [x] M11C.3 CSV export of the ledger (`finance.export`), streamed.
+- [x] M11C.4 `DashboardStatsService`: KPIs, 30-day series, utilisation, top cars; aggregated in PHP and cached for 5 minutes.
+- [x] M11C.5 shadcn `chart` component (recharts), checked in light and dark mode.
+- [x] M11C.6 Dashboard rebuild: permission-gated KPI tiles and charts linking to their menus, today's lists, receipts needing review; the menu shortcut grid removed.
+- [~] M11C.7 Tests: totals and day edges, widget permission matrix, export, route guard; checked in a browser at 390 px and 1440 px.
 
 ## M12 — Hardening
 
@@ -411,6 +411,13 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-10-25 | M11C.7 | Partial | Tests done: `FinanceServiceTest` (day edges at Nairobi midnight, every channel, pending and rejected left out, deposits held, balances due, empty days, ledger order), `FinanceTest` (default range, range, bad ranges, 403, guest, CSV rows and headers, export permission, operations role), `DashboardTest` (widget permission matrix, figures, 5-minute cache, queues live); `RouteGuardTest` covers the new routes. 951 Pest tests (1 skipped, HEIC); Pint, Larastan, `vp check`, `tsc`, `vp build` and `build:ssr` green. Left: the browser check at 390 px and 1440 px, light and dark. |
+| 2026-10-25 | M11C.6 | Done | Dashboard rebuilt: a `widgets` prop, each null without its permission: revenue and collected chart (`finance.view`); bookings, bookings chart, utilisation and top cars (`bookings.view`); payments to check and receipts to resolve (`payments.view`); open requests (`booking-requests.view`); new messages (`contact-messages.view`). Tiles link to their menus; today's lists stay; the menu shortcut grid is gone; staff with nothing to see get an empty state. `paymentsWaiting` moved into `widgets`. |
+| 2026-10-25 | M11C.5 | Done | `recharts` 2.15 and shadcn `components/ui/chart.tsx`; `DailyChart` (one bar a day, `--chart-1`, gold in both themes) and `StatTile` in `components/admin/finance`. `build:ssr` green; not yet looked at in a browser. |
+| 2026-10-25 | M11C.4 | Done | `DashboardStatsService`: net revenue and submitted bookings this month vs last month to the same day (expired holds left out), utilisation over 30 days (firm bookings' days clipped to the window ÷ published cars × 30; blackouts not subtracted), collected and bookings per day, top 5 cars by booked days. Each cached 5 minutes under `dashboard:{widget}:{Nairobi date}`; the queue counts are read live, as staff act on them. |
+| 2026-10-25 | M11C.3 | Done | `GET admin/finance/export` (`finance.export`): streamed CSV with a BOM, the period's ledger oldest first, amounts in KES with cents, refunds negative, `baines-revenue-{from}-{to}.csv`. |
+| 2026-10-25 | M11C.2 | Done | `finance.view`, `finance.export`; the operations role gets `finance.view` only. The seeder fills a role only when it creates it, so on an existing install grant it by hand (Roles → operations). Finance → Revenue (`admin.finance.index`, `FinanceRequest`: local dates, both or neither, at most 366 days; this month so far by default): KPI tiles, collected per day, by channel, top 10 cars by net, the ledger newest first (25 a page). New Finance menu group; Online receipts moved into it. |
+| 2026-10-25 | M11C.1 | Done | `FinanceService` with `FinancePeriod` (Nairobi days, UTC bounds) and `LedgerEntry`; `FinanceChannel` enum. Collected: verified payments by `verified_at`, handover balance and return extra charges by `recorded_at`; refunds by `refunded_at`. Deposits held: deposits taken at a handover with no return yet (once returned they are refunded or settled). Balances due: Reserved or Active with no handover. Merged in PHP, no ledger table. Tests are in `tests/Feature/Finance` (they need the database, unlike `tests/Unit`). |
 | 2026-10-25 | M11B, M12B | M11B done; M12B updated | M11B.12 (gateway sandbox run) and the live send of M11B.13 (Resend) need keys, so they moved to M12B as M12B.13 and M12B.14, to run before M12B.5 and M12B.3; M11B is done at 11/13. M12B now names the current integrations: the register (M12B.1) lists Resend, Daraja and Paystack and their env keys; M12B.3 uses Resend; M12B.5 sets the production Daraja env (callback secret, Safaricom IPs, one-time C2B registration); M12B.9 adds `payments:reconcile`; M12B.10 checks the Paystack popup under the CSP; M12B.11 notes that a new callback secret needs C2B registered again; M12B.12 includes an online payment and Resend. |
 | 2026-10-24 | M11B.12, M11B.13 | Blocked; M11B.13 partial | M11B.12 waits for the Daraja sandbox app keys (consumer key and secret; the sandbox paybill 174379 and its passkey are public), Paystack test keys and a tunnel (cloudflared or ngrok) for the callbacks; to confirm then: the v2 C2B registration path, the Paystack CSP hosts and the popup on mobile. M11B.13 code is done: `resend/resend-php`, Laravel's `resend` mailer from `RESEND_API_KEY`, `.env.example`, `ResendMailerTest`; left: a Resend key and a verified sending domain to send every M10 notification and the portal code and check delivery. 926 Pest tests (1 skipped, HEIC). |
 | 2026-10-24 | M11B.11 | Done | Covered as each step was built: STK success, failure and timeout (`OnlinePaymentServiceTest`, `ReconcilePaymentsTest`); duplicate callbacks and C2B confirmations (`GatewayWebhookTest`); late callback on an expired booking, short payment, manual payment pending, car taken (`OnlinePaymentServiceTest`); bad or missing Paystack signature, forged STK success (`GatewayWebhookTest`); C2B match, unmatched, short, other shortcode, and staff attach (`GatewayWebhookTest`, `ReceiptsAdminTest`); staff and renter notifications for an online payment; hold extension; method offline and no keys (`OnlinePaymentServiceTest`, `OnlinePaymentPageTest`); checklist items and session dismissal (`DashboardTest`); route guard for `admin.receipts.*` and the dismiss route. True concurrent delivery is guarded by row locks and guarded status updates but cannot be exercised on SQLite; it is listed for M12.16. Seen once in the full suite: `ContactMessagesTest` (search "Old" matched "Newer", probably random faker text); it passed three runs alone and is not related to M11B. |

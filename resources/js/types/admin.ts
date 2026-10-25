@@ -686,3 +686,47 @@ export type AdminReceipt = {
     resolution_note: string | null;
     created_at: string | null;
 };
+
+// Finance → Revenue (M11C). Amounts are KES minor units; refunds are negative in the ledger.
+export type FinanceSummary = {
+    collected_minor: number;
+    refunds_minor: number;
+    net_minor: number;
+    deposits_held_minor: number;
+    outstanding_minor: number;
+    outstanding_count: number;
+};
+
+export type FinanceDay = {
+    date: string;
+    collected_minor: number;
+    refunds_minor: number;
+};
+
+export type FinanceChannelTotal = {
+    channel: string;
+    label: string;
+    amount_minor: number;
+    count: number;
+};
+
+export type FinanceCarTotal = {
+    car_id: number | null;
+    car: string;
+    collected_minor: number;
+    refunds_minor: number;
+    net_minor: number;
+};
+
+export type LedgerEntry = {
+    at: string;
+    date: string;
+    kind: 'payment' | 'handover' | 'return' | 'refund';
+    kind_label: string;
+    amount_minor: number;
+    channel: string | null;
+    channel_label: string | null;
+    booking_reference: string | null;
+    car: string | null;
+    reference: string | null;
+};

@@ -55,6 +55,8 @@ export const permissions = [
     'payments.verify',
     'payments.reject',
     'payments.accept-partial',
+    'finance.view',
+    'finance.export',
     'booking-requests.view',
     'booking-requests.update',
     'currencies.view',
