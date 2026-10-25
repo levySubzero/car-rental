@@ -1,9 +1,12 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { ChevronRight } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ChevronRight, ListChecks } from 'lucide-react';
+import { useState } from 'react';
 import BookingController from '@/actions/App/Http/Controllers/Admin/BookingController';
 import PaymentSubmissionController from '@/actions/App/Http/Controllers/Admin/PaymentSubmissionController';
+import SetupReminderController from '@/actions/App/Http/Controllers/Admin/SetupReminderController';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -11,6 +14,13 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { adminNav } from '@/config/admin-nav';
 import { useCan } from '@/hooks/use-can';
 import { formatBookingTime } from '@/lib/booking';
@@ -36,15 +46,18 @@ type Today = {
 };
 
 /**
- * The desk's day (M11.10): pickups and returns due, what is late, payments to check, then
- * the setup checklist (stale rates, unfilled settings). Each part needs its permission.
+ * The desk's day (M11.10): pickups and returns due, what is late, payments to check. The
+ * setup checklist (stale rates, unfilled settings, payment gateways) is a popup that opens
+ * once per session (M11B.10). Each part needs its permission.
  */
 export default function Dashboard({
     setupChecklist,
+    setupReminderDismissed,
     today,
     paymentsWaiting,
 }: {
     setupChecklist: SetupChecklistItem[];
+    setupReminderDismissed: boolean;
     today: Today | null;
     paymentsWaiting: number | null;
 }) {
@@ -61,6 +74,14 @@ export default function Dashboard({
                 <PageHeader
                     title={`Welcome, ${auth.user.name}`}
                     description="Manage the Baines Executives website and bookings."
+                    actions={
+                        setupChecklist.length > 0 && (
+                            <SetupReminder
+                                items={setupChecklist}
+                                dismissed={setupReminderDismissed}
+                            />
+                        )
+                    }
                 />
                 {(today || paymentsWaiting !== null) && (
                     <div className="grid gap-4 md:grid-cols-2">
@@ -116,9 +137,6 @@ export default function Dashboard({
                             />
                         )}
                     </div>
-                )}
-                {setupChecklist.length > 0 && (
-                    <SetupChecklist items={setupChecklist} />
                 )}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {shortcuts.map((item) => (
@@ -214,50 +232,88 @@ function DayList({
 }
 
 /**
- * What is still missing before launch (M5.11): only items the viewer can fix are listed.
+ * What is still missing before launch (M5.11, M11B.10): only items the viewer can fix are
+ * listed. It opens by itself until closed once in the session; the button reopens it.
  */
-function SetupChecklist({ items }: { items: SetupChecklistItem[] }) {
+function SetupReminder({
+    items,
+    dismissed,
+}: {
+    items: SetupChecklistItem[];
+    dismissed: boolean;
+}) {
+    const [open, setOpen] = useState(!dismissed);
+
+    const change = (next: boolean) => {
+        setOpen(next);
+
+        if (!next && !dismissed) {
+            router.post(
+                SetupReminderController.url(),
+                {},
+                { preserveScroll: true, preserveState: true },
+            );
+        }
+    };
+
     return (
-        <Card className="max-w-4xl">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    Before launch
-                    <Badge variant="secondary">{items.length}</Badge>
-                </CardTitle>
-                <CardDescription>
-                    Details the website still needs. Each item disappears once
-                    it is filled in.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ul className="divide-y rounded-md border">
-                    {items.map((item) => (
-                        <li key={item.key}>
-                            <Link
-                                href={item.url}
-                                className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-accent"
-                            >
-                                <Badge
-                                    variant="outline"
-                                    className="hidden w-32 justify-center sm:inline-flex"
+        <>
+            <Button variant="outline" size="sm" onClick={() => change(true)}>
+                <ListChecks /> Before launch
+                <Badge variant="secondary">{items.length}</Badge>
+            </Button>
+            <Dialog open={open} onOpenChange={change}>
+                <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Before launch</DialogTitle>
+                        <DialogDescription>
+                            Details the website still needs. Each item
+                            disappears once it is filled in.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ul className="divide-y rounded-md border">
+                        {items.map((item) => (
+                            <li key={item.key}>
+                                <Link
+                                    href={item.url}
+                                    onClick={(event) => {
+                                        // Going to fix an item counts as closing the popup.
+                                        if (!dismissed) {
+                                            event.preventDefault();
+                                            router.post(
+                                                SetupReminderController.url(),
+                                                {},
+                                                {
+                                                    onFinish: () =>
+                                                        router.visit(item.url),
+                                                },
+                                            );
+                                        }
+                                    }}
+                                    className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-accent"
                                 >
-                                    {item.area}
-                                </Badge>
-                                <div className="grid min-w-0 flex-1">
-                                    <span className="truncate text-sm font-medium">
-                                        {item.label}
-                                    </span>
-                                    <span className="truncate text-xs text-muted-foreground">
-                                        {item.detail}
-                                    </span>
-                                </div>
-                                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            </CardContent>
-        </Card>
+                                    <Badge
+                                        variant="outline"
+                                        className="hidden w-32 justify-center sm:inline-flex"
+                                    >
+                                        {item.area}
+                                    </Badge>
+                                    <div className="grid min-w-0 flex-1">
+                                        <span className="text-sm font-medium">
+                                            {item.label}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {item.detail}
+                                        </span>
+                                    </div>
+                                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 

@@ -13,6 +13,7 @@ use App\Models\Currency;
 use App\Models\DeliveryZone;
 use App\Models\DepositBand;
 use App\Models\FxRate;
+use App\Models\GatewayTransaction;
 use App\Models\Page;
 use App\Models\PaymentMethod;
 use App\Models\PaymentSubmission;
@@ -42,6 +43,8 @@ const OPEN_TO_ALL_STAFF = [
 const OWN_RECORDS = [
     'admin.alerts.open',
     'admin.alerts.read-all',
+    // The signed-in user's own session flag (M11B.10), tested in DashboardTest.
+    'admin.setup-reminder.dismiss',
 ];
 
 /**
@@ -69,6 +72,7 @@ function sampleParameters(RoutingRoute $route): array
         'payment_method' => fn () => (PaymentMethod::query()->firstWhere('code', 'mpesa') ?? PaymentMethod::factory()->create())->code->value,
         'contact_message' => fn () => ContactMessage::factory()->create()->id,
         'payment' => fn () => PaymentSubmission::factory()->create()->id,
+        'receipt' => fn () => GatewayTransaction::factory()->unmatched()->create()->id,
         'booking_request' => fn () => BookingRequest::factory()->create()->id,
         'booking' => fn () => Booking::factory()->reserved()->create()->reference,
         // Currency codes are unique, so reuse USD once an earlier route created it.

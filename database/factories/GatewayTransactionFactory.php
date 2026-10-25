@@ -58,7 +58,7 @@ class GatewayTransactionFactory extends Factory
             'booking_id' => null,
             'status' => GatewayTransactionStatus::Unmatched,
             'payer_name' => 'JOHN',
-            'payload' => ['BillRefNumber' => $billRef],
+            'payload' => ['bill_ref' => $billRef],
         ]);
     }
 }

@@ -13,6 +13,7 @@ import {
     MessageSquare,
     MapPin,
     Receipt,
+    ReceiptText,
     PanelsTopLeft,
     Shapes,
     Settings2,
@@ -35,6 +36,7 @@ import ContactMessageController from '@/actions/App/Http/Controllers/Admin/Conta
 import CurrencyController from '@/actions/App/Http/Controllers/Admin/CurrencyController';
 import DeliveryZoneController from '@/actions/App/Http/Controllers/Admin/DeliveryZoneController';
 import DepositBandController from '@/actions/App/Http/Controllers/Admin/DepositBandController';
+import GatewayReceiptController from '@/actions/App/Http/Controllers/Admin/GatewayReceiptController';
 import FxRateController from '@/actions/App/Http/Controllers/Admin/FxRateController';
 import PaymentSubmissionController from '@/actions/App/Http/Controllers/Admin/PaymentSubmissionController';
 import QuoteSandboxController from '@/actions/App/Http/Controllers/Admin/QuoteSandboxController';
@@ -81,6 +83,13 @@ export const adminNav: NavGroup[] = [
                 title: 'Payments',
                 href: PaymentSubmissionController.index(),
                 icon: Wallet,
+                permission: 'payments.view',
+            },
+            {
+                // Online payments staff resolve by hand (M11B.9); moves under Finance in M11C.
+                title: 'Online receipts',
+                href: GatewayReceiptController.index(),
+                icon: ReceiptText,
                 permission: 'payments.view',
             },
             {

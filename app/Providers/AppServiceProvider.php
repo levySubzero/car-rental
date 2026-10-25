@@ -17,6 +17,7 @@ use App\Models\Currency;
 use App\Models\DeliveryZone;
 use App\Models\DepositBand;
 use App\Models\FxRate;
+use App\Models\GatewayTransaction;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\PaymentMethod;
@@ -133,6 +134,7 @@ class AppServiceProvider extends ServiceProvider
             'booking' => Booking::class,
             'payment_submission' => PaymentSubmission::class,
             'booking_request' => BookingRequest::class,
+            'gateway_transaction' => GatewayTransaction::class,
         ]);
     }
 

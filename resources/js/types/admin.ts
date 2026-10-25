@@ -663,3 +663,26 @@ export type BookingTimelineEntry = {
     causer: string | null;
     at: string;
 };
+
+// An online receipt staff resolve by hand (M11B.9).
+export type AdminReceipt = {
+    id: number;
+    gateway: 'mpesa_stk' | 'mpesa_c2b' | 'paystack';
+    gateway_label: string;
+    status: string;
+    status_label: string;
+    // Still waiting for staff (unmatched or needs review).
+    open: boolean;
+    receipt: string;
+    amount: Money;
+    payer_name: string | null;
+    payer_phone: string | null;
+    // The account number typed on a paybill payment.
+    account: string | null;
+    reason: string | null;
+    booking: { reference: string; status_label: string } | null;
+    resolved_by: string | null;
+    resolved_at: string | null;
+    resolution_note: string | null;
+    created_at: string | null;
+};

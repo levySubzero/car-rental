@@ -3,11 +3,15 @@
 namespace App\Services\Cms;
 
 use App\Enums\FxProvider;
+use App\Enums\PaymentMethodCode;
 use App\Enums\Permission;
 use App\Models\Page;
 use App\Models\PaymentMethod;
 use App\Models\Policy;
 use App\Models\User;
+use App\Services\Payments\Gateways\DarajaClient;
+use App\Services\Payments\Gateways\PaystackClient;
+use App\Services\Payments\OnlinePaymentService;
 use App\Services\Pricing\CurrencyService;
 use App\Services\Pricing\Fx\FxRefreshResult;
 use App\Services\Pricing\FxRateService;
@@ -18,8 +22,8 @@ use App\Support\Content\PageRegistry;
 use App\Support\Markdown;
 
 /**
- * What is still missing before launch (M5.11, D26): empty settings, TODO payment details,
- * unpublished policies, preset pages without copy, and exchange rates that are missing,
+ * What is still missing before launch (M5.11, D26): empty settings, the online payment
+ * gateways (M11B.10), unpublished policies, preset pages without copy, and exchange rates that are missing,
  * stale or held back (M6.4). Each item is shown only to staff who
  * can fix it. M11.10 reuses this on the operations dashboard.
  *
@@ -33,6 +37,9 @@ class SetupChecklistService
         private readonly HomeSettings $home,
         private readonly FxRateService $fx,
         private readonly CurrencyService $currencies,
+        private readonly DarajaClient $daraja,
+        private readonly PaystackClient $paystack,
+        private readonly OnlinePaymentService $onlinePayments,
     ) {}
 
     /**
@@ -95,21 +102,39 @@ class SetupChecklistService
     }
 
     /**
+     * Online payments (M11B.10, D43): the only payment details launch needs are the gateways
+     * set up and switched on. M-Pesa needs the Daraja keys, the paybill URLs registered with
+     * Safaricom (not for a till) and the online switch; card needs the Paystack keys and the
+     * switch. Bank and cash instructions are not checked.
+     *
      * @return list<ChecklistItem>
      */
     private function paymentMethods(): array
     {
-        return array_values(PaymentMethod::query()->active()->ordered()->get()
-            ->filter(fn (PaymentMethod $method) => Markdown::hasTodo($method->instructions)
-                || Markdown::hasTodo(implode("\n", $method->metadata?->getArrayCopy() ?? [])))
-            ->map(fn (PaymentMethod $method) => $this->item(
-                "payment-method.{$method->code->value}",
-                'Payment methods',
-                $method->name,
-                'The instructions still contain TODO placeholders.',
-                route('admin.payment-methods.edit', $method),
-            ))
-            ->all());
+        $items = [];
+
+        $mpesa = PaymentMethod::query()->where('code', PaymentMethodCode::Mpesa)->first();
+        $missing = array_keys(array_filter([
+            'Daraja keys (DARAJA_* on the server)' => ! $this->daraja->configured(),
+            'paybill payments registered (php artisan mpesa:register-c2b)' => $this->daraja->configured() && ! $this->daraja->isTill() && ! $this->onlinePayments->c2bRegistered(),
+            'online payments switched on' => ! ($mpesa->online_enabled ?? false),
+        ]));
+
+        if ($missing !== []) {
+            $items[] = $this->item('payments.mpesa', 'Payments', 'M-Pesa online payments', 'Missing: '.implode(', ', $missing).'.', $mpesa ? route('admin.payment-methods.edit', $mpesa) : route('admin.payment-methods.index'));
+        }
+
+        $card = PaymentMethod::query()->where('code', PaymentMethodCode::Card)->first();
+        $missing = array_keys(array_filter([
+            'Paystack keys (PAYSTACK_* on the server)' => ! $this->paystack->configured(),
+            'online payments switched on' => ! ($card->online_enabled ?? false),
+        ]));
+
+        if ($missing !== []) {
+            $items[] = $this->item('payments.paystack', 'Payments', 'Card payments (Paystack)', 'Missing: '.implode(', ', $missing).'.', $card ? route('admin.payment-methods.edit', $card) : route('admin.payment-methods.index'));
+        }
+
+        return $items;
     }
 
     /**

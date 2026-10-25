@@ -84,6 +84,11 @@ class PaymentException extends DomainException
         return new self('We could not find that card payment for this booking.');
     }
 
+    public static function receiptAlreadyResolved(): self
+    {
+        return new self('This payment has already been dealt with.');
+    }
+
     protected function errorField(): ?string
     {
         return $this->field;

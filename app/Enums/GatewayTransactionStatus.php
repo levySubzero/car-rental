@@ -6,7 +6,7 @@ namespace App\Enums;
  * Where an online payment stands (M11B, D42). Initiated waits for the gateway; paid money
  * either confirms its booking (matched) or waits for staff: needs review when it could not be
  * applied safely, unmatched when a paybill reference names no booking. Staff close those as
- * matched or refunded.
+ * matched (attached to a booking), refunded, or closed with a note (M11B.9).
  */
 enum GatewayTransactionStatus: string
 {
@@ -17,6 +17,7 @@ enum GatewayTransactionStatus: string
     case NeedsReview = 'needs_review';
     case Matched = 'matched';
     case Refunded = 'refunded';
+    case Ignored = 'ignored';
 
     public function label(): string
     {
@@ -28,6 +29,7 @@ enum GatewayTransactionStatus: string
             self::NeedsReview => 'Needs review',
             self::Matched => 'Matched',
             self::Refunded => 'Refunded',
+            self::Ignored => 'Closed',
         };
     }
 

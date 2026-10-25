@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeliveryZoneController;
 use App\Http\Controllers\Admin\DepositBandController;
 use App\Http\Controllers\Admin\FxRateController;
+use App\Http\Controllers\Admin\GatewayReceiptController;
 use App\Http\Controllers\Admin\MarkdownPreviewController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentMethodController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Admin\QuoteSandboxController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SetupReminderController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -127,10 +129,18 @@ Route::prefix('content')->group(function () {
 // Operations
 Route::resource('contact-messages', ContactMessageController::class)->only(['index', 'show', 'update', 'destroy']);
 
+// The before-launch popup, closed for the rest of the session (M11B.10).
+Route::post('setup-reminder/dismiss', SetupReminderController::class)->name('setup-reminder.dismiss');
+
 // Payments (M9): the queue of renter payments to check.
 Route::get('payments', [PaymentSubmissionController::class, 'index'])->name('payments.index');
 Route::post('payments/{payment}/verify', [PaymentSubmissionController::class, 'verify'])->name('payments.verify');
 Route::post('payments/{payment}/reject', [PaymentSubmissionController::class, 'reject'])->name('payments.reject');
+
+// Online receipts (M11B.9): paybill payments naming no booking, and payments held for review.
+Route::get('receipts', [GatewayReceiptController::class, 'index'])->name('receipts.index');
+Route::post('receipts/{receipt}/attach', [GatewayReceiptController::class, 'attach'])->name('receipts.attach');
+Route::post('receipts/{receipt}/resolve', [GatewayReceiptController::class, 'resolve'])->name('receipts.resolve');
 
 // Bookings desk (M11): bookings by reference, and the actions staff take on them.
 Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');

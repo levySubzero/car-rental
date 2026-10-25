@@ -359,7 +359,8 @@ class OnlinePaymentService
             return $locked;
         });
 
-        if ($review !== null) {
+        // Staff resolving it by hand (M11B.9) see the outcome on the page; no alert to themselves.
+        if ($review !== null && ! $actor instanceof User) {
             $this->alert($review);
         }
 
@@ -487,7 +488,7 @@ class OnlinePaymentService
             $booking === null
                 ? "{$money}, receipt {$receipt}: the account reference names no booking."
                 : "{$money}, receipt {$receipt}. {$transaction->failure_reason}",
-            route('admin.payments.index', $booking === null ? [] : ['search' => $booking->reference]),
+            route('admin.receipts.index'),
         );
     }
 
