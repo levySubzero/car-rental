@@ -34,13 +34,13 @@ class SecurityHeaders
         }
 
         if (! $headers->has('Content-Security-Policy')) {
-            $headers->set('Content-Security-Policy', $this->contentSecurityPolicy($nonce));
+            $headers->set('Content-Security-Policy', $this->contentSecurityPolicy($nonce, $request->isSecure()));
         }
 
         return $response;
     }
 
-    private function contentSecurityPolicy(string $nonce): string
+    private function contentSecurityPolicy(string $nonce, bool $secure): string
     {
         // Turnstile, and Paystack's inline card popup (M11B.7).
         $script = ["'self'", 'https://challenges.cloudflare.com', 'https://js.paystack.co'];
@@ -77,7 +77,8 @@ class SecurityHeaders
             'object-src' => ["'none'"],
         ];
 
-        if (app()->isProduction()) {
+        // Over plain HTTP (a container on localhost) it would send every asset to https.
+        if (app()->isProduction() && $secure) {
             $directives['upgrade-insecure-requests'] = [];
         }
 

@@ -56,13 +56,19 @@ describe('security headers', function () {
             ->assertSee("const appearance = 'system'", false);
     });
 
-    it('upgrade insecure requests in production only', function () {
-        expect($this->get(route('login'))->headers->get('Content-Security-Policy'))
+    it('upgrade insecure requests in production over HTTPS only', function () {
+        // Literal URLs: route() would pick up the scheme of the previous request.
+        $http = 'http://localhost/login';
+        $https = 'https://localhost/login';
+
+        expect($this->get($https)->headers->get('Content-Security-Policy'))
             ->not->toContain('upgrade-insecure-requests');
 
         app()->detectEnvironment(fn () => 'production');
 
-        expect($this->get(route('login'))->headers->get('Content-Security-Policy'))
+        expect($this->get($http)->headers->get('Content-Security-Policy'))
+            ->not->toContain('upgrade-insecure-requests')
+            ->and($this->get($https)->headers->get('Content-Security-Policy'))
             ->toContain('upgrade-insecure-requests');
     });
 
