@@ -1,4 +1,4 @@
-// @paystack/inline-js ships no types; only what the card popup uses (M11B.7).
+// @paystack/inline-js ships no types; only what the popup uses (M11B.7).
 declare module '@paystack/inline-js' {
     type PaystackCallbacks = {
         onSuccess?: (transaction: {

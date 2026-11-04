@@ -76,8 +76,8 @@ it('asks only for the payment gateways, not every method\'s details', function (
 
     config(['services.daraja' => [...$daraja, 'consumer_key' => null], 'services.paystack' => ['public_key' => null, 'secret_key' => null]]);
     expect($items()->keys()->all())->toBe(['payments.mpesa', 'payments.paystack'])
-        ->and($items()['payments.mpesa']['detail'])->toBe('Missing: Daraja keys (DARAJA_* on the server), online payments switched on.')
-        ->and($items()['payments.paystack']['detail'])->toBe('Missing: Paystack keys (PAYSTACK_* on the server), online payments switched on.');
+        ->and($items()['payments.mpesa']['detail'])->toBe('Missing: Daraja keys (under Integrations, or DARAJA_* on the server), online payments switched on.')
+        ->and($items()['payments.paystack']['detail'])->toBe('Missing: Paystack keys (under Integrations, or PAYSTACK_* on the server), online payments switched on.');
 
     config(['services.daraja' => $daraja, 'services.paystack' => ['public_key' => 'pk', 'secret_key' => 'sk']]);
     PaymentMethod::query()->whereIn('code', ['mpesa', 'card'])->update(['online_enabled' => true]);

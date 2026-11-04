@@ -90,6 +90,7 @@ export const permissions = [
     'settings.retention.update',
     'settings.security.update',
     'settings.media.update',
+    'integrations.manage',
     'media.upload',
     'media.view-private',
     'activity.view',

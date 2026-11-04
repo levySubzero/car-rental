@@ -72,7 +72,7 @@ class SettingsService
                 'roundingOptions' => array_map(fn (RoundingMode $mode) => ['value' => $mode->value, 'label' => $mode->label()], RoundingMode::cases()),
                 'dayCountingOptions' => array_map(fn (DayCountingStrategy $strategy) => ['value' => $strategy->value, 'label' => $strategy->label()], DayCountingStrategy::cases()),
             ],
-            // The key is env-only (FX_API_KEY); the tab only says whether one is set.
+            // The key is set under Integrations or in env; the tab only says whether one is set.
             SettingsGroup::Fx => [
                 'providers' => array_map(fn (FxProvider $provider) => ['value' => $provider->value, 'label' => $provider->label()], FxProvider::cases()),
                 'hasApiKey' => filled(config('services.fx.api_key')),

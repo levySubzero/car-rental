@@ -7,9 +7,9 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Paystack (M11B.3, D42), called directly over HTTP. The server initializes a card-only KES
- * transaction under our own reference and hands the access code to Paystack's inline popup,
- * so the renter never leaves the booking page. Whatever the popup or a webhook claims, money
+ * Paystack (M11B.3, D42), called directly over HTTP. The server initializes a KES transaction
+ * under our own reference, limited to one channel (card, or M-Pesa as mobile money, M12B.16),
+ * and hands the access code to Paystack's inline popup, so the renter never leaves the booking page. Whatever the popup or a webhook claims, money
  * counts only once `verify()` says `success` for the amount we asked.
  */
 class PaystackClient
@@ -37,11 +37,12 @@ class PaystackClient
     }
 
     /**
-     * Start a card payment and return the access code for the popup.
+     * Start a payment and return the access code for the popup.
      *
      * @param  array<string, scalar>  $metadata
+     * @param  list<string>  $channels
      */
-    public function initialize(string $email, int $amountMinor, string $reference, array $metadata = []): string
+    public function initialize(string $email, int $amountMinor, string $reference, array $metadata = [], array $channels = ['card']): string
     {
         if ($amountMinor <= 0) {
             throw GatewayException::invalidInput($this->name(), 'the amount must be positive');
@@ -56,7 +57,7 @@ class PaystackClient
             'amount' => $amountMinor,
             'currency' => 'KES',
             'reference' => $reference,
-            'channels' => ['card'],
+            'channels' => $channels,
             'metadata' => $metadata,
         ]));
 

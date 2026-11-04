@@ -80,7 +80,9 @@ class GatewayWebhookService
         }
 
         $reference = data_get($payload, 'data.reference');
-        $transaction = is_string($reference) ? $this->find(PaymentGateway::Paystack, $reference) : null;
+        $transaction = is_string($reference)
+            ? GatewayTransaction::query()->whereIn('gateway', PaymentGateway::paystackCases())->where('external_ref', $reference)->first()
+            : null;
 
         if ($transaction === null) {
             Log::warning('Paystack charge for an unknown reference ignored', ['reference' => $reference]);

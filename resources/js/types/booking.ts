@@ -142,11 +142,13 @@ export type PublicPaymentMethod = {
     instructions_html: string;
     // Paid through the gateway from the page (M11B.7).
     online: boolean;
+    // Which gateway M-Pesa uses (M12B.16); null on other methods.
+    mpesa_provider: 'daraja' | 'paystack' | null;
 };
 
-// The renter's latest STK push or card payment (M11B.7); the page polls while it is initiated.
+// The renter's latest STK push or Paystack payment (M11B.7); the page polls while it is initiated.
 export type OnlinePaymentAttempt = {
-    gateway: 'mpesa_stk' | 'paystack';
+    gateway: 'mpesa_stk' | 'paystack' | 'paystack_mpesa';
     status:
         | 'initiated'
         | 'paid'

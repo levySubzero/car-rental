@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\DepositBandController;
 use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\FxRateController;
 use App\Http\Controllers\Admin\GatewayReceiptController;
+use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\MarkdownPreviewController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentMethodController;
@@ -35,6 +36,7 @@ use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SetupReminderController;
 use App\Http\Controllers\Admin\UserController;
+use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -180,6 +182,13 @@ Route::post('alerts/{alert}/open', [AlertController::class, 'open'])->whereUuid(
 Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
 Route::get('settings/{group}', [SettingsController::class, 'edit'])->middleware('can:update-settings,group')->name('settings.edit');
 Route::put('settings/{group}', [SettingsController::class, 'update'])->middleware('can:update-settings,group')->name('settings.update');
+
+// Integration keys (M12B.15): the password is asked for again, as these are the app's secrets.
+Route::middleware(['can:integrations.manage', RequirePassword::class])->group(function () {
+    Route::get('integrations', [IntegrationController::class, 'index'])->name('integrations.index');
+    Route::get('integrations/{integration}', [IntegrationController::class, 'edit'])->name('integrations.edit');
+    Route::put('integrations/{integration}', [IntegrationController::class, 'update'])->name('integrations.update');
+});
 
 // Audit
 Route::get('activity', [ActivityLogController::class, 'index'])->name('activity.index');

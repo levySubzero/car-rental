@@ -17,6 +17,7 @@ import {
     ReceiptText,
     PanelsTopLeft,
     Shapes,
+    KeyRound,
     Settings2,
     ShieldCheck,
     Tags,
@@ -40,6 +41,7 @@ import DepositBandController from '@/actions/App/Http/Controllers/Admin/DepositB
 import GatewayReceiptController from '@/actions/App/Http/Controllers/Admin/GatewayReceiptController';
 import FinanceController from '@/actions/App/Http/Controllers/Admin/FinanceController';
 import FxRateController from '@/actions/App/Http/Controllers/Admin/FxRateController';
+import IntegrationController from '@/actions/App/Http/Controllers/Admin/IntegrationController';
 import PaymentSubmissionController from '@/actions/App/Http/Controllers/Admin/PaymentSubmissionController';
 import QuoteSandboxController from '@/actions/App/Http/Controllers/Admin/QuoteSandboxController';
 import RoleController from '@/actions/App/Http/Controllers/Admin/RoleController';
@@ -223,6 +225,12 @@ export const adminNav: NavGroup[] = [
                 href: SettingsController.index(),
                 icon: Settings2,
                 permission: permissionsFor('settings'),
+            },
+            {
+                title: 'Integrations',
+                href: IntegrationController.index(),
+                icon: KeyRound,
+                permission: 'integrations.manage',
             },
             {
                 title: 'Activity log',

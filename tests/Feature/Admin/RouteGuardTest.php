@@ -58,6 +58,7 @@ function sampleParameters(RoutingRoute $route): array
         'user' => fn () => User::factory()->staff()->create()->id,
         'role' => fn () => Role::findOrCreate('sample-role', 'web')->id,
         'group' => fn () => 'general',
+        'integration' => fn () => 'daraja',
         'brand' => fn () => Brand::factory()->create()->slug,
         'car_type' => fn () => CarType::factory()->create()->slug,
         'car' => fn () => Car::factory()->create()->slug,

@@ -3,6 +3,7 @@
 namespace App\Services\Cms;
 
 use App\Enums\FxProvider;
+use App\Enums\MpesaProvider;
 use App\Enums\PaymentMethodCode;
 use App\Enums\Permission;
 use App\Models\Page;
@@ -103,9 +104,9 @@ class SetupChecklistService
 
     /**
      * Online payments (M11B.10, D43): the only payment details launch needs are the gateways
-     * set up and switched on. M-Pesa needs the Daraja keys, the paybill URLs registered with
-     * Safaricom (not for a till) and the online switch; card needs the Paystack keys and the
-     * switch. Bank and cash instructions are not checked.
+     * set up and switched on. M-Pesa needs its gateway's keys, for Daraja the paybill URLs
+     * registered with Safaricom (not for a till), and the online switch; card needs the
+     * Paystack keys and the switch. Bank and cash instructions are not checked.
      *
      * @return list<ChecklistItem>
      */
@@ -114,9 +115,11 @@ class SetupChecklistService
         $items = [];
 
         $mpesa = PaymentMethod::query()->where('code', PaymentMethodCode::Mpesa)->first();
+        $viaPaystack = MpesaProvider::current() === MpesaProvider::Paystack;
         $missing = array_keys(array_filter([
-            'Daraja keys (DARAJA_* on the server)' => ! $this->daraja->configured(),
-            'paybill payments registered (php artisan mpesa:register-c2b)' => $this->daraja->configured() && ! $this->daraja->isTill() && ! $this->onlinePayments->c2bRegistered(),
+            'Paystack keys (under Integrations, or PAYSTACK_* on the server)' => $viaPaystack && ! $this->paystack->configured(),
+            'Daraja keys (under Integrations, or DARAJA_* on the server)' => ! $viaPaystack && ! $this->daraja->configured(),
+            'paybill payments registered (php artisan mpesa:register-c2b)' => ! $viaPaystack && $this->daraja->configured() && ! $this->daraja->isTill() && ! $this->onlinePayments->c2bRegistered(),
             'online payments switched on' => ! ($mpesa->online_enabled ?? false),
         ]));
 
@@ -126,7 +129,7 @@ class SetupChecklistService
 
         $card = PaymentMethod::query()->where('code', PaymentMethodCode::Card)->first();
         $missing = array_keys(array_filter([
-            'Paystack keys (PAYSTACK_* on the server)' => ! $this->paystack->configured(),
+            'Paystack keys (under Integrations, or PAYSTACK_* on the server)' => ! $this->paystack->configured(),
             'online payments switched on' => ! ($card->online_enabled ?? false),
         ]));
 
@@ -192,7 +195,7 @@ class SetupChecklistService
         $items = [];
 
         if ($settings->provider !== FxProvider::Manual->value && blank(config('services.fx.api_key'))) {
-            $items[] = $this->item('fx.key', 'Exchange rates', 'Exchange rate API key', 'The provider is an API but FX_API_KEY is not set, so no rates are fetched.', $url);
+            $items[] = $this->item('fx.key', 'Exchange rates', 'Exchange rate API key', 'The provider is an API but no key is set (under Integrations, or FX_API_KEY on the server), so no rates are fetched.', $url);
         }
 
         $table = $this->fx->table();

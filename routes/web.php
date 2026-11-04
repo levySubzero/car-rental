@@ -61,6 +61,7 @@ Route::middleware(['booking.token', 'throttle:booking-step'])->prefix('bookings/
     // Online payments (M11B.7).
     Route::middleware('throttle:online-payment')->prefix('payment')->name('payment.')->group(function () {
         Route::post('mpesa', [OnlinePaymentController::class, 'mpesa'])->name('mpesa');
+        Route::post('mpesa/paystack', [OnlinePaymentController::class, 'mpesaPaystack'])->name('mpesa.paystack');
         Route::post('card', [OnlinePaymentController::class, 'card'])->name('card');
         Route::post('card/confirm', [OnlinePaymentController::class, 'confirmCard'])->name('card.confirm');
     });

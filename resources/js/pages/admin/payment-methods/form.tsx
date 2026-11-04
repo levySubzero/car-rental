@@ -134,9 +134,11 @@ export default function PaymentMethodForm({
                             <CardHeader>
                                 <CardTitle>Online payments</CardTitle>
                                 <CardDescription>
-                                    {method.code === 'mpesa'
-                                        ? 'Renters get an M-Pesa prompt on their phone, and paybill payments with the booking reference are matched automatically.'
-                                        : 'Renters pay by card in a Paystack window on the booking page.'}{' '}
+                                    {method.code !== 'mpesa'
+                                        ? 'Renters pay by card in a Paystack window on the booking page.'
+                                        : method.gateway_name === 'Paystack'
+                                          ? 'Renters pay with M-Pesa in a Paystack window on the booking page.'
+                                          : 'Renters get an M-Pesa prompt on their phone, and paybill payments with the booking reference are matched automatically.'}{' '}
                                     The booking is confirmed as soon as the
                                     payment arrives. Turn this off to go back to
                                     checking payments by hand.
@@ -149,7 +151,7 @@ export default function PaymentMethodForm({
                                     description={
                                         method.gateway_configured
                                             ? undefined
-                                            : `The ${method.code === 'mpesa' ? 'Daraja' : 'Paystack'} keys are not set on the server yet, so renters still pay by hand.`
+                                            : `The ${method.gateway_name} keys are not set under Integrations or on the server yet, so renters still pay by hand.`
                                     }
                                     checked={form.data.online_enabled}
                                     disabled={!editable}

@@ -46,7 +46,8 @@ return [
         'cloud_phone_number_id' => env('WHATSAPP_CLOUD_PHONE_NUMBER_ID'),
     ],
 
-    // Online payments (M11B, D42). Keys live here only; staff switch each method online in the admin.
+    // Online payments (M11B, D42). Saved values on the admin Integrations page override these
+    // env values (D46); staff switch each method online in the admin.
     'daraja' => [
         'env' => env('DARAJA_ENV', 'sandbox'),
         'consumer_key' => env('DARAJA_CONSUMER_KEY'),
@@ -66,7 +67,12 @@ return [
         'secret_key' => env('PAYSTACK_SECRET_KEY'),
     ],
 
-    // The provider is chosen in the admin (FxSettings::provider); only its key lives here.
+    // Which gateway takes M-Pesa on the booking page: daraja or paystack (M12B.16).
+    'mpesa' => [
+        'provider' => env('MPESA_PROVIDER', 'daraja'),
+    ],
+
+    // The provider is chosen in the admin (FxSettings::provider); this is its key.
     'fx' => [
         'api_key' => env('FX_API_KEY'),
     ],

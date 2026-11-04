@@ -28,6 +28,7 @@ use App\Models\Role;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\Booking\BookingTokenResolver;
+use App\Services\Integrations\IntegrationConfig;
 use App\Services\Media\Contracts\TokenUploaderResolver;
 use App\Services\Media\CurrentUploader;
 use App\Services\Media\ImageDriver;
@@ -46,12 +47,15 @@ use App\Support\Content\PageRegistry;
 use App\Support\PublicCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -87,6 +91,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(DarajaClient::class, fn () => new DarajaClient((array) config('services.daraja')));
         $this->app->bind(PaystackClient::class, fn () => new PaystackClient(config('services.paystack.public_key'), config('services.paystack.secret_key')));
 
+        // A singleton: it remembers what it applied and the env values underneath (M12B.15).
+        $this->app->singleton(IntegrationConfig::class);
+
         // Not a singleton: admins can change the overrides mid-request (settings save).
         $this->app->bind(MediaCollectionRegistry::class, fn ($app) => new MediaCollectionRegistry(
             definitions: (array) config('media.collections'),
@@ -106,6 +113,17 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAuthorization();
         $this->configureRateLimiting();
         PublicCache::register();
+        $this->configureIntegrations();
+    }
+
+    /**
+     * Saved integration keys reach commands and each queued job here, and requests through
+     * ApplyIntegrationConfig. Never applied directly in boot: config:cache would write them to
+     * disk (see IntegrationConfig).
+     */
+    protected function configureIntegrations(): void
+    {
+        Event::listen([CommandStarting::class, JobProcessing::class], fn () => app(IntegrationConfig::class)->apply());
     }
 
     /**

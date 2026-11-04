@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources\Public;
 
+use App\Enums\MpesaProvider;
+use App\Enums\PaymentMethodCode;
 use App\Models\PaymentMethod;
 use App\Services\Payments\OnlinePaymentService;
 use App\Support\Markdown;
@@ -27,8 +29,10 @@ class PaymentMethodResource extends JsonResource
             'requires_transaction_message' => $this->requires_transaction_message,
             'requires_proof' => $this->requires_proof,
             'instructions_html' => Markdown::toHtml($this->instructions),
-            // Paid through the gateway from the page (M11B.7): an M-Pesa prompt or the card popup.
+            // Paid through the gateway from the page (M11B.7): an M-Pesa prompt or Paystack's popup.
             'online' => app(OnlinePaymentService::class)->isOnline($this->resource),
+            // Which of those M-Pesa uses (M12B.16).
+            'mpesa_provider' => $this->code === PaymentMethodCode::Mpesa ? MpesaProvider::current()->value : null,
         ];
     }
 }

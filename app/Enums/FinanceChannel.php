@@ -42,7 +42,8 @@ enum FinanceChannel: string
             return match ($gateway) {
                 PaymentGateway::MpesaStk => self::MpesaStk,
                 PaymentGateway::MpesaC2b => self::MpesaPaybill,
-                PaymentGateway::Paystack => self::Paystack,
+                // M-Pesa through Paystack settles with Paystack, so it counts there.
+                PaymentGateway::Paystack, PaymentGateway::PaystackMpesa => self::Paystack,
             };
         }
 

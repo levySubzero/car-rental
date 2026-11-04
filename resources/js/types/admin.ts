@@ -253,6 +253,8 @@ export type AdminPaymentMethod = {
     // Online payments (M11B.8): M-Pesa and card only; the switch works once the keys are set.
     supports_online: boolean;
     online_enabled: boolean;
+    // The gateway this method goes through: M-Pesa's follows Integrations (M12B.16).
+    gateway_name: string | null;
     gateway_configured: boolean;
     sort_order: number;
     // Paybill, till, bank details, card link (D20).
@@ -443,7 +445,7 @@ export type AdminPayment = {
     method_name: string;
     // Paid through a gateway and verified automatically (M11B.8).
     online: {
-        gateway: 'mpesa_stk' | 'mpesa_c2b' | 'paystack';
+        gateway: 'mpesa_stk' | 'mpesa_c2b' | 'paystack' | 'paystack_mpesa';
         label: string;
     } | null;
     transaction_message: string | null;
@@ -667,7 +669,7 @@ export type BookingTimelineEntry = {
 // An online receipt staff resolve by hand (M11B.9).
 export type AdminReceipt = {
     id: number;
-    gateway: 'mpesa_stk' | 'mpesa_c2b' | 'paystack';
+    gateway: 'mpesa_stk' | 'mpesa_c2b' | 'paystack' | 'paystack_mpesa';
     gateway_label: string;
     status: string;
     status_label: string;

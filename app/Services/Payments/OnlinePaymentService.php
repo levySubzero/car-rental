@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Enums\AlertKind;
 use App\Enums\GatewayTransactionStatus;
+use App\Enums\MpesaProvider;
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentMethodCode;
 use App\Enums\PaymentStatus;
@@ -24,7 +25,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Paying the reservation online (M11B.4, D42): an M-Pesa STK push or a Paystack card payment
+ * Paying the reservation online (M11B.4, D42): an M-Pesa STK push, or a card or M-Pesa payment
+ * in Paystack's window (M-Pesa goes through whichever gateway `MpesaProvider` names, M12B.16),
  * started from the booking page, then settled once the gateway confirms the money.
  *
  * Starting refuses unless the booking takes a payment, none is waiting for staff and the
@@ -73,26 +75,28 @@ class OnlinePaymentService
     }
 
     /**
-     * The method can go online (M-Pesa through Daraja, card through Paystack) and its keys
-     * are in the environment.
+     * The method can go online (M-Pesa through its chosen gateway, card through Paystack) and
+     * its keys are set.
      */
     public function gatewayConfigured(PaymentMethodCode $code): bool
     {
         return match ($code) {
-            PaymentMethodCode::Mpesa => $this->daraja->configured(),
+            PaymentMethodCode::Mpesa => MpesaProvider::current() === MpesaProvider::Paystack
+                ? $this->paystack->configured()
+                : $this->daraja->configured(),
             PaymentMethodCode::Card => $this->paystack->configured(),
             default => false,
         };
     }
 
     /**
-     * The renter's latest STK push or card payment from the last half hour, which the booking
+     * The renter's latest STK push or Paystack payment from the last half hour, which the booking
      * page follows while it is in flight.
      */
     public function latestAttempt(Booking $booking): ?GatewayTransaction
     {
         return $booking->gatewayTransactions()
-            ->whereIn('gateway', [PaymentGateway::MpesaStk, PaymentGateway::Paystack])
+            ->whereIn('gateway', [PaymentGateway::MpesaStk, ...PaymentGateway::paystackCases()])
             ->where('created_at', '>=', now()->subMinutes(self::GIVE_UP_AFTER_MINUTES))
             ->latest('id')
             ->first();
@@ -100,7 +104,8 @@ class OnlinePaymentService
 
     /**
      * Where to pay by hand with M-Pesa: the paybill and the account number that matches the
-     * booking (C2B), or the till. Null when Daraja is not configured.
+     * booking (C2B), or the till. Null when Daraja is not configured or M-Pesa goes through
+     * Paystack, whose payments the paybill would not match.
      *
      * @return array{number: string, account: string|null, till: bool}|null
      */
@@ -108,7 +113,7 @@ class OnlinePaymentService
     {
         $number = $this->daraja->payTo();
 
-        if (! $this->daraja->configured() || $number === null) {
+        if (MpesaProvider::current() === MpesaProvider::Paystack || ! $this->daraja->configured() || $number === null) {
             return null;
         }
 
@@ -121,6 +126,10 @@ class OnlinePaymentService
 
     public function startMpesa(Booking $booking, string $phone): GatewayTransaction
     {
+        if (MpesaProvider::current() !== MpesaProvider::Daraja) {
+            throw PaymentException::methodUnavailable();
+        }
+
         $msisdn = PhoneNumber::kenyanMobile($phone) ?? throw PaymentException::invalidMpesaPhone();
         $booking = $this->prepare($booking, PaymentMethodCode::Mpesa, function (Booking $booking) use ($msisdn) {
             // The phone is encrypted, so the comparison happens here, over a handful of rows.
@@ -175,7 +184,31 @@ class OnlinePaymentService
      */
     public function startCard(Booking $booking): array
     {
-        $booking = $this->prepare($booking, PaymentMethodCode::Card);
+        return $this->startPaystack($booking, PaymentGateway::Paystack, ['card'], 'Card payment');
+    }
+
+    /**
+     * M-Pesa in Paystack's window, when it is the chosen M-Pesa gateway (M12B.16). Paystack
+     * asks for the phone and sends the prompt.
+     *
+     * @return array{access_code: string, reference: string, public_key: string}
+     */
+    public function startPaystackMpesa(Booking $booking): array
+    {
+        if (MpesaProvider::current() !== MpesaProvider::Paystack) {
+            throw PaymentException::methodUnavailable();
+        }
+
+        return $this->startPaystack($booking, PaymentGateway::PaystackMpesa, ['mobile_money'], 'M-Pesa');
+    }
+
+    /**
+     * @param  list<string>  $channels
+     * @return array{access_code: string, reference: string, public_key: string}
+     */
+    private function startPaystack(Booking $booking, PaymentGateway $gateway, array $channels, string $name): array
+    {
+        $booking = $this->prepare($booking, $gateway->method());
         $email = $booking->driver->email;
 
         if (blank($email)) {
@@ -183,7 +216,7 @@ class OnlinePaymentService
         }
 
         $open = $booking->gatewayTransactions()
-            ->where('gateway', PaymentGateway::Paystack)
+            ->where('gateway', $gateway)
             ->where('status', GatewayTransactionStatus::Initiated)
             ->where('amount_minor', (int) $booking->reservation_minor)
             ->where('created_at', '>', now()->subMinutes(self::CARD_REUSE_MINUTES))
@@ -199,15 +232,15 @@ class OnlinePaymentService
         try {
             $accessCode = $this->paystack->initialize($email, (int) $booking->reservation_minor, $reference, [
                 'booking' => (string) $booking->reference,
-            ]);
+            ], $channels);
         } catch (GatewayException $exception) {
             report($exception);
 
-            throw PaymentException::gatewayUnavailable('Card payment');
+            throw PaymentException::gatewayUnavailable($name);
         }
 
         $booking->gatewayTransactions()->create([
-            'gateway' => PaymentGateway::Paystack,
+            'gateway' => $gateway,
             'external_ref' => $reference,
             'amount_minor' => (int) $booking->reservation_minor,
             'status' => GatewayTransactionStatus::Initiated,
@@ -218,12 +251,12 @@ class OnlinePaymentService
     }
 
     /**
-     * The popup says the card was charged: ask Paystack, never the browser.
+     * The popup says the payment went through: ask Paystack, never the browser.
      */
     public function confirmCard(Booking $booking, string $reference): GatewayTransaction
     {
         $transaction = $booking->gatewayTransactions()
-            ->where('gateway', PaymentGateway::Paystack)
+            ->whereIn('gateway', PaymentGateway::paystackCases())
             ->where('external_ref', $reference)
             ->first() ?? throw PaymentException::unknownOnlinePayment();
 
@@ -289,7 +322,7 @@ class OnlinePaymentService
         $counts = ['checked' => 0, 'paid' => 0, 'failed' => 0, 'errors' => 0];
 
         GatewayTransaction::query()
-            ->whereIn('gateway', [PaymentGateway::MpesaStk, PaymentGateway::Paystack])
+            ->whereIn('gateway', [PaymentGateway::MpesaStk, ...PaymentGateway::paystackCases()])
             ->where('status', GatewayTransactionStatus::Initiated)
             ->where('created_at', '<=', now()->subMinutes(self::RECONCILE_AFTER_MINUTES))
             ->orderBy('id')
@@ -297,7 +330,7 @@ class OnlinePaymentService
                 $counts['checked']++;
 
                 try {
-                    $transaction = $transaction->gateway === PaymentGateway::Paystack
+                    $transaction = $transaction->gateway->isPaystack()
                         ? $this->refreshPaystack($transaction)
                         : $this->refreshStk($transaction);
                 } catch (GatewayException $exception) {

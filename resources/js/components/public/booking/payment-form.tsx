@@ -4,8 +4,8 @@ import { useState } from 'react';
 import BookingPaymentController from '@/actions/App/Http/Controllers/Public/BookingPaymentController';
 import { MediaUploader } from '@/components/media/media-uploader';
 import {
-    CardOnline,
     MpesaOnline,
+    PaystackOnline,
 } from '@/components/public/booking/online-payment';
 import { Field, inputClass } from '@/components/public/form-field';
 import { Button } from '@/components/ui/button';
@@ -107,7 +107,8 @@ export function PaymentForm({
 
             {chosen && online && (
                 <div className="grid gap-4 rounded-md border border-white/10 bg-ink/40 p-4">
-                    {chosen.code === 'mpesa' ? (
+                    {chosen.code === 'mpesa' &&
+                    chosen.mpesa_provider !== 'paystack' ? (
                         <MpesaOnline
                             token={token}
                             amount={amount}
@@ -116,7 +117,8 @@ export function PaymentForm({
                             payTo={mpesaPayTo}
                         />
                     ) : (
-                        <CardOnline
+                        <PaystackOnline
+                            channel={chosen.code === 'mpesa' ? 'mpesa' : 'card'}
                             token={token}
                             amount={amount}
                             attempt={onlinePayment}

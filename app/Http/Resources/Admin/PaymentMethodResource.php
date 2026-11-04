@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Enums\MpesaProvider;
+use App\Enums\PaymentMethodCode;
 use App\Models\PaymentMethod;
 use App\Services\Payments\OnlinePaymentService;
 use App\Support\Markdown;
@@ -31,6 +33,11 @@ class PaymentMethodResource extends JsonResource
             // Online payments (M11B.8): staff's switch, and whether the gateway's keys are set.
             'supports_online' => $this->code->supportsOnline(),
             'online_enabled' => $this->online_enabled,
+            'gateway_name' => match (true) {
+                $this->code === PaymentMethodCode::Mpesa => MpesaProvider::current()->label(),
+                $this->code === PaymentMethodCode::Card => MpesaProvider::Paystack->label(),
+                default => null,
+            },
             'gateway_configured' => app(OnlinePaymentService::class)->gatewayConfigured($this->code),
             'sort_order' => $this->sort_order,
             'metadata' => (object) $metadata,

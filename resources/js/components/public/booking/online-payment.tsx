@@ -131,39 +131,68 @@ export function MpesaOnline({
     );
 }
 
+const PAYSTACK_CHANNELS = {
+    card: {
+        gateway: 'paystack',
+        name: 'card',
+        title: 'Card payment',
+        icon: CreditCard,
+        note: 'Visa or Mastercard, processed securely by Paystack.',
+    },
+    mpesa: {
+        gateway: 'paystack_mpesa',
+        name: 'M-Pesa',
+        title: 'M-Pesa payment',
+        icon: Smartphone,
+        note: 'Enter your M-Pesa number in the secure Paystack window, then approve the prompt on your phone.',
+    },
+} as const;
+
 /**
- * Pay by card in Paystack's popup (M11B.7). The server opens the transaction; when the popup
- * reports success the server checks it with Paystack before the booking is confirmed.
+ * Pay in Paystack's popup, by card (M11B.7) or M-Pesa when Paystack takes it (M12B.16). The
+ * server opens the transaction; when the popup reports success the server checks it with
+ * Paystack before the booking is confirmed.
  */
-export function CardOnline({
+export function PaystackOnline({
+    channel,
     token,
     amount,
     attempt,
 }: {
+    channel: keyof typeof PAYSTACK_CHANNELS;
     token: string;
     amount: string | null;
     attempt: OnlinePaymentAttempt | null;
 }) {
+    const {
+        gateway,
+        name,
+        title,
+        icon: Icon,
+        note,
+    } = PAYSTACK_CHANNELS[channel];
     const http = useHttp<
         Record<string, never>,
         { access_code: string; reference: string; public_key: string }
     >({});
     const [message, setMessage] = useState<string | null>(null);
     const [confirming, setConfirming] = useState(false);
-    const mine = attempt?.gateway === 'paystack' ? attempt : null;
+    const mine = attempt?.gateway === gateway ? attempt : null;
 
     const pay = async () => {
         setMessage(null);
 
         try {
             const started = await http.post(
-                OnlinePaymentController.card(token).url,
+                channel === 'card'
+                    ? OnlinePaymentController.card(token).url
+                    : OnlinePaymentController.mpesaPaystack(token).url,
             );
 
             if (!started) {
                 setMessage(
                     Object.values(http.errors)[0] ??
-                        'Card payment could not be started. Please try again.',
+                        `${title} could not be started. Please try again.`,
                 );
 
                 return;
@@ -185,11 +214,11 @@ export function CardOnline({
                     );
                 },
                 onCancel: () =>
-                    setMessage('Card payment cancelled. Nothing was charged.'),
+                    setMessage(`${title} cancelled. Nothing was charged.`),
                 onError: (error) => setMessage(error.message),
             });
         } catch {
-            setMessage('Card payment could not be started. Please try again.');
+            setMessage(`${title} could not be started. Please try again.`);
         }
     };
 
@@ -200,7 +229,8 @@ export function CardOnline({
                     role="alert"
                     className="rounded-md border border-red-400/40 bg-red-400/10 px-3 py-2 text-sm text-red-200"
                 >
-                    The last card payment did not go through. You can try again.
+                    The last {name} payment did not go through. You can try
+                    again.
                 </p>
             )}
             {message && (
@@ -216,16 +246,14 @@ export function CardOnline({
                     disabled={http.processing || confirming}
                     className="h-12 px-6 font-semibold"
                 >
-                    <CreditCard aria-hidden className="size-4" />
+                    <Icon aria-hidden className="size-4" />
                     {confirming
                         ? 'Confirming…'
                         : http.processing
                           ? 'Opening…'
-                          : `Pay${amount ? ` ${amount}` : ''} by card`}
+                          : `Pay${amount ? ` ${amount}` : ''} ${channel === 'card' ? 'by card' : 'with M-Pesa'}`}
                 </Button>
-                <p className="mt-2 text-xs text-muted-foreground">
-                    Visa or Mastercard, processed securely by Paystack.
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground">{note}</p>
             </div>
         </div>
     );

@@ -78,8 +78,8 @@ export function FxSettingsForm({
                         description={
                             form.data.provider !== 'manual' &&
                             !context.hasApiKey
-                                ? 'FX_API_KEY is not set on the server, so nothing will be fetched.'
-                                : 'The API key is set on the server (FX_API_KEY), not here.'
+                                ? 'No API key is set under Integrations or on the server, so nothing will be fetched.'
+                                : 'The API key is set under Integrations or on the server, not here.'
                         }
                         onChange={(event) =>
                             form.setData('provider', event.target.value)

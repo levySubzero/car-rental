@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Enums\GatewayTransactionStatus;
+use App\Enums\PaymentGateway;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\ResolveBookingToken;
 use App\Http\Requests\Public\Booking\ConfirmCardPaymentRequest;
@@ -39,14 +40,24 @@ class OnlinePaymentController extends Controller
         return response()->json($this->payments->startCard(ResolveBookingToken::booking($request)));
     }
 
+    /**
+     * The same for M-Pesa in Paystack's window, when Paystack takes M-Pesa (M12B.16).
+     */
+    public function mpesaPaystack(Request $request): JsonResponse
+    {
+        return response()->json($this->payments->startPaystackMpesa(ResolveBookingToken::booking($request)));
+    }
+
     public function confirmCard(ConfirmCardPaymentRequest $request): RedirectResponse
     {
         $transaction = $this->payments->confirmCard($request->booking(), $request->reference());
 
+        $name = $transaction->gateway === PaymentGateway::PaystackMpesa ? 'M-Pesa' : 'card';
+
         Inertia::flash('toast', match ($transaction->status) {
             GatewayTransactionStatus::Matched => ['type' => 'success', 'message' => 'Payment received. Your booking is confirmed.'],
             GatewayTransactionStatus::Initiated => ['type' => 'success', 'message' => 'Payment is being processed. This page updates once it is confirmed.'],
-            GatewayTransactionStatus::Failed => ['type' => 'error', 'message' => 'The card payment did not go through. Please try again.'],
+            GatewayTransactionStatus::Failed => ['type' => 'error', 'message' => "The {$name} payment did not go through. Please try again."],
             default => ['type' => 'success', 'message' => 'Payment received. Our team will confirm your booking shortly.'],
         });
 

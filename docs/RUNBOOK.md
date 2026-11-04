@@ -80,9 +80,11 @@ Neither undoes migrations. If a migration must be reversed, run `php artisan mig
 
 ## 6. Rotate keys
 
+Daraja, Paystack, Resend, FX, Turnstile and S3 values can be changed under **Admin → Integrations** (super admins, D46) with no deploy; a saved value overrides `.env`, and workers pick it up on their next job. Wherever a row below says to update `.env` and deploy, saving there does the same.
+
 | Key | How | Watch out |
 | --- | --- | --- |
-| `APP_KEY` | Put the old key in `APP_PREVIOUS_KEYS`, set the new one, deploy. | Encrypted columns (driver ID, KRA PIN, licence numbers, payer phones) still decrypt through `APP_PREVIOUS_KEYS`, but `booking_drivers.id_number_hash` is an HMAC keyed on `APP_KEY`, so lookups by ID number stop matching for older rows. Rotate only if the key leaked, and then rehash the column (one-off tinker loop over `BookingDriver`: `id_number_hash = BookingDriver::hashIdNumber($driver->id_number)`). Sessions are signed out. |
+| `APP_KEY` | Put the old key in `APP_PREVIOUS_KEYS`, set the new one, deploy. | Encrypted columns (driver ID, KRA PIN, licence numbers, payer phones) still decrypt through `APP_PREVIOUS_KEYS`, but `booking_drivers.id_number_hash` is an HMAC keyed on `APP_KEY`, so lookups by ID number stop matching for older rows. Saved integration keys are encrypted with it too: without `APP_PREVIOUS_KEYS` the app falls back to `.env` values and the Integrations page refuses to save. Rotate only if the key leaked, and then rehash the column (one-off tinker loop over `BookingDriver`: `id_number_hash = BookingDriver::hashIdNumber($driver->id_number)`). Sessions are signed out. |
 | `DARAJA_CALLBACK_SECRET` | Set a new long random value, deploy, then `php artisan mpesa:register-c2b`. | Safaricom allows registering production C2B URLs once per shortcode; a second change needs Safaricom support. STK pushes started before the switch call back on the old URL and are picked up by `payments:reconcile`. |
 | Daraja consumer key and secret, passkey | Regenerate on the Daraja portal, update `.env`, deploy (or `php artisan optimize` on cPanel). | The cached OAuth token expires within the hour. |
 | `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY` | Roll the keys in the Paystack dashboard, update `.env`, deploy. | Webhook signatures use the secret key: events signed with the old key are refused, and `payments:reconcile` picks those payments up. |
@@ -97,7 +99,7 @@ The app has no backup code. The host keeps:
 
 - **Database:** daily snapshots kept 30 days. On a VPS, from the managed MySQL service or the provider's volume snapshots; on cPanel, from JetBackup or the host's daily backup (confirm the retention with the host).
 - **Media:** on S3, bucket versioning plus a lifecycle rule that expires old versions after 30 days, on both buckets. On local disks (cPanel, or a VPS before M12B.7), `shared/storage` (cPanel) or the `storage` volume (Docker) must be inside the host backup. Private media holds renters' KYC documents.
-- **`.env`:** kept outside the backups, in the team's password manager. Restoring a database without its `APP_KEY` leaves the encrypted columns unreadable.
+- **`.env`:** kept outside the backups, in the team's password manager. Restoring a database without its `APP_KEY` leaves the encrypted columns and the keys saved on the Integrations page unreadable.
 
 **Restore drill (M12.11):** at least once before launch, then every quarter.
 

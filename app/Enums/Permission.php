@@ -143,6 +143,9 @@ enum Permission: string
     case SettingsSecurityUpdate = 'settings.security.update';
     case SettingsMediaUpdate = 'settings.media.update';
 
+    // The keys of third-party services (M12B.15): no seeded role has it, so super admins only
+    case IntegrationsManage = 'integrations.manage';
+
     // Media: uploading also needs the collection's own permission (config/media.php)
     case MediaUpload = 'media.upload';
     case MediaViewPrivate = 'media.view-private';

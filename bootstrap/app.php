@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\HealthController;
 use App\Http\Middleware\AdminIdleTimeout;
+use App\Http\Middleware\ApplyIntegrationConfig;
 use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsurePortalSession;
 use App\Http\Middleware\EnsureStaff;
@@ -47,6 +48,9 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Saved integration keys (M12B.15) must be in config before anything reads it.
+        $middleware->prepend(ApplyIntegrationConfig::class);
+
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->alias([
@@ -73,7 +77,7 @@ return Application::configure(basePath: dirname(__DIR__))
         Integration::handles($exceptions);
 
         // Never flashed back into the session after a validation error (M12.4).
-        $exceptions->dontFlash(['id_number', 'kra_pin', 'licence_number', 'current_password', 'password', 'password_confirmation']);
+        $exceptions->dontFlash(['id_number', 'kra_pin', 'licence_number', 'current_password', 'password', 'password_confirmation', 'credentials']);
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
