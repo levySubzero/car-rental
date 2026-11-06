@@ -53,7 +53,57 @@ describe('viewing', function () {
         $unpaid = Booking::factory()->awaitingPayment()->create();
         $this->actingAs($this->editor)->get(route('admin.bookings.voucher.show', $unpaid->reference))->assertNotFound();
     });
+
+    it('can be managed while the booking is reserved or on hire', function (BookingStatus $status) {
+        $this->booking->forceFill(['status' => $status])->save();
+
+        $this->actingAs($this->editor)->get(route('admin.bookings.voucher.show', $this->booking->reference))
+            ->assertInertia(fn (Assert $page) => $page->where('manageable', true)->where('void', false));
+    })->with([BookingStatus::Reserved, BookingStatus::Active]);
+
+    it('is read-only once the hire is over', function () {
+        $this->booking->forceFill(['status' => BookingStatus::Completed])->save();
+
+        $this->actingAs($this->editor)->get(route('admin.bookings.voucher.show', $this->booking->reference))
+            ->assertInertia(fn (Assert $page) => $page->where('manageable', false)->where('void', false)->has('voucher.urls.view'));
+    });
+
+    it('stays on record as void after a paid booking is cancelled or a no-show, without making a new PDF', function (BookingStatus $status) {
+        $this->booking->forceFill(['status' => $status])->save();
+
+        $this->actingAs($this->editor)->get(route('admin.bookings.voucher.show', $this->booking->reference))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('manageable', false)->where('void', true)->where('voucher', null));
+
+        expect($this->vouchers->current($this->booking))->toBeNull();
+
+        $this->vouchers->generate($this->booking);
+        $this->actingAs($this->editor)->get(route('admin.bookings.voucher.show', $this->booking->reference))
+            ->assertInertia(fn (Assert $page) => $page->has('voucher.urls.download'));
+    })->with([BookingStatus::Cancelled, BookingStatus::NoShow]);
+
+    it('does not exist for a booking cancelled before it was paid', function () {
+        $this->booking->forceFill(['status' => BookingStatus::Cancelled, 'paid_at' => null])->save();
+
+        $this->actingAs($this->editor)->get(route('admin.bookings.voucher.show', $this->booking->reference))->assertNotFound();
+    });
 });
+
+it('refuses to edit or send a voucher once the hire is over or the booking is void', function (BookingStatus $status) {
+    Notification::fake();
+    $this->booking->forceFill(['status' => $status])->save();
+
+    $this->actingAs($this->editor)
+        ->put(route('admin.bookings.voucher.update', $this->booking->reference), voucherEdits(['car' => 'Reworded']))
+        ->assertRedirect();
+    $this->actingAs($this->editor)
+        ->post(route('admin.bookings.voucher.resend', $this->booking->reference))
+        ->assertRedirect();
+
+    expect($this->booking->fresh()->voucher_overrides)->toBeNull()
+        ->and($this->booking->fresh()->voucher_sent_at)->toBeNull();
+    Notification::assertNothingSent();
+})->with([BookingStatus::Completed, BookingStatus::Cancelled, BookingStatus::NoShow]);
 
 describe('editing', function () {
     it('needs the voucher permission', function () {

@@ -145,6 +145,17 @@ it('keeps a voucher from the renter until staff have sent it', function () {
     $this->get(route('portal.voucher', $this->booking->reference))->assertNotFound();
 });
 
+it('takes the voucher away once a paid booking is cancelled or a no-show', function (BookingStatus $status) {
+    app(VoucherService::class)->generate($this->booking);
+    $this->booking->forceFill(['status' => $status, 'paid_at' => now(), 'voucher_sent_at' => now()])->save();
+    signIn();
+
+    $this->get(route('portal.voucher', $this->booking->reference))->assertNotFound();
+    $this->get(route('portal.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('bookings.0.reference', $this->booking->reference)
+        ->where('bookings.0.has_voucher', false));
+})->with([BookingStatus::Cancelled, BookingStatus::NoShow]);
+
 it('has no voucher before the booking is confirmed', function () {
     signIn();
 

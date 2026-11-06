@@ -151,9 +151,8 @@ class BookingNotifier
             return false;
         }
 
-        if ($this->vouchers->current($booking) === null) {
-            $this->vouchers->generate($booking);
-        }
+        // Made afresh so the attachment always matches the email, whatever changed since.
+        $this->vouchers->generate($booking);
 
         $renter->notify(new BookingConfirmed($booking, $this->freshToken($booking, 'booking_confirmed')));
         $booking->forceFill(['voucher_sent_at' => now()])->save();

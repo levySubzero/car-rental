@@ -98,6 +98,8 @@ class BookingPortalController extends Controller
         $booking = $this->portal->find($this->identity($request), $reference);
         // Staff may still be reviewing it: an unsent voucher is not the renter's yet.
         abort_if($booking->voucher_sent_at === null, 404);
+        // A cancelled or no-show booking's voucher is no longer a valid confirmation.
+        abort_if($vouchers->isVoid($booking), 404);
         $voucher = $vouchers->current($booking) ?? abort(404);
 
         $media->logAccess($voucher, 'downloaded', null, $request->ip());
@@ -147,7 +149,9 @@ class BookingPortalController extends Controller
             'status_label' => $booking->status->label(),
             'total' => new Money((int) $booking->total_minor),
             'balance' => new Money((int) $booking->balance_minor),
-            'has_voucher' => $booking->voucher_sent_at !== null && $booking->primaryMedia(VoucherService::COLLECTION)->exists(),
+            'has_voucher' => $booking->voucher_sent_at !== null
+                && ! app(VoucherService::class)->isVoid($booking)
+                && $booking->primaryMedia(VoucherService::COLLECTION)->exists(),
             'accepts_requests' => $this->portal->acceptsRequests($booking),
             'requests' => $booking->requests->map(fn (BookingRequest $request) => [
                 'id' => $request->id,

@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SetupReminderController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VoucherController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -172,6 +173,9 @@ Route::prefix('bookings/{booking:reference}')->name('bookings.')->group(function
     Route::post('link', [BookingVoucherController::class, 'rotate'])->name('link.rotate');
     Route::put('legal-hold', [BookingController::class, 'legalHold'])->name('legal-hold');
 });
+
+// Vouchers: every booking's voucher by where it stands; each opens on bookings.voucher.show.
+Route::get('vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
 
 // Availability calendar (M11.9)
 Route::get('availability', [AvailabilityController::class, 'index'])->name('availability.index');

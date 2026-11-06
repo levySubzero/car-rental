@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\DeliveryZone;
 use App\Models\User;
 use App\Services\Notifications\BookingNotifier;
+use App\Services\Notifications\VoucherService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +19,10 @@ use Illuminate\Support\Facades\DB;
  */
 class DeliveryAdjustmentService
 {
-    public function __construct(private readonly BookingNotifier $notifier) {}
+    public function __construct(
+        private readonly BookingNotifier $notifier,
+        private readonly VoucherService $vouchers,
+    ) {}
 
     public function setFee(Booking $booking, Money $fee, User $actor): Booking
     {
@@ -89,6 +93,11 @@ class DeliveryAdjustmentService
 
             return $booking;
         });
+
+        // A voucher already made would still show the old total and balance.
+        if ($this->vouchers->isAvailable($booking) && $this->vouchers->current($booking) !== null) {
+            $this->vouchers->generate($booking, $actor);
+        }
 
         $this->notifier->deliveryUpdated($booking);
 

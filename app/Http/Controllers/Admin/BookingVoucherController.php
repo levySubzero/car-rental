@@ -24,10 +24,11 @@ class BookingVoucherController extends Controller
     public function show(Booking $booking, VoucherService $vouchers): Response
     {
         Gate::authorize('viewVoucher', $booking);
-        abort_unless($vouchers->isAvailable($booking), 404);
+        abort_unless($vouchers->hasRecord($booking), 404);
 
-        // Staff can get here before the queued job that makes it has run.
-        $voucher = $vouchers->current($booking) ?? $vouchers->generate($booking);
+        // Staff can get here before the queued job that makes it has run. A void booking gets
+        // no new voucher, so it may have none.
+        $voucher = $vouchers->current($booking) ?? ($vouchers->isAvailable($booking) ? $vouchers->generate($booking) : null);
         $booking->loadMissing(['car', 'driver']);
 
         return Inertia::render('admin/bookings/voucher', [
@@ -39,7 +40,9 @@ class BookingVoucherController extends Controller
                 'phone' => $booking->driver?->phone,
                 'sent_at' => $booking->voucher_sent_at?->toIso8601String(),
             ],
-            'voucher' => MediaResource::make($voucher),
+            'manageable' => $vouchers->isManageable($booking),
+            'void' => $vouchers->isVoid($booking),
+            'voucher' => $voucher === null ? null : MediaResource::make($voucher),
             'fields' => $vouchers->editable($booking),
             'original' => $vouchers->editable($booking, withOverrides: false),
             'notes' => $booking->voucher_overrides['notes'] ?? '',
@@ -48,8 +51,8 @@ class BookingVoucherController extends Controller
 
     public function update(UpdateVoucherRequest $request, Booking $booking, VoucherService $vouchers): RedirectResponse
     {
-        if (! $vouchers->isAvailable($booking)) {
-            Inertia::flash('toast', ['type' => 'error', 'message' => 'Only a confirmed booking has a voucher to edit.']);
+        if (! $vouchers->isManageable($booking)) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'This voucher can no longer be edited: the hire is over or the booking was cancelled.']);
 
             return back();
         }
@@ -63,8 +66,8 @@ class BookingVoucherController extends Controller
 
     public function resend(ResendVoucherRequest $request, Booking $booking, BookingNotifier $notifier, VoucherService $vouchers): RedirectResponse
     {
-        if (! $vouchers->isAvailable($booking)) {
-            Inertia::flash('toast', ['type' => 'error', 'message' => 'Only a confirmed booking has a voucher to send.']);
+        if (! $vouchers->isManageable($booking)) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'This voucher can no longer be sent: the hire is over or the booking was cancelled.']);
 
             return back();
         }

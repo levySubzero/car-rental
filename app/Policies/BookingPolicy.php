@@ -36,6 +36,14 @@ class BookingPolicy
     }
 
     /**
+     * The Vouchers screen: the same people who may open a voucher.
+     */
+    public function viewAnyVoucher(User $user): bool
+    {
+        return $user->can(Permission::BookingsView) || $user->can(Permission::PaymentsView);
+    }
+
+    /**
      * See, download and print the voucher: anyone who sees the booking or its payments.
      */
     public function viewVoucher(User $user, Booking $booking): bool

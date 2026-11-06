@@ -140,6 +140,18 @@ it('sends one email with the voucher and a fresh link when staff send it', funct
         ->and($this->booking->fresh()->voucher_sent_at)->not->toBeNull();
 });
 
+it('makes the voucher afresh before sending it, so it matches the email', function () {
+    Notification::fake();
+
+    app(PaymentVerificationService::class)->verify($this->submission, 'REF1', Money::fromMajor('16588'), $this->staff);
+    $before = app(VoucherService::class)->current($this->booking);
+
+    app(BookingNotifier::class)->resendConfirmation($this->booking->fresh());
+
+    expect(app(VoucherService::class)->current($this->booking->fresh())->id)->not->toBe($before->id)
+        ->and($this->booking->mediaIn(VoucherService::COLLECTION)->count())->toBe(1);
+});
+
 it('tells the renter about a rejection with the reason and a fresh link', function () {
     Notification::fake();
 

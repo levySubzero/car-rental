@@ -549,6 +549,21 @@ export type AdminBookingRow = {
     balance: Money;
 };
 
+export type AdminVoucherRow = {
+    id: number;
+    reference: string;
+    status: BookingStatus;
+    status_label: string;
+    car: string;
+    renter: string | null;
+    phone: string | null;
+    pickup_at: string;
+    return_at: string;
+    sent_at: string | null;
+    by_hand: boolean;
+    total: Money;
+};
+
 export type BookingLeg = {
     address: string | null;
     landmark: string | null;

@@ -22,6 +22,7 @@ import {
     Shapes,
     ShieldCheck,
     Tags,
+    TicketCheck,
     Users,
     Wallet,
 } from 'lucide-react';
@@ -48,6 +49,7 @@ import QuoteSandboxController from '@/actions/App/Http/Controllers/Admin/QuoteSa
 import RoleController from '@/actions/App/Http/Controllers/Admin/RoleController';
 import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsController';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
+import VoucherController from '@/actions/App/Http/Controllers/Admin/VoucherController';
 import { permissionsFor } from '@/lib/can';
 import { dashboard } from '@/routes/admin';
 import type { NavGroup } from '@/types';
@@ -83,6 +85,12 @@ export const adminNav: NavGroup[] = [
                 href: BookingController.index(),
                 icon: CalendarCheck,
                 permission: 'bookings.view',
+            },
+            {
+                title: 'Vouchers',
+                href: VoucherController.index(),
+                icon: TicketCheck,
+                permission: ['bookings.view', 'payments.view'],
             },
             {
                 title: 'Availability',

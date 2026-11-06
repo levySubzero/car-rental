@@ -7,9 +7,11 @@ use App\Models\BookingDriver;
 use App\Models\DeliveryZone;
 use App\Notifications\Booking\DeliveryUpdated;
 use App\Services\Booking\DeliveryAdjustmentService;
+use App\Services\Notifications\VoucherService;
 use App\Support\Money;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
+use Tests\Support\BookingFixtures;
 
 beforeEach(function () {
     Notification::fake();
@@ -80,6 +82,30 @@ it('refuses once the car is on hire, and for office bookings', function () {
 
     $office = Booking::factory()->reserved()->create();
     expect(fn () => $this->service->setFee($office, Money::fromMajor(1), $this->staff))->toThrow(BookingException::class, 'no delivery');
+});
+
+it('remakes an existing voucher with the new figures, keeping what staff reworded', function () {
+    BookingFixtures::setUp();
+    $vouchers = app(VoucherService::class);
+    $vouchers->update($this->booking, ['car' => 'Reworded car']);
+    $before = $vouchers->current($this->booking);
+
+    $this->service->setFee($this->booking, Money::fromMajor(3000), $this->staff);
+
+    $after = $vouchers->current($this->booking->fresh());
+    $html = $vouchers->html($this->booking->fresh());
+    expect($after->id)->not->toBe($before->id)
+        ->and($this->booking->mediaIn(VoucherService::COLLECTION)->count())->toBe(1)
+        ->and($html)->toContain((new Money(6_935_000))->format())
+        ->and($html)->toContain('Reworded car');
+});
+
+it('makes no voucher when there is none yet', function () {
+    BookingFixtures::setUp();
+
+    $this->service->setFee($this->booking, Money::fromMajor(3000), $this->staff);
+
+    expect(app(VoucherService::class)->current($this->booking->fresh()))->toBeNull();
 });
 
 it('records that staff checked the address', function () {

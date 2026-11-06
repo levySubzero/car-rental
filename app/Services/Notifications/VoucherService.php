@@ -76,6 +76,31 @@ class VoucherService
     }
 
     /**
+     * Staff may edit and send it until the hire is over.
+     */
+    public function isManageable(Booking $booking): bool
+    {
+        return in_array($booking->status, [BookingStatus::Reserved, BookingStatus::Active], true);
+    }
+
+    /**
+     * Confirmed once, then cancelled or a no-show: kept for the record, no longer valid.
+     */
+    public function isVoid(Booking $booking): bool
+    {
+        return $booking->status === BookingStatus::NoShow
+            || ($booking->status === BookingStatus::Cancelled && $booking->paid_at !== null);
+    }
+
+    /**
+     * Whether staff have a voucher to look at, valid or not.
+     */
+    public function hasRecord(Booking $booking): bool
+    {
+        return $this->isAvailable($booking) || $this->isVoid($booking);
+    }
+
+    /**
      * Save staff's edits and regenerate the PDF. Only what differs from the booking is kept,
      * so a later delivery change still reaches every figure nobody reworded.
      *

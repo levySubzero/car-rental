@@ -1,7 +1,15 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { AlertTriangle, Download, Mail, Printer } from 'lucide-react';
+import {
+    AlertTriangle,
+    Ban,
+    Download,
+    Info,
+    Mail,
+    Printer,
+} from 'lucide-react';
 import BookingController from '@/actions/App/Http/Controllers/Admin/BookingController';
 import BookingVoucherController from '@/actions/App/Http/Controllers/Admin/BookingVoucherController';
+import VoucherController from '@/actions/App/Http/Controllers/Admin/VoucherController';
 import { BookingStatusBadge } from '@/components/admin/bookings/booking-status-badge';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import { TextareaField, TextField } from '@/components/admin/form-field';
@@ -72,9 +80,12 @@ const GROUPS: { title: string; fields: [keyof Fields, string][] }[] = [
 /**
  * Review a voucher before it goes out, and send, download or print it at any point. Edits
  * reword this document only: the booking, the calendar and the ledger stay as they are.
+ * Once the hire is over, or the booking is cancelled or a no-show, it is kept read-only.
  */
 export default function BookingVoucher({
     booking,
+    manageable,
+    void: isVoid,
     voucher,
     fields,
     original,
@@ -88,13 +99,15 @@ export default function BookingVoucher({
         phone: string | null;
         sent_at: string | null;
     };
-    voucher: MediaItem;
+    manageable: boolean;
+    void: boolean;
+    voucher: MediaItem | null;
     fields: Fields;
     original: Fields;
     notes: string;
 }) {
     const can = useCan();
-    const canEdit = can('bookings.resend-voucher');
+    const canEdit = can('bookings.resend-voucher') && manageable;
     const form = useForm({ ...fields, notes });
     const reworded = GROUPS.flatMap((group) => group.fields).filter(
         ([key]) => fields[key] !== original[key],
@@ -115,17 +128,45 @@ export default function BookingVoucher({
                         </span>
                     }
                     actions={
-                        <Button asChild variant="outline">
-                            <Link
-                                href={BookingController.show.url(
-                                    booking.reference,
-                                )}
-                            >
-                                Back to the booking
-                            </Link>
-                        </Button>
+                        can('bookings.view') && (
+                            <Button asChild variant="outline">
+                                <Link
+                                    href={BookingController.show.url(
+                                        booking.reference,
+                                    )}
+                                >
+                                    Open booking
+                                </Link>
+                            </Button>
+                        )
                     }
                 />
+
+                {isVoid ? (
+                    <Alert variant="destructive">
+                        <Ban />
+                        <AlertTitle>This voucher is void</AlertTitle>
+                        <AlertDescription>
+                            The booking was{' '}
+                            {booking.status === 'no_show'
+                                ? 'marked a no-show'
+                                : 'cancelled'}
+                            . The voucher is kept for the record and the renter
+                            can no longer download it.
+                        </AlertDescription>
+                    </Alert>
+                ) : (
+                    !manageable && (
+                        <Alert>
+                            <Info />
+                            <AlertTitle>This hire is finished</AlertTitle>
+                            <AlertDescription>
+                                The voucher is kept for the record and can no
+                                longer be edited or sent.
+                            </AlertDescription>
+                        </Alert>
+                    )
+                )}
 
                 <div className="flex flex-wrap gap-2">
                     {canEdit && (
@@ -164,20 +205,28 @@ export default function BookingVoucher({
                         />
                     )}
                     {/* The browser's PDF viewer prints it; the CSP stops it being embedded here. */}
-                    <Button asChild variant="outline">
-                        <a
-                            href={voucher.urls.view}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <Printer /> View or print
-                        </a>
-                    </Button>
-                    <Button asChild variant="outline">
-                        <a href={voucher.urls.download}>
-                            <Download /> Download
-                        </a>
-                    </Button>
+                    {voucher ? (
+                        <>
+                            <Button asChild variant="outline">
+                                <a
+                                    href={voucher.urls.view}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Printer /> View or print
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline">
+                                <a href={voucher.urls.download}>
+                                    <Download /> Download
+                                </a>
+                            </Button>
+                        </>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">
+                            No PDF was made before this booking closed.
+                        </p>
+                    )}
                 </div>
                 {canEdit && form.isDirty && (
                     <p className="text-sm text-muted-foreground">
@@ -287,7 +336,7 @@ export default function BookingVoucher({
 
 BookingVoucher.layout = {
     breadcrumbs: [
-        { title: 'Bookings', href: BookingController.index() },
+        { title: 'Vouchers', href: VoucherController.index() },
         { title: 'Voucher', href: '#' },
     ],
 };
