@@ -140,8 +140,8 @@ class BookingNotifier
     }
 
     /**
-     * Staff send the voucher, the first time or again (M11.5): the stored PDF, or a new one if
-     * it is missing, and a fresh renter link. False when the mail is off or there is no email.
+     * Staff send the voucher, the first time or again (M11.5): a freshly made PDF and a fresh
+     * renter link. False when the mail is off or there is no email.
      */
     public function resendConfirmation(Booking $booking): bool
     {

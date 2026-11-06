@@ -46,7 +46,7 @@ Living tracker for the build. The design behind each step is in [TECHNICAL_PLAN.
 | M9  | Payments                                                       | Blocked     | 10/12    | **G3** (with M6, M8) |
 | M10 | Notifications and voucher                                      | Done        | 11/11    | —                    |
 | M10B | In-app alerts and renter portal                               | Done        | 10/10    | —                    |
-| M11 | Operations desk                                                | In review   | 13/14    | **G4**               |
+| M11 | Operations desk                                                | In review   | 14/15    | **G4**               |
 | M11B | Online payments (Daraja and Paystack) and Resend mail         | Done        | 11/13    | —                    |
 | M11C | Finance and dashboard                                         | In progress | 6/7      | —                    |
 | M12 | Hardening (security, performance, SEO, a11y)                   | In progress | 12/18    | —                    |
@@ -290,7 +290,7 @@ Status: **In review**, all steps built; waiting for Gate G4 (M11.12) · PRD: A-5
 - [x] M11.2 Booking detail: drivers, quote snapshot, FX snapshot, status history, payments, documents.
 - [x] M11.3 Document viewer: signed URLs and a logged view, requires `bookings.view-documents`.
 - [x] M11.4 Verify and reject payments from the detail page, with a confirm dialog and amount check.
-- [x] M11.5 Resend voucher (email and WhatsApp link) with `bookings.resend-voucher`, and rotate the renter link.
+- [x] M11.5 Review, reword and send the voucher (email and WhatsApp link) with `bookings.resend-voucher`, and rotate the renter link. The voucher is held for staff, not sent on confirmation (D47).
 - [x] M11.6 Record handover: balance and deposit received, odometer, fuel, notes → Active (`bookings.record-handover`).
 - [x] M11.7 Record return: deposit refunded or settled, odometer, excess km → Completed (`bookings.record-return`).
 - [x] M11.8 Cancel and mark no-show with a reason, and show the cancellation tier where configured.
@@ -300,6 +300,7 @@ Status: **In review**, all steps built; waiting for Gate G4 (M11.12) · PRD: A-5
 - [ ] M11.12 **Gate G4** timed run-through with the operations staff. Record the result in the log.
 - [x] M11.13 Delivery check (D33): the booking detail shows the delivery address, landmark, pin and zone, with a reminder to confirm the address is in that zone. Staff can set the fee for a staff-quoted zone, or move the booking to the right zone; either recalculates only the balance (the reservation already paid stays), is activity-logged and notifies the renter (`bookings.update-delivery`).
 - [x] M11.14 Cancellation refunds (D34): cancelling a booking (M11.8) shows the notice in hours, the tier from the booking's snapshot (the longest notice the renter still met) and the suggested refund, a share of the reservation paid. Less notice than every tier, or a no-show, suggests 0%. Staff can change the amount with a reason; the suggested and final amounts, the tier and the reason are stored and activity-logged. The refund itself is paid back by hand (payments are manual), and staff mark it refunded with a reference. Tests: each tier boundary, below every tier, no-show, override with reason, and tiers edited after booking.
+- [x] M11.15 Vouchers screen (D47, added 2026-11-06): Operations → Vouchers, with tabs Not sent, Sent, Used, Void and All, counts, search, and pickup date and car filters (`bookings.view` or `payments.view`). A row opens the voucher page: editable while the booking is Reserved or Active, read-only once used or void, with a link to the booking. The renter can't download a void voucher. The PDF is remade on send and after a delivery change.
 
 ## M11B — Online payments (Daraja and Paystack) and Resend mail
 
@@ -414,6 +415,7 @@ Newest first. Add one row per completed step, status change, block or gate.
 
 | Date       | Step | Change       | Notes                                                                   |
 | ---------- | ---- | ------------ | ----------------------------------------------------------------------- |
+| 2026-11-06 | M11.15 | Done | Vouchers screen and voucher states (D47). `VoucherBucket` derives the tabs from booking state, with no table of its own; a test checks Not sent against `Booking::voucherUnsent()`. The voucher page now opens read-only for used and void vouchers instead of refusing void ones, and the server refuses edits and sends for Completed bookings. The portal refuses void vouchers and hides their download. Fixed a stale PDF: a delivery change left the stored voucher on the old total until someone saved it; it is now remade after a delivery change and on every send. Full suite green; not yet looked at in a browser. M11 now 14/15. |
 | 2026-11-04 | M12B.15, M12B.16 | Done | Admin Integrations page and M-Pesa through Paystack (D46). Tested with fakes; a saved secret was checked absent from a real `config:cache` file. The live Paystack M-Pesa prompt is still to run in M12B.13. |
 | 2026-10-25 | M12.5, M12.9, M12.11, M12.12, M12.13, M12.15 | Partial | Code for each is done; what is left needs staging: Lighthouse (M12.5), Rich Results and OG checks (M12.9), the restore drill (M12.11), the k6 run (M12.12), the client's privacy text (M12.13) and a first deploy (M12.15, then M5.13). |
 | 2026-10-25 | M12.14, M12.10, M12.8 | Done | `docs/RUNBOOK.md`: both hosts, env keys, first deploy, deploy, rollback, health, key rotation (the `APP_KEY` caveat: `id_number_hash` is keyed on it), backups and the restore drill, media disk switch. Monitoring: `/health` (database, cache, scheduler heartbeat, database-queue backlog; 503 on failure; outside the web group), browser Sentry loaded on demand when `VITE_SENTRY_DSN` is set (built in, with the release), Horizon mail alerts to `OPS_ALERT_EMAIL`, `horizon:snapshot` (Redis only), `queue:prune-failed` weekly. Accessibility: a description (alt) field under each image in staff uploaders, saved on blur; axe (`tests/e2e/a11y.spec.ts`, WCAG 2.1 AA) clean on 9 public pages, desktop and mobile, after fixing in-text links (always underlined), the gallery slides (divs, not list items with a role) and the policy tables (focusable when they scroll). Contrast passes. Alt text is not required to publish: empty descriptions fall back to the car or page name. New CI job `a11y` runs the spec on a seeded SQLite app. |

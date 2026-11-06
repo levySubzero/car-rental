@@ -31,7 +31,7 @@ Today bookings run over calls and WhatsApp, with prices, deposits and documents 
 1. Present the fleet and brand at a luxury standard comparable to the Dubai reference.
 2. Let a renter pick a car, see an exact quote in five currencies and submit a complete booking with documents.
 3. Collect the 25% reservation by cash, M-Pesa, bank transfer or card, verified by staff from the pasted transaction message.
-4. Send a booking voucher by email and WhatsApp once payment is confirmed.
+4. Prepare a booking voucher once payment is confirmed, for staff to review and send by email and WhatsApp.
 5. Let staff manage cars (6 photos each), brands, types, services, policies and contacts without a developer.
 
 **Non-goals for v1**
@@ -127,7 +127,7 @@ Requirements are grouped by page; IDs are referenced in the delivery plan and UA
 | P-2 | Renter pastes the transaction message (e.g. M-Pesa SMS) and may attach a screenshot; booking moves to _Payment submitted_.                                                                                                                       |
 | P-3 | Cash: booking moves to _Awaiting cash_ and staff confirm on receipt.                                                                                                                                                                             |
 | P-4 | Staff verify the payment in admin, record the reference and amount, then confirm or reject with a reason.                                                                                                                                        |
-| P-5 | On confirmation the system sends a booking voucher by email (PDF attached) and by WhatsApp.                                                                                                                                                      |
+| P-5 | On confirmation the system prepares the booking voucher (PDF) and alerts staff. Staff review it, may reword it (the booking itself is unchanged), then send it by email (PDF attached) and WhatsApp. Nothing reaches the renter until staff send it. |
 | P-6 | Voucher shows: booking reference, client full name, car (e.g. Toyota Prado), number of days, total rental, deposit (reservation) paid, balance due, security deposit due at handover, pick-up date, point and time, return date, point and time. |
 | P-7 | Renter receives an acknowledgement email immediately on submission; staff receive a new-booking alert (email + WhatsApp to the main number).                                                                                                     |
 
@@ -145,7 +145,7 @@ Requirements are grouped by page; IDs are referenced in the delivery plan and UA
 | A-2 | Brands (name, logo, order, show in marquee), Car types, Services, Homepage sections, Policies (rich text, versioned), Contacts and socials, Payment method instructions.                                                    |
 | A-3 | Pricing settings: deposit percentages by age band, reservation %, chauffeur rate, delivery fee, mileage default, FX margin (KES 3).                                                                                         |
 | A-4 | FX: daily automatic rate pull, manual override, history.                                                                                                                                                                    |
-| A-5 | Bookings: list with status filters, detail view with documents (secure viewer), quote snapshot, payment submissions, verify/reject, resend voucher, record handover (security deposit and 75% balance received) and return. |
+| A-5 | Bookings: list with status filters, detail view with documents (secure viewer), quote snapshot, payment submissions, verify/reject, review and send the voucher, record handover (security deposit and 75% balance received) and return. A Vouchers screen lists every voucher by Not sent, Sent, Used and Void. |
 | A-6 | Availability calendar per car; overlapping confirmed bookings are blocked.                                                                                                                                                  |
 | A-7 | Audit log of every status change and document view.                                                                                                                                                                         |
 
@@ -203,7 +203,7 @@ where p is 2% or 3% by age band and V is the car value. Display in currency X = 
 | Payment submitted   | Renter pasted transaction message           | Reserved, Payment rejected                |
 | Awaiting cash       | Renter chose cash                           | Reserved, Expired                         |
 | Payment rejected    | Staff could not match payment               | Payment submitted (retry), Cancelled      |
-| Reserved            | Staff confirmed 25%; voucher sent           | Active, Cancelled, No-show                |
+| Reserved            | Staff confirmed 25%; voucher ready to send  | Active, Cancelled, No-show                |
 | Active              | Handover done; balance and deposit received | Completed                                 |
 | Completed           | Car returned, deposit refunded or settled   | —                                         |
 | Cancelled / No-show | Per cancellation policy                     | —                                         |
@@ -329,7 +329,7 @@ Sensitive identifiers use Laravel encrypted casts; a separate `id_number_hash` c
 2. Step data posts to `POST /bookings/draft`, which creates a Draft and returns a signed token; uploads go to `POST /bookings/{token}/documents` one file at a time.
 3. `POST /bookings/{token}/submit` validates (age, licence expiry, documents present), recalculates the quote, checks availability in a DB transaction with a row lock on the car, snapshots quote/FX/policy and moves to Awaiting payment.
 4. The renter picks a method; `POST /bookings/{token}/payments` stores the transaction message → Payment submitted; staff are alerted on a queued job.
-5. Staff verify in admin → `VerifyPaymentAction` moves to Reserved, firm-blocks the dates, queues the voucher email and WhatsApp.
+5. Staff verify in admin → `VerifyPaymentAction` moves to Reserved, firm-blocks the dates and prepares the voucher; staff review it and send it by email and WhatsApp.
 
 ### 8.5 Deployment
 
