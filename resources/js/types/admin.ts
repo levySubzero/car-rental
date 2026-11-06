@@ -516,6 +516,7 @@ export type AdminBookingRequest = {
 // The bookings desk (M11).
 export type BookingStatus =
     | 'draft'
+    | 'requested'
     | 'awaiting_payment'
     | 'payment_submitted'
     | 'awaiting_cash'
@@ -540,6 +541,9 @@ export type AdminBookingRow = {
     pickup_mode: 'office' | 'address';
     return_mode: 'office' | 'address';
     delivery_pending: boolean;
+    one_day: boolean;
+    voucher_unsent: boolean;
+    car_taken: boolean;
     method: string | null;
     total: Money;
     balance: Money;
@@ -585,6 +589,10 @@ export type AdminBooking = {
     reference: string;
     status: BookingStatus;
     status_label: string;
+    one_day: boolean;
+    voucher_unsent: boolean;
+    voucher_sent_at: string | null;
+    car_taken: boolean;
     car: { id: number; name: string; slug: string };
     pickup_at: string;
     return_at: string;
@@ -612,17 +620,18 @@ export type AdminBooking = {
     cancellation_tiers: RefundTier[];
     driver: {
         name: string;
-        dob: string;
-        email: string;
-        phone: string;
-        nationality: string;
+        // Staff enter clients who did not book online with little more than a name.
+        dob: string | null;
+        email: string | null;
+        phone: string | null;
+        nationality: string | null;
         is_kenyan_resident: boolean;
-        id_type: string;
+        id_type: string | null;
         id_number: string | null;
         kra_pin: string | null;
         licence_number: string | null;
-        licence_expiry: string;
-        licence_years: number;
+        licence_expiry: string | null;
+        licence_years: number | null;
         masked: boolean;
     } | null;
     // Null without bookings.view-documents.

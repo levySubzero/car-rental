@@ -5,6 +5,7 @@ import { CarCard } from '@/components/public/car-card';
 import { CarGallery } from '@/components/public/car-gallery';
 import { BrandIcon } from '@/components/public/icons';
 import { Seo } from '@/components/public/seo';
+import { ShareActions } from '@/components/share-actions';
 import { Button } from '@/components/ui/button';
 import { useSite } from '@/hooks/use-site';
 import { displayPrice } from '@/lib/money';
@@ -60,9 +61,7 @@ export default function Car({
             <Seo
                 title={title}
                 description={`Rent the ${car.name} in Nairobi from ${car.daily_rate.display} per day. ${car.seats} seats, ${car.transmission.toLowerCase()}, ${car.mileage_limit_km} km per day included.`}
-                image={absolute(
-                    photos[0]?.urls.full ?? photos[0]?.urls.original,
-                )}
+                image={absolute(photos[0]?.urls.og ?? photos[0]?.urls.full)}
                 jsonLd={carJsonLd(car, site, `${site.url}/cars/${car.slug}`)}
             />
 
@@ -207,9 +206,17 @@ export default function Car({
                                 </div>
                             </div>
 
+                            <div className="mt-5">
+                                <ShareActions
+                                    url={`${site.url}/cars/${car.slug}`}
+                                    text={car.name}
+                                />
+                            </div>
+
                             <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-                                Pay {reservation}% to reserve and the balance at
-                                handover, with a refundable security deposit.{' '}
+                                Once your request is approved, pay {reservation}
+                                % to reserve and the balance at handover, with a
+                                refundable security deposit.{' '}
                                 <Link
                                     href={rentalPolicy()}
                                     className="text-gold underline underline-offset-4"

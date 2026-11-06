@@ -1,4 +1,4 @@
-import { router, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import {
     Ban,
     CarFront,
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import BookingAcceptanceController from '@/actions/App/Http/Controllers/Admin/BookingAcceptanceController';
 import BookingCancellationController from '@/actions/App/Http/Controllers/Admin/BookingCancellationController';
 import BookingDeliveryController from '@/actions/App/Http/Controllers/Admin/BookingDeliveryController';
 import BookingHandoverController from '@/actions/App/Http/Controllers/Admin/BookingHandoverController';
@@ -318,8 +319,63 @@ export function ReturnDialog({
 }
 
 /**
+ * Accept a website request: the car is held from now and the renter is emailed the link to
+ * pay. Staff may set the price and deposit, as they do for one-day rentals.
+ */
+export function AcceptBookingDialog({ booking }: { booking: AdminBooking }) {
+    const form = useForm({
+        total: booking.total.major,
+        deposit: booking.security_deposit?.major ?? '',
+    });
+
+    return (
+        <ActionDialog
+            trigger={
+                <Button size="sm">
+                    <CircleCheck />
+                    Accept
+                </Button>
+            }
+            title={`Accept ${booking.reference}`}
+            description="The car is held from now, and the renter is emailed the link to pay."
+            submitLabel="Accept request"
+            processing={form.processing}
+            onSubmit={(close) =>
+                form.post(
+                    BookingAcceptanceController.accept.url(booking.reference),
+                    { preserveScroll: true, onSuccess: close },
+                )
+            }
+        >
+            {booking.one_day && (
+                <div className="rounded-md bg-muted px-3 py-2 text-sm">
+                    <strong>One-day rental.</strong> Check it meets the one-day
+                    policy, then set the price and security deposit below.
+                </div>
+            )}
+            <MoneyField
+                name="total"
+                label="Total rental"
+                description="Change this to set a different price. The reservation and balance follow."
+                value={form.data.total}
+                error={form.errors.total}
+                onChange={(e) => form.setData('total', e.target.value)}
+            />
+            <MoneyField
+                name="deposit"
+                label="Security deposit"
+                value={form.data.deposit}
+                error={form.errors.deposit}
+                onChange={(e) => form.setData('deposit', e.target.value)}
+            />
+        </ActionDialog>
+    );
+}
+
+/**
  * Cancel or mark a no-show (M11.8, M11.14): the suggested refund from the booking's own
- * tiers, which staff may change with a reason.
+ * tiers, which staff may change with a reason. A request has nothing to refund, so declining
+ * only asks why; that reason is emailed to the renter, as a cancellation's is.
  */
 export function CloseBookingDialog({
     booking,
@@ -330,8 +386,11 @@ export function CloseBookingDialog({
     suggestion: RefundSuggestion;
     noShow?: boolean;
 }) {
+    const declining = booking.status === 'requested';
     const form = useForm({
-        reason: '',
+        reason: booking.car_taken
+            ? 'This car is no longer available for your dates.'
+            : '',
         refund: suggestion.amount.major,
         refund_override_reason: '',
     });
@@ -348,16 +407,32 @@ export function CloseBookingDialog({
             trigger={
                 <Button size="sm" variant="outline">
                     {noShow ? <UserX /> : <Ban />}
-                    {noShow ? 'No-show' : 'Cancel booking'}
+                    {noShow
+                        ? 'No-show'
+                        : declining
+                          ? 'Decline'
+                          : 'Cancel booking'}
                 </Button>
             }
             title={
                 noShow
                     ? `Mark ${booking.reference} as a no-show`
-                    : `Cancel ${booking.reference}`
+                    : declining
+                      ? `Decline ${booking.reference}`
+                      : `Cancel ${booking.reference}`
             }
-            description="The car is freed straight away. Any refund is paid back by hand; record it once sent."
-            submitLabel={noShow ? 'Mark no-show' : 'Cancel booking'}
+            description={
+                declining
+                    ? 'The renter is emailed your reason, with a link to choose another car.'
+                    : 'The car is freed straight away. Any refund is paid back by hand; record it once sent.'
+            }
+            submitLabel={
+                noShow
+                    ? 'Mark no-show'
+                    : declining
+                      ? 'Decline request'
+                      : 'Cancel booking'
+            }
             destructive
             processing={form.processing}
             onSubmit={(close) =>
@@ -367,41 +442,55 @@ export function CloseBookingDialog({
                 })
             }
         >
-            <div className="rounded-md bg-muted px-3 py-2 text-sm">
-                {noShow ? (
-                    <p>A no-show gets no refund unless you decide otherwise.</p>
-                ) : (
-                    <p>
-                        {suggestion.notice_hours} hours before pickup.{' '}
-                        {suggestion.tier
-                            ? `Tier met: ${suggestion.tier.label ?? `${suggestion.tier.hours_before_pickup} h or more`} (${percentFromBp(suggestion.percent_bp)} refund).`
-                            : booking.cancellation_tiers.length > 0
-                              ? 'Less notice than every tier: no refund.'
-                              : 'This booking has no cancellation tiers: no refund.'}
+            {!declining && (
+                <div className="rounded-md bg-muted px-3 py-2 text-sm">
+                    {noShow ? (
+                        <p>
+                            A no-show gets no refund unless you decide
+                            otherwise.
+                        </p>
+                    ) : (
+                        <p>
+                            {suggestion.notice_hours} hours before pickup.{' '}
+                            {suggestion.tier
+                                ? `Tier met: ${suggestion.tier.label ?? `${suggestion.tier.hours_before_pickup} h or more`} (${percentFromBp(suggestion.percent_bp)} refund).`
+                                : booking.cancellation_tiers.length > 0
+                                  ? 'Less notice than every tier: no refund.'
+                                  : 'This booking has no cancellation tiers: no refund.'}
+                        </p>
+                    )}
+                    <p className="mt-1">
+                        Reservation paid: {paid?.display ?? 'nothing'} ·
+                        suggested refund:{' '}
+                        <strong>{suggestion.amount.display}</strong>
                     </p>
-                )}
-                <p className="mt-1">
-                    Reservation paid: {paid?.display ?? 'nothing'} · suggested
-                    refund: <strong>{suggestion.amount.display}</strong>
-                </p>
-            </div>
+                </div>
+            )}
             <TextareaField
                 name="reason"
-                label={noShow ? 'What happened?' : 'Reason for cancelling'}
+                label={
+                    noShow
+                        ? 'What happened?'
+                        : declining
+                          ? 'Reason, sent to the renter'
+                          : 'Reason for cancelling, sent to the renter'
+                }
                 required
                 rows={2}
                 value={form.data.reason}
                 error={form.errors.reason}
                 onChange={(e) => form.setData('reason', e.target.value)}
             />
-            <MoneyField
-                name="refund"
-                label="Refund"
-                required
-                value={form.data.refund}
-                error={form.errors.refund}
-                onChange={(e) => form.setData('refund', e.target.value)}
-            />
+            {!declining && (
+                <MoneyField
+                    name="refund"
+                    label="Refund"
+                    required
+                    value={form.data.refund}
+                    error={form.errors.refund}
+                    onChange={(e) => form.setData('refund', e.target.value)}
+                />
+            )}
             {overridden && (
                 <TextareaField
                     name="refund_override_reason"
@@ -546,7 +635,7 @@ export function DeliveryCheckedButton({ booking }: { booking: AdminBooking }) {
 }
 
 /**
- * Resend the confirmation, or replace the renter's link (M11.5).
+ * Go to the voucher to review and send it, or replace the renter's link (M11.5).
  */
 export function VoucherActions({ booking }: { booking: AdminBooking }) {
     const confirmed = ['reserved', 'active'].includes(booking.status);
@@ -554,27 +643,15 @@ export function VoucherActions({ booking }: { booking: AdminBooking }) {
     return (
         <>
             {confirmed && (
-                <ConfirmDialog
-                    trigger={
-                        <Button size="sm" variant="outline">
-                            <Mail /> Resend voucher
-                        </Button>
-                    }
-                    title="Resend the voucher?"
-                    description="The renter gets the voucher again with a new booking link; earlier links stop working."
-                    confirmLabel="Resend"
-                    onConfirm={() =>
-                        new Promise((resolve) =>
-                            router.post(
-                                BookingVoucherController.resend.url(
-                                    booking.reference,
-                                ),
-                                {},
-                                { preserveScroll: true, onFinish: resolve },
-                            ),
-                        )
-                    }
-                />
+                <Button asChild size="sm" variant="outline">
+                    <Link
+                        href={BookingVoucherController.show.url(
+                            booking.reference,
+                        )}
+                    >
+                        <Mail /> Voucher
+                    </Link>
+                </Button>
             )}
             <ConfirmDialog
                 trigger={

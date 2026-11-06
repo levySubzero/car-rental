@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\MediaStatus;
+use App\Http\Resources\Media\MediaResource;
 use App\Models\Media;
 use App\Services\Media\MediaService;
 use App\Settings\SecuritySettings;
@@ -111,7 +112,7 @@ describe('viewing', function () {
         config()->set('media.serve_public_via', 'stream');
         $media = $this->service->upload(MediaFixtures::png(), 'gadget.photos', $this->uploader);
 
-        $this->get(route('media.show', $media->uuid))
+        $this->actingAs($this->uploader)->get(route('media.show', $media->uuid))
             ->assertOk()
             ->assertHeader('Content-Type', 'image/png')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
@@ -230,5 +231,47 @@ describe('managing', function () {
 
     it('keeps pending files pending until a form saves them', function () {
         expect($this->a->fresh()->status)->toBe(MediaStatus::Pending);
+    });
+});
+
+describe('public images on the website', function () {
+    beforeEach(function () {
+        $this->photo = app(MediaService::class)->upload(MediaFixtures::jpeg(), 'gadget.photos', staffWith(['media.upload', 'users.update']))->fresh();
+    });
+
+    it('refuses a visitor the download and allows staff', function () {
+        $this->get(route('media.download', $this->photo->uuid))->assertForbidden();
+        $this->actingAs(staffWith())->get(route('media.download', $this->photo->uuid))->assertOk();
+    });
+
+    it('serves a visitor the full conversion instead of the original', function () {
+        // The test collection has no full conversion; every real photo collection does.
+        $this->photo->forceFill(['conversions' => [...$this->photo->conversions, 'full' => 'photos/full.webp']])->save();
+
+        $location = $this->get(route('media.show', $this->photo->uuid))->assertRedirect()->headers->get('Location');
+
+        expect($location)->toBe(Storage::disk('media-public-local')->url('photos/full.webp'));
+    });
+
+    it('leaves the original out of what a visitor receives', function () {
+        $data = MediaResource::make($this->photo)->resolve(request());
+
+        expect($data['urls'])->not->toHaveKey('original')->toHaveKey('full')
+            ->and($data['name'])->toBe('');
+    });
+
+    it('keeps the original of a video, which the hero plays directly', function () {
+        $this->photo->mime_type = 'video/mp4';
+
+        expect(MediaResource::make($this->photo)->resolve(request())['urls'])->toHaveKey('original');
+    });
+
+    it('keeps the original and name for staff', function () {
+        $this->actingAs(staffWith());
+
+        $data = MediaResource::make($this->photo)->resolve(request());
+
+        expect($data['urls'])->toHaveKey('original')
+            ->and($data['name'])->not->toBe('');
     });
 });

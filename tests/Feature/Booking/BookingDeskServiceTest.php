@@ -18,9 +18,9 @@ it('groups bookings into the desk tabs and never shows drafts', function () {
     Booking::factory()->active()->create();
     Booking::factory()->reserved()->create(['status' => BookingStatus::Cancelled]);
 
-    expect($this->desk->counts())->toBe(['unpaid' => 1, 'upcoming' => 2, 'on_hire' => 1, 'closed' => 1, 'all' => 5])
+    expect($this->desk->counts())->toBe(['new' => 0, 'unpaid' => 1, 'declined' => 0, 'upcoming' => 2, 'on_hire' => 1, 'closed' => 1, 'all' => 4])
         ->and($this->desk->paginate(['bucket' => 'upcoming'])->total())->toBe(2)
-        ->and($this->desk->paginate(['bucket' => 'all'])->total())->toBe(5);
+        ->and($this->desk->paginate(['bucket' => 'all'])->total())->toBe(4);
 });
 
 it('searches by reference, name or phone and filters by local pickup date and car', function () {

@@ -2,24 +2,68 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\BookingStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Booking\ResendVoucherRequest;
+use App\Http\Requests\Admin\Booking\UpdateVoucherRequest;
+use App\Http\Resources\Media\MediaResource;
 use App\Models\Booking;
 use App\Services\Booking\BookingDeskService;
 use App\Services\Notifications\BookingNotifier;
+use App\Services\Notifications\VoucherService;
 use App\Support\WhatsAppLinkBuilder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Inertia\Response;
 
 /**
- * Resending the confirmation and replacing the renter's link (M11.5).
+ * Reviewing, editing and sending the voucher, and replacing the renter's link (M11.5).
  */
 class BookingVoucherController extends Controller
 {
-    public function resend(ResendVoucherRequest $request, Booking $booking, BookingNotifier $notifier): RedirectResponse
+    public function show(Booking $booking, VoucherService $vouchers): Response
     {
-        if (! in_array($booking->status, [BookingStatus::Reserved, BookingStatus::Active], true)) {
+        Gate::authorize('viewVoucher', $booking);
+        abort_unless($vouchers->isAvailable($booking), 404);
+
+        // Staff can get here before the queued job that makes it has run.
+        $voucher = $vouchers->current($booking) ?? $vouchers->generate($booking);
+        $booking->loadMissing(['car', 'driver']);
+
+        return Inertia::render('admin/bookings/voucher', [
+            'booking' => [
+                'reference' => $booking->reference,
+                'status' => $booking->status->value,
+                'status_label' => $booking->status->label(),
+                'email' => $booking->driver?->email,
+                'phone' => $booking->driver?->phone,
+                'sent_at' => $booking->voucher_sent_at?->toIso8601String(),
+            ],
+            'voucher' => MediaResource::make($voucher),
+            'fields' => $vouchers->editable($booking),
+            'original' => $vouchers->editable($booking, withOverrides: false),
+            'notes' => $booking->voucher_overrides['notes'] ?? '',
+        ]);
+    }
+
+    public function update(UpdateVoucherRequest $request, Booking $booking, VoucherService $vouchers): RedirectResponse
+    {
+        if (! $vouchers->isAvailable($booking)) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Only a confirmed booking has a voucher to edit.']);
+
+            return back();
+        }
+
+        $vouchers->update($booking, $request->validated(), $request->user());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Voucher saved. It has not been sent.']);
+
+        return back();
+    }
+
+    public function resend(ResendVoucherRequest $request, Booking $booking, BookingNotifier $notifier, VoucherService $vouchers): RedirectResponse
+    {
+        if (! $vouchers->isAvailable($booking)) {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'Only a confirmed booking has a voucher to send.']);
 
             return back();
@@ -30,7 +74,11 @@ class BookingVoucherController extends Controller
 
         Inertia::flash('toast', array_filter([
             'type' => $sent || $whatsapp !== null ? 'success' : 'error',
-            'message' => $sent ? 'Voucher emailed with a new booking link.' : 'The confirmation email is turned off in Notification settings.',
+            'message' => match (true) {
+                $sent => 'Voucher emailed with a new booking link.',
+                blank($booking->driver?->email) => 'This client has no email address. Download or print the voucher instead.',
+                default => 'The confirmation email is turned off in Notification settings.',
+            },
             'action' => $whatsapp === null ? null : ['label' => 'Send on WhatsApp', 'url' => $whatsapp],
         ]));
 

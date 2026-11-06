@@ -197,7 +197,7 @@ class MediaService
         $conversions = [];
 
         foreach ($this->collections->get($media->collection)->conversions as $name) {
-            /** @var array{width: int, format?: string, quality?: int} $spec */
+            /** @var array{width: int, height?: int, format?: string, quality?: int} $spec */
             $spec = config("media.conversions.{$name}");
             $converted = $this->images->convert($original, $spec);
             $path = "{$directory}/{$name}.{$converted->extension}";

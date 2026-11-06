@@ -9,7 +9,6 @@ use App\Http\Requests\Admin\Payment\RejectPaymentRequest;
 use App\Http\Requests\Admin\Payment\VerifyPaymentRequest;
 use App\Http\Resources\Admin\PaymentSubmissionResource;
 use App\Models\PaymentSubmission;
-use App\Services\Notifications\BookingNotifier;
 use App\Services\Payments\PaymentVerificationService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -36,20 +35,20 @@ class PaymentSubmissionController extends Controller
         ]);
     }
 
-    public function verify(VerifyPaymentRequest $request, PaymentSubmission $payment, BookingNotifier $notifier): RedirectResponse
+    /**
+     * Nothing reaches the renter yet: staff who can see the voucher go straight to reviewing it.
+     */
+    public function verify(VerifyPaymentRequest $request, PaymentSubmission $payment): RedirectResponse
     {
         $this->payments->verify($payment, (string) $request->validated('reference'), $request->amount(), $request->user(), $request->note());
 
-        // Click-to-chat sends nothing itself: staff send the confirmation from the toast.
-        $whatsapp = $notifier->confirmationWhatsAppLink($payment->booking);
+        $booking = $payment->booking;
 
-        Inertia::flash('toast', array_filter([
-            'type' => 'success',
-            'message' => "Payment verified. {$payment->booking->reference} is reserved.",
-            'action' => $whatsapp === null ? null : ['label' => 'Send on WhatsApp', 'url' => $whatsapp],
-        ]));
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Payment verified. {$booking->reference} is reserved: review the voucher and send it."]);
 
-        return back();
+        return $request->user()->can('viewVoucher', $booking)
+            ? to_route('admin.bookings.voucher.show', $booking->reference)
+            : back();
     }
 
     public function reject(RejectPaymentRequest $request, PaymentSubmission $payment): RedirectResponse

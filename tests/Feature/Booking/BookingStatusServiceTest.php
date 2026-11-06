@@ -17,26 +17,26 @@ it('moves the status, logs one booking-status row and fires the event', function
     $booking = Booking::factory()->create();
     $staff = staffWith();
 
-    $this->service->transition($booking, BookingStatus::AwaitingPayment, 'renter');
-    $this->service->transition($booking, BookingStatus::Expired, $staff, 'Not paid');
+    $this->service->transition($booking, BookingStatus::Requested, 'renter');
+    $this->service->transition($booking, BookingStatus::Expired, $staff, 'Not reviewed');
 
     $timeline = array_map(fn (array $row) => array_diff_key($row, ['at' => true]), $this->service->timeline($booking));
 
     expect($booking->fresh()->status)->toBe(BookingStatus::Expired)
         ->and($timeline)->toBe([
-            ['from' => 'draft', 'to' => 'awaiting_payment', 'reason' => null, 'actor' => 'renter', 'causer' => null],
-            ['from' => 'awaiting_payment', 'to' => 'expired', 'reason' => 'Not paid', 'actor' => 'staff', 'causer' => $staff->name],
+            ['from' => 'draft', 'to' => 'requested', 'reason' => null, 'actor' => 'renter', 'causer' => null],
+            ['from' => 'requested', 'to' => 'expired', 'reason' => 'Not reviewed', 'actor' => 'staff', 'causer' => $staff->name],
         ]);
 
     Event::assertDispatchedTimes(BookingStatusChanged::class, 2);
-    Event::assertDispatched(fn (BookingStatusChanged $event) => $event->from === BookingStatus::AwaitingPayment && $event->to === BookingStatus::Expired);
+    Event::assertDispatched(fn (BookingStatusChanged $event) => $event->from === BookingStatus::Requested && $event->to === BookingStatus::Expired);
 });
 
 it('refuses an edge outside the map and changes nothing', function () {
     $booking = Booking::factory()->create();
 
-    expect(fn () => $this->service->transition($booking, BookingStatus::Reserved, 'system'))
-        ->toThrow(BookingException::class, 'from Draft to Reserved');
+    expect(fn () => $this->service->transition($booking, BookingStatus::Active, 'system'))
+        ->toThrow(BookingException::class, 'from Draft to On hire');
 
     expect($booking->fresh()->status)->toBe(BookingStatus::Draft)
         ->and($this->service->timeline($booking))->toBe([]);

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 /*
- * M8.20: a renter books a car online, from the booking page to Awaiting payment, with
+ * M8.20: a renter requests a car online, from the booking page to Under review, with
  * their documents. Runs against a seeded app (`composer dev`): it books the Mazda Demio
  * from the seed pack on random dates in the coming year, so reruns don't clash.
  */
@@ -29,7 +29,7 @@ test('a renter books a car with their documents', async ({ page }) => {
     // Step 1: trip.
     await page.getByLabel('Pickup', { exact: true }).fill(local(start));
     await page.getByLabel('Return', { exact: true }).fill(local(start + 3));
-    await expect(page.getByText('Pay now to reserve')).toBeVisible();
+    await expect(page.getByText('Reservation to pay')).toBeVisible();
     await page
         .getByRole('button', { name: 'Continue to driver details' })
         .click();
@@ -71,41 +71,22 @@ test('a renter books a car with their documents', async ({ page }) => {
 
     // Step 3: review. A refresh keeps the place.
     await expect(
-        page.getByRole('button', { name: 'Submit booking' }),
+        page.getByRole('button', { name: 'Send request' }),
     ).toBeVisible();
     await page.goto(link);
     await expect(
-        page.getByRole('button', { name: 'Submit booking' }),
+        page.getByRole('button', { name: 'Send request' }),
     ).toBeVisible();
 
     await page.getByLabel(/I have read and accept/).check();
     await page
         .getByLabel(/I agree to Baines Executives keeping my details/)
         .check();
-    await page.getByRole('button', { name: 'Submit booking' }).click();
+    await page.getByRole('button', { name: 'Send request' }).click();
 
-    await expect(page.getByText('Awaiting payment').first()).toBeVisible();
+    await expect(page.getByText('Under review').first()).toBeVisible();
     await expect(page.getByText(/Booking BE-\d{4}-\d{6}/)).toBeVisible();
 
-    // Steps 4 and 5: the instructions show once a method is chosen (P-1).
-    await expect(page.getByText('Paying by M-Pesa')).toHaveCount(0);
-    await page.getByRole('radio', { name: 'M-Pesa' }).check();
-    await expect(page.getByText('Paying by M-Pesa')).toBeVisible();
-    await page
-        .getByLabel('Confirmation message')
-        .fill('TJK1AB2CD3 Confirmed. Ksh16,588.00 sent to BAINES EXECUTIVES.');
-    await page.locator('input[type="file"]').setInputFiles({
-        name: 'mpesa.pdf',
-        mimeType: 'application/pdf',
-        buffer: PDF,
-    });
-    await expect(
-        page.getByRole('button', { name: /^Remove mpesa/ }),
-    ).toBeVisible();
-    await page.getByRole('button', { name: 'Send payment details' }).click();
-
-    await expect(
-        page.getByRole('heading', { name: 'We are checking your payment' }),
-    ).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('Payment submitted').first()).toBeVisible();
+    // Nothing can be paid until staff accept the request; feature tests cover that step.
+    await expect(page.getByRole('radio', { name: 'M-Pesa' })).toHaveCount(0);
 });

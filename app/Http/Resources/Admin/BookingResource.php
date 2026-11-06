@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\BookingRequest;
 use App\Models\HandoverRecord;
 use App\Models\PaymentSubmission;
+use App\Services\Booking\AvailabilityService;
 use App\Services\Notifications\VoucherService;
 use App\Support\Money;
 use Illuminate\Http\Request;
@@ -42,6 +43,11 @@ class BookingResource extends JsonResource
             'reference' => $this->reference,
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+            'source' => $this->source->value,
+            'one_day' => $this->isOneDay(),
+            'voucher_unsent' => $this->voucherUnsent(),
+            'voucher_sent_at' => $this->voucher_sent_at?->toIso8601String(),
+            'car_taken' => app(AvailabilityService::class)->isTakenFromRequest($this->resource),
             'car' => ['id' => $this->car->id, 'name' => $this->car->name, 'slug' => $this->car->slug],
             'pickup_at' => $this->pickup_at->toIso8601String(),
             'return_at' => $this->return_at->toIso8601String(),
@@ -133,16 +139,16 @@ class BookingResource extends JsonResource
 
         return [
             'name' => $driver->fullName(),
-            'dob' => $driver->dob->toDateString(),
+            'dob' => $driver->dob?->toDateString(),
             'email' => $driver->email,
             'phone' => $driver->phone,
             'nationality' => $driver->nationality,
             'is_kenyan_resident' => $driver->is_kenyan_resident,
-            'id_type' => $driver->id_type->label(),
+            'id_type' => $driver->id_type?->label(),
             'id_number' => $show($driver->id_number),
             'kra_pin' => $show($driver->kra_pin),
             'licence_number' => $show($driver->licence_number),
-            'licence_expiry' => $driver->licence_expiry->toDateString(),
+            'licence_expiry' => $driver->licence_expiry?->toDateString(),
             'licence_years' => $driver->licence_years_declared,
             'masked' => ! $full,
         ];

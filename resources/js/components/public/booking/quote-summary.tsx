@@ -85,7 +85,7 @@ export function QuoteSummary({
             <dl className="mt-2 grid gap-2 border-t border-white/15 pt-4 text-sm">
                 <Row label="Total" value={shown?.total.display} strong />
                 <Row
-                    label="Pay now to reserve"
+                    label="Reservation to pay"
                     value={shown?.reservation.display}
                     accent
                 />

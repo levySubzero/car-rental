@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Resources\Media\MediaResource;
 use App\Models\Brand;
 use App\Models\Car;
 use App\Models\CarType;
 use App\Models\User;
 use App\Services\Media\MediaService;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\CatalogFixtures;
 
 beforeEach(function () {
@@ -43,4 +45,49 @@ it('points crawlers to the sitemap and keeps them out of the admin', function ()
 
 it('shares the absolute site address for canonical links and previews', function () {
     $this->get('/')->assertInertia(fn ($page) => $page->where('site.url', rtrim(config('app.url'), '/')));
+});
+
+describe('link previews', function () {
+    it('prints a car\'s preview tags in the page itself when SSR is off', function () {
+        config(['inertia.ssr.enabled' => false]);
+
+        $og = $this->car->gallery()->first()->conversions['og'];
+
+        $this->get('/cars/toyota-prado-tx')
+            ->assertOk()
+            ->assertSee('<meta property="og:title" content="', false)
+            ->assertSee('<meta property="og:url" content="'.rtrim(config('app.url'), '/').'/cars/toyota-prado-tx">', false)
+            ->assertSee('<meta property="og:image" content="'.Storage::disk('media-public-local')->url($og).'">', false)
+            ->assertSee('<meta property="og:image:width" content="1200">', false)
+            ->assertSee('<meta name="twitter:title" content="', false)
+            ->assertSeeInOrder([' seats, ', ' '.$this->car->effectiveMileageLimitKm().' km per day included.'], false);
+    });
+
+    it('prints preview tags on the fleet page', function () {
+        config(['inertia.ssr.enabled' => false]);
+
+        $this->get('/fleet')->assertOk()->assertSee('<meta property="og:title" content="', false);
+    });
+
+    it('makes a 1200 by 630 JPEG for previews', function () {
+        $media = $this->car->gallery()->first();
+        $path = $media->conversions['og'];
+        $size = getimagesizefromstring(Storage::disk($media->disk)->get($path));
+
+        expect($path)->toEndWith('/og.jpg')
+            ->and([$size[0], $size[1], $size['mime']])->toBe([1200, 630, 'image/jpeg']);
+    });
+
+    it('rebuilds conversions for existing photos, adding the preview image', function () {
+        $media = $this->car->gallery()->first();
+        $conversions = $media->conversions;
+        unset($conversions['og']);
+        $media->forceFill(['conversions' => $conversions])->save();
+
+        expect(MediaResource::make($media->fresh())->resolve(request())['urls'])->not->toHaveKey('og');
+
+        $this->artisan('media:regenerate')->assertSuccessful();
+
+        expect($media->fresh()->conversions)->toHaveKey('og');
+    });
 });

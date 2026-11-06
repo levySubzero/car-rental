@@ -78,6 +78,10 @@ enum Permission: string
     // Bookings (M8) and the operations desk (M11)
     case BookingsView = 'bookings.view';
     case BookingsViewDocuments = 'bookings.view-documents';
+    // Accept a website request, optionally setting its price and deposit
+    case BookingsAccept = 'bookings.accept';
+    // Enter a booking for a client who did not book on the website
+    case BookingsCreate = 'bookings.create';
     case BookingsResendVoucher = 'bookings.resend-voucher';
     case BookingsRecordHandover = 'bookings.record-handover';
     case BookingsRecordReturn = 'bookings.record-return';

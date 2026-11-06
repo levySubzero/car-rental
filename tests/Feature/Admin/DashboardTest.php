@@ -113,7 +113,7 @@ it('opens the before-launch popup until it is closed for the session', function 
 });
 
 it('sends each widget only to staff with its permission', function (array $permissions, array $visible) {
-    $all = ['revenue', 'collected', 'bookings', 'bookingsSeries', 'utilisation', 'topCars', 'paymentsWaiting', 'receiptsOpen', 'openRequests', 'newMessages'];
+    $all = ['revenue', 'collected', 'bookings', 'bookingsSeries', 'requests', 'requestsSeries', 'utilisation', 'topCars', 'requestsWaiting', 'paymentsWaiting', 'receiptsOpen', 'openRequests', 'newMessages'];
     $widgets = $this->actingAs(staffWith($permissions))
         ->get(route('admin.dashboard'))
         ->viewData('page')['props']['widgets'];
@@ -123,11 +123,33 @@ it('sends each widget only to staff with its permission', function (array $permi
 })->with([
     'no permissions' => [[], []],
     'finance' => [[Permission::FinanceView], ['revenue', 'collected']],
-    'bookings' => [[Permission::BookingsView], ['bookings', 'bookingsSeries', 'utilisation', 'topCars']],
+    'bookings' => [[Permission::BookingsView], ['bookings', 'bookingsSeries', 'requests', 'requestsSeries', 'utilisation', 'topCars', 'requestsWaiting']],
     'payments' => [[Permission::PaymentsView], ['paymentsWaiting', 'receiptsOpen']],
     'requests' => [[Permission::BookingRequestsView], ['openRequests']],
     'messages' => [[Permission::ContactMessagesView], ['newMessages']],
 ]);
+
+it('counts confirmed bookings and website requests separately', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-12-15 09:00', 'Africa/Nairobi'));
+    $received = ['submitted_at' => now()->subDay()];
+
+    // Waiting, accepted but unpaid, and declined: requests, not bookings.
+    Booking::factory()->requested()->create($received);
+    Booking::factory()->awaitingPayment()->create($received);
+    Booking::factory()->requested()->create([...$received, 'status' => 'cancelled']);
+    // Paid: both. Paid then cancelled: a request, no longer a booking.
+    Booking::factory()->reserved()->create($received);
+    Booking::factory()->reserved()->create([...$received, 'status' => 'cancelled']);
+    // Entered by staff: a booking, not a request.
+    Booking::factory()->reserved()->create([...$received, 'source' => 'admin']);
+
+    $widgets = $this->actingAs(superAdmin())->get(route('admin.dashboard'))->viewData('page')['props']['widgets'];
+
+    expect($widgets['bookings']['this_month'])->toBe(2)
+        ->and($widgets['requests']['this_month'])->toBe(5)
+        ->and(collect($widgets['bookingsSeries'])->sum('value'))->toBe(2)
+        ->and(collect($widgets['requestsSeries'])->sum('value'))->toBe(5);
+});
 
 it('works out the figures and keeps them for five minutes', function () {
     $this->travelTo(CarbonImmutable::parse('2026-12-15 09:00', 'Africa/Nairobi'));
@@ -148,11 +170,13 @@ it('works out the figures and keeps them for five minutes', function () {
 
     expect($widgets['revenue'])->toBe(['this_month_minor' => 1_000_000, 'last_month_minor' => 0])
         ->and($widgets['bookings'])->toBe(['this_month' => 1, 'last_month' => 0])
+        ->and($widgets['requests'])->toBe(['this_month' => 2, 'last_month' => 0])
         ->and($widgets['utilisation'])->toBe(['percent' => 17, 'booked_days' => 10.0, 'car_days' => 60])
         ->and($widgets['topCars'])->toBe([['car_id' => $car->id, 'car' => 'Prado', 'days' => 10.0]])
         ->and($widgets['collected'])->toHaveCount(30)
         ->and(collect($widgets['collected'])->sum('value'))->toBe(1_000_000)
-        ->and(collect($widgets['bookingsSeries'])->sum('value'))->toBe(1);
+        ->and(collect($widgets['bookingsSeries'])->sum('value'))->toBe(1)
+        ->and(collect($widgets['requestsSeries'])->sum('value'))->toBe(2);
 
     // A new payment shows after the cache expires, not before; queues stay live.
     PaymentSubmission::factory()->verified(500_000)->create(['booking_id' => $booking->id, 'verified_at' => now()]);

@@ -25,6 +25,27 @@ class BookingPolicy
         return $user->can(Permission::BookingsView);
     }
 
+    public function create(User $user): bool
+    {
+        return $this->desk($user, Permission::BookingsCreate);
+    }
+
+    public function accept(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsAccept);
+    }
+
+    /**
+     * See, download and print the voucher: anyone who sees the booking or its payments.
+     */
+    public function viewVoucher(User $user, Booking $booking): bool
+    {
+        return $user->can(Permission::BookingsView) || $user->can(Permission::PaymentsView);
+    }
+
+    /**
+     * Edit and send the voucher.
+     */
     public function resendVoucher(User $user, Booking $booking): bool
     {
         return $this->desk($user, Permission::BookingsResendVoucher);

@@ -128,6 +128,15 @@ export default function BookingStatus({
                         </section>
                     )}
 
+                    {booking.status === 'requested' && (
+                        <Notice title="Your request is under review">
+                            Thank you. Our team is reviewing your request and
+                            will email you whether it is approved. There is
+                            nothing to pay yet, and the car is held for you once
+                            it is approved.
+                        </Notice>
+                    )}
+
                     {booking.status === 'payment_submitted' && (
                         <Notice title="We are checking your payment">
                             Thank you. Our team is matching your{' '}
@@ -154,7 +163,13 @@ export default function BookingStatus({
 
                     {booking.status === 'reserved' &&
                         booking.reservation_paid && (
-                            <Notice title="Your booking is confirmed">
+                            <Notice
+                                title={
+                                    booking.voucher_sent
+                                        ? 'Your booking is confirmed'
+                                        : 'Payment received'
+                                }
+                            >
                                 We received{' '}
                                 <strong className="text-foreground">
                                     {booking.reservation_paid.display}
@@ -162,10 +177,13 @@ export default function BookingStatus({
                                 .
                                 {booking.balance_due &&
                                     ` ${booking.balance_due.display} is due at handover, with the security deposit.`}
+                                {!booking.voucher_sent &&
+                                    ' Your voucher will follow by email.'}
                             </Notice>
                         )}
 
                     {(canPay ||
+                        booking.status === 'requested' ||
                         booking.status === 'payment_submitted' ||
                         booking.status === 'awaiting_cash') &&
                         chat && (

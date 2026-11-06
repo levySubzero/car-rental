@@ -18,7 +18,7 @@ it('loads every settings group with the TECHNICAL_PLAN §9 defaults', function (
     expect($pricing->reservation_percent_bp)->toBe(2500)
         ->and($pricing->reservation_rounding)->toBe(RoundingMode::CeilMajor)
         ->and($pricing->day_counting)->toBe(DayCountingStrategy::CalendarInclusive)
-        ->and($pricing->hold_minutes)->toBe(120)
+        ->and($pricing->hold_minutes)->toBe(1440)
         ->and($pricing->cash_hold_hours)->toBe(24)
         ->and($pricing->default_mileage_km)->toBe(300)
         ->and($pricing->unlimited_mileage_after_days)->toBeNull()

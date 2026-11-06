@@ -7,6 +7,7 @@ const VARIANTS: Record<
     'default' | 'secondary' | 'outline' | 'destructive'
 > = {
     draft: 'outline',
+    requested: 'default',
     awaiting_payment: 'secondary',
     payment_submitted: 'default',
     awaiting_cash: 'default',

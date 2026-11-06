@@ -191,7 +191,7 @@ it('reserves the booking once the push is paid, as an automatically verified pay
     expect($staff->notifications()->sole()->data['title'])->toBe('Paid online for BE-2026-000123');
 });
 
-it('tells staff the money arrived online and sends the renter the voucher', function () {
+it('tells staff the money arrived online and leaves the voucher for them to send', function () {
     Notification::fake();
     fakeGateways();
     $transaction = $this->service->startMpesa($this->booking, '0712345678');
@@ -205,9 +205,9 @@ it('tells staff the money arrived online and sends the renter the voucher', func
         return $mail->subject === 'Paid online for BE-2026-000123'
             && $mail->actionUrl === route('admin.bookings.show', 'BE-2026-000123')
             && collect($mail->introLines)->contains(fn ($line) => str_contains($line, 'TJK1AB2CD3'))
-            && str_contains($whatsApp->text, 'nothing to check');
+            && str_contains($whatsApp->text, 'send the voucher');
     });
-    Notification::assertSentTo(new AnonymousNotifiable, BookingConfirmed::class, fn ($notification, array $channels, $notifiable) => $notifiable->routes['mail'] === 'amina@example.test');
+    Notification::assertNotSentTo(new AnonymousNotifiable, BookingConfirmed::class);
 });
 
 it('marks a declined or unanswered push failed, and leaves one still waiting', function (array $answer, int $status, GatewayTransactionStatus $expected) {

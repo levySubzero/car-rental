@@ -64,14 +64,14 @@ it('holds the car until the hold expires, and a second booking is refused', func
     $hold = $this->service->lockAndHold($first);
 
     expect($hold->type)->toBe(AvailabilityBlockType::Hold)
-        ->and($hold->expires_at->toIso8601String())->toBe(now()->addMinutes(120)->toIso8601String())
+        ->and($hold->expires_at->toIso8601String())->toBe(now()->addMinutes(1440)->toIso8601String())
         ->and(fn () => $this->service->lockAndHold($second))->toThrow(BookingException::class);
 
     // Holding again (a resubmit) replaces the booking's own hold instead of clashing with it.
     $this->service->lockAndHold($first);
     expect($first->availabilityBlocks()->count())->toBe(1);
 
-    $this->travel(121)->minutes();
+    $this->travel(1441)->minutes();
     expect($this->service->lockAndHold($second)->booking_id)->toBe($second->id);
 });
 

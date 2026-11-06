@@ -10,6 +10,7 @@ use App\Models\Brand;
 use App\Models\Car;
 use App\Models\CarType;
 use App\Services\Cms\PageContent;
+use App\Support\SharePreview;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -67,16 +68,19 @@ class FleetController extends Controller
 
         $page = app(PageContent::class)->for('fleet');
 
+        $heading = $preset['name'] ?? PageContent::text($page, 'heading', 'Our fleet');
+        $intro = $preset !== null ? $preset['description'] : PageContent::text($page, 'intro');
+
         return Inertia::render('public/fleet', [
-            'heading' => $preset['name'] ?? PageContent::text($page, 'heading', 'Our fleet'),
-            'intro' => $preset !== null ? $preset['description'] : PageContent::text($page, 'intro'),
+            'heading' => $heading,
+            'intro' => $intro,
             // Brand and car type pages share the fleet's header image.
             'header_image' => $page['header_image'] ?? null,
             'preset' => $preset === null ? null : ['kind' => $preset['kind'], 'slug' => $preset['slug']],
             'filters' => $filters,
             'options' => $this->options(),
             'cars' => CarCardResource::collection($cars),
-        ]);
+        ])->withViewData('share', SharePreview::for($heading, $intro));
     }
 
     /**

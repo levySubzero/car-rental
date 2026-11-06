@@ -20,10 +20,12 @@ class MediaResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $urls = app(MediaUrlGenerator::class);
+
         return [
             'uuid' => $this->uuid,
             'collection' => $this->collection,
-            'name' => $this->original_name,
+            'name' => $urls->hidesOriginal($this->resource) ? '' : $this->original_name,
             'mime' => $this->mime_type,
             'size' => $this->size_bytes,
             'width' => $this->width,
@@ -35,7 +37,7 @@ class MediaResource extends JsonResource
             'processing' => $this->processing->value,
             'is_primary' => $this->is_primary,
             'sort_order' => $this->sort_order,
-            'urls' => app(MediaUrlGenerator::class)->urlsFor($this->resource),
+            'urls' => $urls->urlsFor($this->resource),
         ];
     }
 }

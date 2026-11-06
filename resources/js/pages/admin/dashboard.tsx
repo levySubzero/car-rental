@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     CalendarCheck,
+    ClipboardList,
     ChevronRight,
     Gauge,
     Inbox,
@@ -68,12 +69,15 @@ type Widgets = {
     collected: Series | null;
     bookings: { this_month: number; last_month: number } | null;
     bookingsSeries: Series | null;
+    requests: { this_month: number; last_month: number } | null;
+    requestsSeries: Series | null;
     utilisation: {
         percent: number;
         booked_days: number;
         car_days: number;
     } | null;
     topCars: { car_id: number; car: string; days: number }[] | null;
+    requestsWaiting: number | null;
     paymentsWaiting: number | null;
     receiptsOpen: number | null;
     openRequests: number | null;
@@ -122,8 +126,11 @@ export default function Dashboard({
         collected,
         bookings,
         bookingsSeries,
+        requests,
+        requestsSeries,
         utilisation,
         topCars,
+        requestsWaiting,
         paymentsWaiting,
         receiptsOpen,
         openRequests,
@@ -132,13 +139,18 @@ export default function Dashboard({
     const hasTiles = [
         revenue,
         bookings,
+        requests,
         utilisation,
+        requestsWaiting,
         paymentsWaiting,
         receiptsOpen,
         openRequests,
         newMessages,
     ].some((widget) => widget !== null);
-    const hasCharts = collected !== null || bookingsSeries !== null;
+    const hasCharts =
+        collected !== null ||
+        bookingsSeries !== null ||
+        requestsSeries !== null;
     const isEmpty = !hasTiles && !hasCharts && today === null;
 
     return (
@@ -175,7 +187,7 @@ export default function Dashboard({
                         )}
                         {bookings && (
                             <StatTile
-                                label="Bookings this month"
+                                label="Confirmed bookings this month"
                                 value={bookings.this_month}
                                 hint={versusLastMonth(
                                     bookings.this_month,
@@ -186,6 +198,19 @@ export default function Dashboard({
                                 href={BookingController.index()}
                             />
                         )}
+                        {requests && (
+                            <StatTile
+                                label="Requests this month"
+                                value={requests.this_month}
+                                hint={versusLastMonth(
+                                    requests.this_month,
+                                    requests.last_month,
+                                    String,
+                                )}
+                                icon={ClipboardList}
+                                href={BookingController.requests()}
+                            />
+                        )}
                         {utilisation && (
                             <StatTile
                                 label="Fleet utilisation"
@@ -193,6 +218,24 @@ export default function Dashboard({
                                 hint={`${utilisation.booked_days} of ${utilisation.car_days} car-days booked, last 30 days`}
                                 icon={Gauge}
                                 href={BookingController.index()}
+                            />
+                        )}
+                        {requestsWaiting !== null && (
+                            <StatTile
+                                label="Requests to review"
+                                value={requestsWaiting}
+                                hint={
+                                    requestsWaiting > 0
+                                        ? 'Waiting to be accepted or declined'
+                                        : 'All reviewed'
+                                }
+                                icon={ClipboardList}
+                                href={BookingController.requests()}
+                                tone={
+                                    requestsWaiting > 0
+                                        ? 'attention'
+                                        : undefined
+                                }
                             />
                         )}
                         {paymentsWaiting !== null && (
@@ -231,7 +274,7 @@ export default function Dashboard({
                         )}
                         {openRequests !== null && (
                             <StatTile
-                                label="Open requests"
+                                label="Open change requests"
                                 value={openRequests}
                                 hint="Changes and cancellations from renters"
                                 icon={MessageSquare}
@@ -288,7 +331,7 @@ export default function Dashboard({
                 )}
 
                 {hasCharts && (
-                    <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
                         {collected && (
                             <ChartCard
                                 title="Collected per day"
@@ -305,13 +348,26 @@ export default function Dashboard({
                         )}
                         {bookingsSeries && (
                             <ChartCard
-                                title="Bookings per day"
-                                description="Submitted, last 30 days"
+                                title="Confirmed bookings per day"
+                                description="By the day they were confirmed, last 30 days"
                                 href={BookingController.index()}
                             >
                                 <DailyChart
                                     data={bookingsSeries}
-                                    label="Bookings"
+                                    label="Confirmed bookings"
+                                    format={String}
+                                />
+                            </ChartCard>
+                        )}
+                        {requestsSeries && (
+                            <ChartCard
+                                title="Requests per day"
+                                description="Received from the website, last 30 days"
+                                href={BookingController.requests()}
+                            >
+                                <DailyChart
+                                    data={requestsSeries}
+                                    label="Requests"
                                     format={String}
                                 />
                             </ChartCard>

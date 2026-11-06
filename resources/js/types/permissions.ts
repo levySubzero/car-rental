@@ -45,6 +45,8 @@ export const permissions = [
     'contact-messages.delete',
     'bookings.view',
     'bookings.view-documents',
+    'bookings.accept',
+    'bookings.create',
     'bookings.resend-voucher',
     'bookings.record-handover',
     'bookings.record-return',

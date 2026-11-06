@@ -128,6 +128,7 @@ it('opens a booking with a fresh link', function () {
 
 it('downloads the voucher and logs it', function () {
     app(VoucherService::class)->generate($this->booking);
+    $this->booking->forceFill(['voucher_sent_at' => now()])->save();
     signIn();
 
     $this->get(route('portal.voucher', $this->booking->reference))
@@ -135,6 +136,13 @@ it('downloads the voucher and logs it', function () {
         ->assertHeader('Content-Type', 'application/pdf');
 
     expect(Activity::query()->where('log_name', 'media')->where('event', 'downloaded')->count())->toBe(1);
+});
+
+it('keeps a voucher from the renter until staff have sent it', function () {
+    app(VoucherService::class)->generate($this->booking);
+    signIn();
+
+    $this->get(route('portal.voucher', $this->booking->reference))->assertNotFound();
 });
 
 it('has no voucher before the booking is confirmed', function () {

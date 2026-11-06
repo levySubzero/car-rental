@@ -74,9 +74,12 @@ class MediaPolicy
         return $owner !== null && Gate::forUser($user)->allows($this->viewAbilityFor($owner), [$owner, $media]);
     }
 
+    /**
+     * The website shows public files but does not hand them out: only staff download those.
+     */
     public function download(?User $user, Media $media): bool
     {
-        return $this->view($user, $media);
+        return $media->isPublic() ? $user !== null : $this->view($user, $media);
     }
 
     /**

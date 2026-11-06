@@ -53,7 +53,7 @@ class PaymentSubmitted extends BookingNotification
         if ($online !== null) {
             $mail->line("**Paid:** {$this->money($online->amount_minor)}")
                 ->line("**Receipt:** {$payment->reference}")
-                ->line('Confirmed automatically: nothing to check. The renter has been sent the voucher.')
+                ->line('Confirmed automatically, so the payment needs no checking. Review the voucher and send it to the renter.')
                 ->action('Open the booking', route('admin.bookings.show', $booking->reference));
         } else {
             if ($payment->transaction_message !== null) {
@@ -77,7 +77,7 @@ class PaymentSubmitted extends BookingNotification
         return new WhatsAppMessage(
             to: $this->phoneFor($notifiable),
             text: match (true) {
-                $online !== null => "{$this->booking->reference}: {$this->renterName()} paid {$this->money($online->amount_minor)} by {$online->gateway->label()} (receipt {$payment->reference}). Confirmed automatically, nothing to check.",
+                $online !== null => "{$this->booking->reference}: {$this->renterName()} paid {$this->money($online->amount_minor)} by {$online->gateway->label()} (receipt {$payment->reference}). Confirmed automatically: review and send the voucher.",
                 $payment->isCash() => "{$this->booking->reference}: {$this->renterName()} will pay the reservation in cash.",
                 default => "{$this->booking->reference}: {$this->renterName()} paid by {$method}. Please check and verify.",
             },

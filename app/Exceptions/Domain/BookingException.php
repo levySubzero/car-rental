@@ -34,6 +34,16 @@ class BookingException extends DomainException
         return new self('This car is already booked for some of these dates. Please choose other dates.', 'pickup_at');
     }
 
+    public static function carTakenForRequest(): self
+    {
+        return new self('This car has been taken for some of these dates, so the request cannot be accepted. Decline it with a reason.');
+    }
+
+    public static function adjustedTotalTooLow(): self
+    {
+        return new self('The total cannot be less than the delivery fee already set on this booking.', 'total');
+    }
+
     public static function pickupPassed(): self
     {
         return new self('The pickup time has passed. Please choose new dates.', 'pickup_at');

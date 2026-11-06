@@ -282,6 +282,14 @@
     color: rgb(255 255 255 / 0.9);
 }
 
+/* Discourages saving photos: no dragging, selecting or long-press menu. Phones also need
+   the callout off, because iOS ignores contextmenu handlers. */
+.public img {
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
 @layer base {
     * {
         @apply border-border;

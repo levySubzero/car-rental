@@ -51,6 +51,7 @@ class MediaUrlGenerator
 
     /**
      * Every URL a client needs, for MediaResource. Private files only get app routes.
+     * The website's visitors get a public image's conversions, never its original.
      *
      * @return array<string, string>
      */
@@ -63,13 +64,35 @@ class MediaUrlGenerator
             ];
         }
 
-        $urls = ['original' => $this->url($media)];
+        $urls = $this->hidesOriginal($media) ? [] : ['original' => $this->url($media)];
 
         foreach (array_keys((array) config('media.conversions')) as $name) {
-            $urls[$name] = $this->url($media, $name);
+            // Only a file with its own preview image gets the URL: otherwise it would be the original.
+            if ($name !== 'og' || isset($media->conversions['og'])) {
+                $urls[$name] = $this->url($media, $name);
+            }
         }
 
         return $urls;
+    }
+
+    /**
+     * The absolute URL of the image a link preview shows. Local disks give a root-relative
+     * URL; S3 or a CDN give an absolute one.
+     */
+    public function shareUrl(Media $media): string
+    {
+        $src = $this->url($media, isset($media->conversions['og']) ? 'og' : 'full');
+
+        return str_starts_with($src, 'http') ? $src : rtrim((string) config('app.url'), '/').$src;
+    }
+
+    /**
+     * True for a public image requested by anyone but staff.
+     */
+    public function hidesOriginal(Media $media): bool
+    {
+        return $media->isPublic() && $media->isImage() && ! auth()->user()?->is_staff;
     }
 
     /**

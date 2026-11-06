@@ -128,7 +128,7 @@ export function QuoteResult({ quote }: { quote: AdminQuote }) {
                     <CardHeader>
                         <CardTitle>In other currencies</CardTitle>
                         <CardDescription>
-                            KES ÷ (market rate − margin), as renters see it.
+                            KES ÷ the display rate, as renters see it.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

@@ -9,6 +9,7 @@ namespace App\Enums;
 enum BookingStatus: string
 {
     case Draft = 'draft';
+    case Requested = 'requested';
     case AwaitingPayment = 'awaiting_payment';
     case PaymentSubmitted = 'payment_submitted';
     case AwaitingCash = 'awaiting_cash';
@@ -28,7 +29,10 @@ enum BookingStatus: string
     public function transitions(): array
     {
         return match ($this) {
-            self::Draft => [self::AwaitingPayment, self::Expired],
+            // Staff entering a client who did not book online confirm it straight away.
+            self::Draft => [self::Requested, self::Reserved, self::Expired],
+            // Staff accept or decline it; it holds no car and takes no payment until accepted.
+            self::Requested => [self::AwaitingPayment, self::Cancelled, self::Expired],
             // Staff may cancel any unpaid booking, e.g. when the renter phones to call it off (D41).
             self::AwaitingPayment => [self::PaymentSubmitted, self::AwaitingCash, self::Cancelled, self::Expired],
             self::PaymentSubmitted => [self::Reserved, self::PaymentRejected, self::Cancelled],
@@ -71,6 +75,7 @@ enum BookingStatus: string
     {
         return match ($this) {
             self::Draft => 'Draft',
+            self::Requested => 'Under review',
             self::AwaitingPayment => 'Awaiting payment',
             self::PaymentSubmitted => 'Payment submitted',
             self::AwaitingCash => 'Awaiting cash',

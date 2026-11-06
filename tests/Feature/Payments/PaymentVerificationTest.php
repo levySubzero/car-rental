@@ -74,13 +74,22 @@ it('verifies a payment only once', function () {
         ->toThrow(PaymentException::class);
 });
 
+it('caps the retry after a rejection at pick-up', function () {
+    $pickup = now()->addHours(5);
+    $this->booking->forceFill(['pickup_at' => $pickup])->save();
+
+    app(PaymentVerificationService::class)->reject($this->submission, 'No such payment.', staffWith());
+
+    expect($this->booking->fresh()->expires_at->toIso8601String())->toBe($pickup->toIso8601String());
+});
+
 it('rejects with a reason and gives the renter a fresh hold', function () {
     $this->service->reject($this->submission, 'No payment with this code.', $this->staff);
 
     $booking = $this->booking->fresh();
     expect($booking->status)->toBe(BookingStatus::PaymentRejected)
-        ->and($booking->expires_at->toIso8601String())->toBe(now()->addMinutes(120)->toIso8601String())
-        ->and($booking->availabilityBlocks()->sole()->expires_at->toIso8601String())->toBe(now()->addMinutes(120)->toIso8601String())
+        ->and($booking->expires_at->toIso8601String())->toBe(now()->addMinutes(1440)->toIso8601String())
+        ->and($booking->availabilityBlocks()->sole()->expires_at->toIso8601String())->toBe(now()->addMinutes(1440)->toIso8601String())
         ->and($this->submission->fresh()->status)->toBe(PaymentStatus::Rejected)
         ->and($this->submission->fresh()->rejection_reason)->toBe('No payment with this code.');
 });

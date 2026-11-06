@@ -3,6 +3,7 @@
 namespace App\Services\Booking;
 
 use App\Enums\AvailabilityBlockType;
+use App\Enums\BookingStatus;
 use App\Exceptions\Domain\BookingException;
 use App\Models\AvailabilityBlock;
 use App\Models\Booking;
@@ -15,8 +16,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Whether a car is free (D35). Every reason a car is taken is an availability block: a
- * booking's hold, a reserved booking or a staff block. The turnaround buffer keeps a gap
+ * Whether a car is free (D35). Every reason a car is taken is an availability block: an
+ * accepted booking's hold, a reserved booking or a staff block. The turnaround buffer keeps a gap
  * between one block and the next.
  */
 class AvailabilityService
@@ -39,12 +40,22 @@ class AvailabilityService
     }
 
     /**
-     * Hold the car for a submitted booking until it is paid for or expires. The car row is
-     * locked first, so two renters submitting the same dates queue up and only one wins.
+     * A request holds no car, so another booking may have taken its dates meanwhile.
      */
-    public function lockAndHold(Booking $booking): AvailabilityBlock
+    public function isTakenFromRequest(Booking $booking): bool
     {
-        return DB::transaction(function () use ($booking) {
+        return $booking->status === BookingStatus::Requested
+            && ! $this->isAvailable($booking->car, $booking->range(), $booking);
+    }
+
+    /**
+     * Hold the car for an accepted booking until it is paid for or expires ($until, by default
+     * the payment window). The car row is locked first, so two requests for the same dates
+     * queue up and only one wins.
+     */
+    public function lockAndHold(Booking $booking, ?CarbonInterface $until = null): AvailabilityBlock
+    {
+        return DB::transaction(function () use ($booking, $until) {
             $car = Car::withTrashed()->whereKey($booking->car_id)->lockForUpdate()->firstOrFail();
 
             if (! $this->isAvailable($car, $booking->range(), $booking)) {
@@ -58,7 +69,7 @@ class AvailabilityService
                 'type' => AvailabilityBlockType::Hold,
                 'starts_at' => $booking->pickup_at,
                 'ends_at' => $booking->return_at,
-                'expires_at' => now()->addMinutes($this->pricing->hold_minutes),
+                'expires_at' => $until ?? now()->addMinutes($this->pricing->hold_minutes),
             ]);
         });
     }

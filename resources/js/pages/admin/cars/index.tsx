@@ -9,7 +9,9 @@ import { DataTable, useTableQuery } from '@/components/admin/data-table';
 import { NativeSelect } from '@/components/admin/form-field';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
 import { Badge } from '@/components/ui/badge';
+import { ShareActions } from '@/components/share-actions';
 import { Button } from '@/components/ui/button';
+import { show as carShow } from '@/routes/cars';
 import { useCan } from '@/hooks/use-can';
 import type { AdminCar, Option, Paginated } from '@/types';
 
@@ -79,6 +81,18 @@ export default function CarsIndex({
                 ) : (
                     <Badge variant="outline">Draft</Badge>
                 ),
+        },
+        {
+            key: 'share',
+            header: 'Share',
+            cell: (car) =>
+                car.is_published ? (
+                    <ShareActions
+                        compact
+                        url={`${window.location.origin}${carShow.url(car.slug)}`}
+                        text={car.name}
+                    />
+                ) : null,
         },
         {
             key: 'available',

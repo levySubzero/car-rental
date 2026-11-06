@@ -3,8 +3,10 @@
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\AvailabilityController;
+use App\Http\Controllers\Admin\BookingAcceptanceController;
 use App\Http\Controllers\Admin\BookingCancellationController;
 use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\BookingCreateController;
 use App\Http\Controllers\Admin\BookingDeliveryController;
 use App\Http\Controllers\Admin\BookingHandoverController;
 use App\Http\Controllers\Admin\BookingRequestController;
@@ -151,8 +153,12 @@ Route::get('finance/export', [FinanceController::class, 'export'])->name('financ
 
 // Bookings desk (M11): bookings by reference, and the actions staff take on them.
 Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
+Route::get('requests', [BookingController::class, 'requests'])->name('bookings.requests');
+Route::get('bookings/create', [BookingCreateController::class, 'create'])->name('bookings.create');
+Route::post('bookings', [BookingCreateController::class, 'store'])->name('bookings.store');
 Route::prefix('bookings/{booking:reference}')->name('bookings.')->group(function () {
     Route::get('/', [BookingController::class, 'show'])->name('show');
+    Route::post('accept', [BookingAcceptanceController::class, 'accept'])->name('accept');
     Route::post('handover', [BookingHandoverController::class, 'handover'])->name('handover');
     Route::post('return', [BookingHandoverController::class, 'return'])->name('return');
     Route::post('cancel', [BookingCancellationController::class, 'cancel'])->name('cancel');
@@ -160,6 +166,8 @@ Route::prefix('bookings/{booking:reference}')->name('bookings.')->group(function
     Route::post('refunded', [BookingCancellationController::class, 'refunded'])->name('refunded');
     Route::put('delivery', [BookingDeliveryController::class, 'update'])->name('delivery.update');
     Route::post('delivery/checked', [BookingDeliveryController::class, 'checked'])->name('delivery.checked');
+    Route::get('voucher', [BookingVoucherController::class, 'show'])->name('voucher.show');
+    Route::put('voucher', [BookingVoucherController::class, 'update'])->name('voucher.update');
     Route::post('voucher', [BookingVoucherController::class, 'resend'])->name('voucher.resend');
     Route::post('link', [BookingVoucherController::class, 'rotate'])->name('link.rotate');
     Route::put('legal-hold', [BookingController::class, 'legalHold'])->name('legal-hold');

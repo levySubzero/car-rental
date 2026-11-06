@@ -100,7 +100,7 @@ it('alerts staff when a payment comes in, by message or cash', function () {
     });
 });
 
-it('sends the voucher on verify with a fresh link, and stores the PDF', function () {
+it('stores the PDF on verify and tells the renter nothing until staff send it', function () {
     Notification::fake();
 
     app(PaymentVerificationService::class)->verify($this->submission, 'REF1', Money::fromMajor('16588'), $this->staff);
@@ -109,15 +109,26 @@ it('sends the voucher on verify with a fresh link, and stores the PDF', function
     expect($voucher)->not->toBeNull()
         ->and($voucher->collection)->toBe('booking.voucher')
         ->and($voucher->mime_type)->toBe('application/pdf')
-        ->and(Storage::disk($voucher->disk)->get($voucher->path))->toStartWith('%PDF');
+        ->and(Storage::disk($voucher->disk)->get($voucher->path))->toStartWith('%PDF')
+        ->and($this->booking->fresh()->voucher_sent_at)->toBeNull();
+
+    Notification::assertNotSentTo(new AnonymousNotifiable, BookingConfirmed::class);
+    expect(app(BookingTokenService::class)->find($this->token)?->is($this->booking))->toBeTrue();
+});
+
+it('sends one email with the voucher and a fresh link when staff send it', function () {
+    Notification::fake();
+
+    app(PaymentVerificationService::class)->verify($this->submission, 'REF1', Money::fromMajor('16588'), $this->staff);
+    app(BookingNotifier::class)->resendConfirmation($this->booking->fresh());
 
     $newToken = null;
-    Notification::assertSentTo(new AnonymousNotifiable, BookingConfirmed::class, function (BookingConfirmed $notification, array $channels, $notifiable) use ($voucher, &$newToken) {
+    Notification::assertSentOnDemandTimes(BookingConfirmed::class, 1);
+    Notification::assertSentTo(new AnonymousNotifiable, BookingConfirmed::class, function (BookingConfirmed $notification, array $channels, $notifiable) use (&$newToken) {
         $newToken = $notification->token;
         $mail = $notification->toMail($notifiable);
 
         return $channels === ['mail', WhatsAppChannel::class]
-            && $notification->voucher?->is($voucher)
             && count($mail->rawAttachments) + count($mail->attachments) === 1
             && $mail->subject === "Your Baines Executives booking {$this->booking->reference} is confirmed";
     });
@@ -125,7 +136,8 @@ it('sends the voucher on verify with a fresh link, and stores the PDF', function
     // The old link stops working; the mailed one opens the booking.
     $tokens = app(BookingTokenService::class);
     expect($tokens->find($this->token))->toBeNull()
-        ->and($tokens->find($newToken)?->is($this->booking))->toBeTrue();
+        ->and($tokens->find($newToken)?->is($this->booking))->toBeTrue()
+        ->and($this->booking->fresh()->voucher_sent_at)->not->toBeNull();
 });
 
 it('tells the renter about a rejection with the reason and a fresh link', function () {
@@ -201,6 +213,7 @@ it('keeps one voucher when it is generated again', function () {
 
 it('logs each booking notification that goes out', function () {
     app(PaymentVerificationService::class)->verify($this->submission, 'REF1', Money::fromMajor('16588'), $this->staff);
+    app(BookingNotifier::class)->resendConfirmation($this->booking->fresh());
 
     $sent = Activity::query()->with('subject')->where('log_name', 'notifications')->get();
 
@@ -224,15 +237,19 @@ it('builds click-to-chat links and refuses the unbuilt Cloud API driver', functi
     expect(fn () => app(WhatsAppDriver::class)->send($message))->toThrow(LogicException::class, 'P2.3');
 });
 
-it('offers the WhatsApp confirmation in the verify toast', function () {
+it('takes staff to the voucher after verifying, and offers WhatsApp once they send it', function () {
     Notification::fake();
 
     $this->actingAs($this->staff)
         ->post(route('admin.payments.verify', $this->submission), ['reference' => 'REF1', 'amount' => '16588'])
-        ->assertSessionHasNoErrors();
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('admin.bookings.voucher.show', $this->booking->reference));
+
+    $this->actingAs($this->staff->givePermissionTo(Permission::BookingsView, Permission::BookingsResendVoucher))
+        ->post(route('admin.bookings.voucher.resend', $this->booking->reference));
 
     $toast = session('inertia.flash_data')['toast'] ?? session('toast');
 
     expect($toast['action']['label'])->toBe('Send on WhatsApp')
-        ->and($toast['action']['url'])->toStartWith('https://wa.me/254712345678?text=Hello%20from%20Baines%20Executives.');
+        ->and($toast['action']['url'])->toStartWith('https://wa.me/254712345678?text=Hello%20from%20Baines%20');
 });

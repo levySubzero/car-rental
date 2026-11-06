@@ -21,6 +21,8 @@ class SendBookingNotifications implements ShouldQueue
         $booking = $event->booking->fresh() ?? $event->booking;
 
         match ($event->to) {
+            BookingStatus::AwaitingPayment => $this->notifier->accepted($booking),
+            BookingStatus::Cancelled, BookingStatus::Expired => $this->notifier->closed($booking, $event->from, $event->to),
             BookingStatus::PaymentSubmitted, BookingStatus::AwaitingCash => $this->notifier->paymentSubmitted($booking),
             BookingStatus::Reserved => $this->notifier->confirmed($booking),
             BookingStatus::PaymentRejected => $this->notifier->rejected($booking),

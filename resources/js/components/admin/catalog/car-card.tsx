@@ -2,7 +2,9 @@ import { Link } from '@inertiajs/react';
 import { ImageOff } from 'lucide-react';
 import CarController from '@/actions/App/Http/Controllers/Admin/CarController';
 import { FlagSwitch } from '@/components/admin/catalog/flag-switch';
+import { ShareActions } from '@/components/share-actions';
 import { Badge } from '@/components/ui/badge';
+import { show as carShow } from '@/routes/cars';
 import type { AdminCar } from '@/types';
 
 /**
@@ -60,12 +62,21 @@ export function CarCard({
                             .join(' · ')}
                     </span>
                 </div>
-                <p className="text-sm font-semibold tabular-nums">
-                    {car.daily_rate.display}{' '}
-                    <span className="font-normal text-muted-foreground">
-                        / day
-                    </span>
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold tabular-nums">
+                        {car.daily_rate.display}{' '}
+                        <span className="font-normal text-muted-foreground">
+                            / day
+                        </span>
+                    </p>
+                    {car.is_published && (
+                        <ShareActions
+                            compact
+                            url={`${window.location.origin}${carShow.url(car.slug)}`}
+                            text={car.name}
+                        />
+                    )}
+                </div>
                 <div className="mt-auto grid grid-cols-2 gap-2 border-t pt-3 text-xs text-muted-foreground">
                     <label className="flex items-center justify-between gap-2">
                         Available

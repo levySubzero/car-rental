@@ -7,7 +7,7 @@ use App\Support\WhatsAppLinkBuilder;
 use Illuminate\Notifications\Messages\MailMessage;
 
 /**
- * Staff alert for a submitted booking (M10.4, PRD P-7), to the staff emails and the staff
+ * Staff alert for a new request (M10.4, PRD P-7), to the staff emails and the staff
  * WhatsApp number in Notification settings.
  */
 class StaffNewBooking extends BookingNotification
@@ -23,8 +23,8 @@ class StaffNewBooking extends BookingNotification
         $driver = $booking->driver;
 
         $mail = (new MailMessage)
-            ->subject("New booking {$booking->reference}: {$booking->car->name}")
-            ->greeting('New booking')
+            ->subject("New request {$booking->reference}: {$booking->car->name}")
+            ->greeting('New booking request')
             ->line("**Reference:** {$booking->reference}")
             ->line("**Renter:** {$this->renterName()}");
 
@@ -35,8 +35,8 @@ class StaffNewBooking extends BookingNotification
         $mail->line("**Car:** {$booking->car->name}")
             ->line("**Dates:** {$this->dates()}")
             ->line("**Total:** {$this->money($booking->total_minor)}, reservation {$this->money($booking->reservation_minor)}")
-            ->line('The car is held while the renter pays the reservation.')
-            ->action('Open the payments queue', route('admin.payments.index', ['search' => $booking->reference]));
+            ->line('Accept or decline it. The car is not held and the renter cannot pay until it is accepted.')
+            ->action('Review the request', route('admin.bookings.show', $booking->reference));
 
         $chat = WhatsAppLinkBuilder::linkTo($driver?->phone);
 
@@ -49,7 +49,7 @@ class StaffNewBooking extends BookingNotification
 
         return new WhatsAppMessage(
             to: $this->phoneFor($notifiable),
-            text: "New booking {$this->booking->reference}: {$this->booking->car->name}, {$this->dates()}, from {$this->renterName()}. Total {$this->money($this->booking->total_minor)}.",
+            text: "New request {$this->booking->reference}: {$this->booking->car->name}, {$this->dates()}, from {$this->renterName()}. Total {$this->money($this->booking->total_minor)}.",
             notification: $this->event(),
             subject: $this->booking,
         );

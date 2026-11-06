@@ -21,6 +21,14 @@ final readonly class FxTable
         public array $rates,
     ) {}
 
+    /**
+     * @param  array{base: string, rates: array<string, array<string, mixed>>}  $data  toArray()
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self($data['base'], array_map(ResolvedRate::fromArray(...), $data['rates']));
+    }
+
     public function has(string $code): bool
     {
         return $code === $this->base || isset($this->rates[$code]);

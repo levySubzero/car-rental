@@ -128,7 +128,7 @@ class BookingController extends Controller
     {
         $this->bookings->submit(ResolveBookingToken::booking($request), (string) $request->ip(), (string) $request->route('token'));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Booking received. Choose how to pay the reservation below.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Request received. We will email you once it has been reviewed.']);
 
         return back();
     }

@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\AvailabilityBlockType;
 use App\Enums\BookingDocument;
 use App\Enums\BookingStatus;
 use App\Models\AvailabilityBlock;
@@ -119,7 +118,7 @@ it('shows the booking page for a published car only', function () {
     $this->get(route('bookings.create', $this->car))->assertNotFound();
 });
 
-it('takes a renter from the booking page to awaiting payment', function () {
+it('takes a renter from the booking page to a request under review', function () {
     CancellationTier::factory()->create(['hours_before_pickup' => 72, 'refund_percent_bp' => 5000, 'label' => null]);
 
     $token = startBooking();
@@ -148,7 +147,7 @@ it('takes a renter from the booking page to awaiting payment', function () {
         && $notifiable->routes['mail'] === 'amina@example.test');
 
     $booking->refresh();
-    expect($booking->status)->toBe(BookingStatus::AwaitingPayment)
+    expect($booking->status)->toBe(BookingStatus::Requested)
         ->and($booking->reference)->toBe('BE-2026-000001')
         ->and($booking->total_minor)->toBe(6_635_000)
         ->and($booking->reservation_minor)->toBe(1_658_800)
@@ -159,17 +158,16 @@ it('takes a renter from the booking page to awaiting payment', function () {
         ->and($booking->accepted_privacy_at?->toIso8601String())->toBe(now()->toIso8601String())
         ->and($booking->cancellation_tiers)->toBe([['hours_before_pickup' => 72, 'refund_percent_bp' => 5000, 'label' => null]])
         ->and($booking->quote['settings_hash'])->toBeString()
-        ->and($booking->expires_at->toIso8601String())->toBe(now()->addMinutes(120)->toIso8601String())
-        ->and($booking->mediaIn('booking.licence')->count())->toBe(1);
-
-    $hold = $booking->availabilityBlocks()->sole();
-    expect($hold->type)->toBe(AvailabilityBlockType::Hold);
+        ->and($booking->expires_at->toIso8601String())->toBe($booking->pickup_at->toIso8601String())
+        ->and($booking->mediaIn('booking.licence')->count())->toBe(1)
+        // A request holds no car until staff accept it.
+        ->and($booking->availabilityBlocks()->count())->toBe(0);
 
     $this->get(route('bookings.show', $token))
         ->assertInertia(fn (Assert $page) => $page
             ->component('public/booking/status')
             ->where('booking.reference', 'BE-2026-000001')
-            ->where('booking.status', 'awaiting_payment')
+            ->where('booking.status', 'requested')
             ->where('quote.reservation.major', '16588.00')
             ->where('cancellation_tiers.0.refund_percent_bp', 5000)
             ->missing('booking.documents'));
@@ -280,7 +278,7 @@ it('refuses another file uploaded by someone else', function () {
     $this->put(route('bookings.driver', $token), driverPayload($theirs))->assertSessionHasErrors('documents.id_front');
 });
 
-it('lets only one of two renters submit the same dates', function () {
+it('lets two renters request the same dates, because neither holds the car yet', function () {
     $first = startBooking();
     $second = startBooking(['pickup_at' => '2026-11-03T10:00:00+03:00', 'return_at' => '2026-11-05T10:00:00+03:00']);
 
@@ -289,11 +287,11 @@ it('lets only one of two renters submit the same dates', function () {
     }
 
     $this->post(route('bookings.submit', $first), ['accept_terms' => true, 'accept_privacy' => true])->assertSessionHasNoErrors();
-    $this->post(route('bookings.submit', $second), ['accept_terms' => true, 'accept_privacy' => true]);
+    $this->post(route('bookings.submit', $second), ['accept_terms' => true, 'accept_privacy' => true])->assertSessionHasNoErrors();
 
-    expect(app(BookingTokenService::class)->find($second)->status)->toBe(BookingStatus::Draft)
-        ->and(AvailabilityBlock::count())->toBe(1)
-        ->and(Booking::whereNotNull('reference')->count())->toBe(1);
+    expect(app(BookingTokenService::class)->find($second)->status)->toBe(BookingStatus::Requested)
+        ->and(AvailabilityBlock::count())->toBe(0)
+        ->and(Booking::whereNotNull('reference')->count())->toBe(2);
 });
 
 it('submits once, refuses edits afterwards, and needs the terms accepted', function () {
@@ -307,8 +305,7 @@ it('submits once, refuses edits afterwards, and needs the terms accepted', funct
     $this->post(route('bookings.submit', $token), ['accept_terms' => true, 'accept_privacy' => true]);
     $this->put(route('bookings.trip', $token), tripPayload());
 
-    expect(Booking::sole()->reference)->toBe('BE-2026-000001')
-        ->and(AvailabilityBlock::count())->toBe(1);
+    expect(Booking::sole()->reference)->toBe('BE-2026-000001');
 
     $this->withHeaders(['Accept' => 'application/json', 'X-Booking-Token' => $token])
         ->post(route('media.store'), ['collection' => 'booking.licence', 'file' => MediaFixtures::pdf()])
@@ -324,7 +321,7 @@ it('books a staff-quoted zone with delivery left out of the reservation', functi
     $booking = Booking::sole();
     $delivery = collect($booking->quote['lines'])->firstWhere('kind', 'delivery');
 
-    expect($booking->status)->toBe(BookingStatus::AwaitingPayment)
+    expect($booking->status)->toBe(BookingStatus::Requested)
         ->and($booking->quote['requires_staff_quote'])->toBeTrue()
         ->and($delivery['amount'])->toBeNull()
         ->and($delivery['counted'])->toBeFalse()
@@ -353,25 +350,21 @@ it('keeps the snapshot when settings, rates, charges or tiers change', function 
         ->assertInertia(fn (Assert $page) => $page->where('quote.total.major', '66350.00')->where('cancellation_tiers', []));
 });
 
-it('expires stale drafts and unpaid bookings, freeing the car', function () {
+it('expires stale drafts after a day and unanswered requests at their pick-up time', function () {
     $draft = startBooking();
-    $unpaid = startBooking(['pickup_at' => '2026-12-02T10:00:00+03:00', 'return_at' => '2026-12-04T10:00:00+03:00']);
-    $this->put(route('bookings.driver', $unpaid), driverPayload(uploadDocuments($unpaid)));
-    $this->post(route('bookings.submit', $unpaid), ['accept_terms' => true, 'accept_privacy' => true]);
-
-    $this->travel(119)->minutes();
-    $this->artisan('bookings:expire')->assertSuccessful();
-    expect(Booking::where('status', 'expired')->count())->toBe(0);
-
-    $this->travel(2)->minutes();
-    $this->artisan('bookings:expire')->assertSuccessful();
-    expect(app(BookingTokenService::class)->find($unpaid)->status)->toBe(BookingStatus::Expired)
-        ->and(AvailabilityBlock::count())->toBe(0)
-        ->and(app(BookingTokenService::class)->find($draft)->status)->toBe(BookingStatus::Draft);
+    $request = startBooking(['pickup_at' => '2026-12-02T10:00:00+03:00', 'return_at' => '2026-12-04T10:00:00+03:00']);
+    $this->put(route('bookings.driver', $request), driverPayload(uploadDocuments($request)));
+    $this->post(route('bookings.submit', $request), ['accept_terms' => true, 'accept_privacy' => true]);
 
     $this->travel(24)->hours();
+    $this->travel(1)->minutes();
     $this->artisan('bookings:expire')->assertSuccessful();
-    expect(app(BookingTokenService::class)->find($draft)->status)->toBe(BookingStatus::Expired);
+    expect(app(BookingTokenService::class)->find($draft)->status)->toBe(BookingStatus::Expired)
+        ->and(app(BookingTokenService::class)->find($request)->status)->toBe(BookingStatus::Requested);
+
+    $this->travelTo('2026-12-02 07:01:00');
+    $this->artisan('bookings:expire')->assertSuccessful();
+    expect(app(BookingTokenService::class)->find($request)->status)->toBe(BookingStatus::Expired);
 });
 
 it('stores the renter\'s Nairobi times in UTC', function () {

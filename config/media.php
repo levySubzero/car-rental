@@ -43,6 +43,8 @@ return [
         'thumb' => ['width' => 320, 'format' => 'webp', 'quality' => 75],
         'card' => ['width' => 800, 'format' => 'webp', 'quality' => 80],
         'full' => ['width' => 1920, 'format' => 'webp', 'quality' => 82],
+        // Link previews: JPEG, because not every app that fetches them reads WebP.
+        'og' => ['width' => 1200, 'height' => 630, 'format' => 'jpg', 'quality' => 85],
     ],
 
     // Sniffed MIME type => stored extension. Collections list extensions from here.
@@ -82,7 +84,7 @@ return [
             'max_files' => 1,
             'max_kb' => 8192,
             'mimes' => ['jpg', 'png', 'webp', 'heic'],
-            'conversions' => ['thumb', 'card', 'full'],
+            'conversions' => ['thumb', 'card', 'full', 'og'],
             'upload' => ['permission' => 'settings.home.update'],
             'guidance' => [
                 'shape' => 'Wide 16:9',
@@ -135,7 +137,7 @@ return [
             'max_files' => 6,
             'max_kb' => 8192,
             'mimes' => ['jpg', 'png', 'webp', 'heic'],
-            'conversions' => ['thumb', 'card', 'full'],
+            'conversions' => ['thumb', 'card', 'full', 'og'],
             'upload' => ['permission' => 'cars.update'],
             'guidance' => [
                 'shape' => 'Landscape 4:3',

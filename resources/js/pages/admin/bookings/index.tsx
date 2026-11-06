@@ -1,12 +1,16 @@
 import { Head, Link } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import BookingController from '@/actions/App/Http/Controllers/Admin/BookingController';
+import BookingCreateController from '@/actions/App/Http/Controllers/Admin/BookingCreateController';
 import { BookingStatusBadge } from '@/components/admin/bookings/booking-status-badge';
 import type { Column } from '@/components/admin/data-table';
 import { DataTable, useTableQuery } from '@/components/admin/data-table';
 import { NativeSelect } from '@/components/admin/form-field';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useCan } from '@/hooks/use-can';
 import { formatBookingTime } from '@/lib/booking';
 import { cn } from '@/lib/utils';
 import type { AdminBookingRow, Option, Paginated } from '@/types';
@@ -21,7 +25,8 @@ type Filters = {
 };
 
 /**
- * The bookings desk (M11.1): tabs by what staff do next, soonest pickup first.
+ * The bookings desk (M11.1): tabs by what staff do next, soonest pickup first. The Requests
+ * screen (admin/bookings/requests) is the same table over the requests' tabs.
  */
 export default function BookingsIndex({
     bookings,
@@ -30,6 +35,7 @@ export default function BookingsIndex({
     buckets,
     cars,
     methods,
+    requests = false,
 }: {
     bookings: Paginated<AdminBookingRow>;
     filters: Filters;
@@ -37,9 +43,15 @@ export default function BookingsIndex({
     buckets: Option[];
     cars: Option[];
     methods: Option[];
+    requests?: boolean;
 }) {
+    const can = useCan();
     const apply = useTableQuery(filters);
-    const bucket = filters.bucket ?? 'upcoming';
+    const bucket = filters.bucket ?? buckets[0]?.value;
+    const title = requests ? 'Requests' : 'Bookings';
+    const tabUrl = requests
+        ? BookingController.requests.url
+        : BookingController.index.url;
 
     const columns: Column<AdminBookingRow>[] = [
         {
@@ -91,7 +103,20 @@ export default function BookingsIndex({
         {
             key: 'status',
             header: 'Status',
-            cell: (booking) => <BookingStatusBadge booking={booking} />,
+            cell: (booking) => (
+                <div className="flex flex-wrap gap-1">
+                    <BookingStatusBadge booking={booking} />
+                    {booking.one_day && (
+                        <Badge variant="secondary">One day</Badge>
+                    )}
+                    {booking.voucher_unsent && (
+                        <Badge variant="destructive">Voucher not sent</Badge>
+                    )}
+                    {booking.car_taken && (
+                        <Badge variant="destructive">Car taken</Badge>
+                    )}
+                </div>
+            ),
         },
         {
             key: 'money',
@@ -111,11 +136,25 @@ export default function BookingsIndex({
 
     return (
         <>
-            <Head title="Bookings" />
+            <Head title={title} />
             <AdminPage>
                 <PageHeader
-                    title="Bookings"
-                    description="Every submitted booking, from payment to return."
+                    title={title}
+                    description={
+                        requests
+                            ? 'Website requests to accept or decline, and accepted ones waiting for payment.'
+                            : 'Paid and confirmed bookings, from pick-up to return.'
+                    }
+                    actions={
+                        !requests &&
+                        can('bookings.create') && (
+                            <Button asChild>
+                                <Link href={BookingCreateController.create()}>
+                                    <Plus /> Enter a booking
+                                </Link>
+                            </Button>
+                        )
+                    }
                 />
                 <nav
                     className="flex gap-1 overflow-x-auto border-b"
@@ -124,9 +163,7 @@ export default function BookingsIndex({
                     {buckets.map((tab) => (
                         <Link
                             key={tab.value}
-                            href={BookingController.index.url({
-                                query: { bucket: tab.value },
-                            })}
+                            href={tabUrl({ query: { bucket: tab.value } })}
                             preserveState
                             aria-current={
                                 tab.value === bucket ? 'page' : undefined

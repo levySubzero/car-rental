@@ -66,13 +66,6 @@ class ShareSite
         $uuid = app(HomeSettings::class)->hero_media_uuid;
         $media = $uuid === null ? null : Media::query()->where('uuid', $uuid)->first();
 
-        if ($media === null) {
-            return null;
-        }
-
-        // Local disks give a root-relative URL; S3 or a CDN give an absolute one.
-        $src = app(MediaUrlGenerator::class)->url($media, 'full');
-
-        return str_starts_with($src, 'http') ? $src : rtrim((string) config('app.url'), '/').$src;
+        return $media === null ? null : app(MediaUrlGenerator::class)->shareUrl($media);
     }
 }

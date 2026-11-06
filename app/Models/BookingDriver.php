@@ -19,20 +19,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $first_name
  * @property string|null $second_name
  * @property string $surname
- * @property CarbonImmutable $dob
- * @property string $email
- * @property string $phone
+ * @property CarbonImmutable|null $dob
+ * @property string|null $email
+ * @property string|null $phone
  * @property string $email_normalized
  * @property string $phone_digits
- * @property string $nationality
+ * @property string|null $nationality
  * @property bool $is_kenyan_resident
- * @property IdType $id_type
- * @property string $id_number
- * @property string $id_number_hash
+ * @property IdType|null $id_type
+ * @property string|null $id_number
+ * @property string|null $id_number_hash
  * @property string|null $kra_pin
- * @property string $licence_number
- * @property CarbonImmutable $licence_expiry
- * @property int $licence_years_declared
+ * @property string|null $licence_number
+ * @property CarbonImmutable|null $licence_expiry
+ * @property int|null $licence_years_declared
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read Booking $booking
@@ -70,12 +70,12 @@ class BookingDriver extends Model
     protected static function booted(): void
     {
         static::saving(function (self $driver): void {
-            if ($driver->isDirty('id_number')) {
+            if ($driver->isDirty('id_number') && $driver->id_number !== null) {
                 $driver->id_number_hash = self::hashIdNumber($driver->id_number);
             }
 
-            // Lookup keys for the renter portal (M10B).
-            $driver->email_normalized = mb_strtolower(trim($driver->email));
+            // Lookup keys for the renter portal (M10B). Staff may enter a client with only a phone.
+            $driver->email_normalized = mb_strtolower(trim((string) $driver->email));
             $driver->phone_digits = PhoneNumber::digits($driver->phone);
         });
     }

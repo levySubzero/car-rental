@@ -22,7 +22,7 @@ class BookingDeskService
     public function __construct(private readonly BookingTokenService $tokens) {}
 
     /**
-     * Upcoming and unpaid soonest pickup first; closed and all newest first. Dates are local
+     * New, unpaid and upcoming soonest pickup first; closed and all newest first. Dates are local
      * (business time zone) pickup dates.
      *
      * @param  array{bucket?: string|null, search?: string|null, from?: string|null, to?: string|null, car?: int|string|null, method?: string|null}  $filters
@@ -33,9 +33,8 @@ class BookingDeskService
         $bucket = BookingBucket::tryFrom((string) ($filters['bucket'] ?? '')) ?? BookingBucket::Upcoming;
         $zone = (string) config('baines.timezone');
 
-        return Booking::query()
-            ->with(['car:id,name', 'driver:id,booking_id,first_name,surname,phone', 'latestPayment.method'])
-            ->whereIn('status', $bucket->statuses())
+        return $bucket->apply(Booking::query())
+            ->with(['car:id,name', 'driver:id,booking_id,first_name,surname,phone,email', 'latestPayment.method'])
             ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(
                 fn (Builder $query) => $query
                     ->where('reference', 'like', "%{$search}%")
@@ -52,7 +51,7 @@ class BookingDeskService
             ->when($filters['method'] ?? null, fn (Builder $query, string $method) => $query
                 ->whereHas('latestPayment', fn (Builder $query) => $query->where('payment_method_code', $method)))
             ->when(
-                in_array($bucket, [BookingBucket::Unpaid, BookingBucket::Upcoming, BookingBucket::OnHire], true),
+                in_array($bucket, [BookingBucket::New, BookingBucket::Unpaid, BookingBucket::Upcoming, BookingBucket::OnHire], true),
                 fn (Builder $query) => $query->orderBy($bucket === BookingBucket::OnHire ? 'return_at' : 'pickup_at'),
                 fn (Builder $query) => $query->orderByDesc('pickup_at'),
             )
@@ -66,16 +65,10 @@ class BookingDeskService
      */
     public function counts(): array
     {
-        $byStatus = Booking::query()
-            ->selectRaw('status, count(*) as total')
-            ->where('status', '!=', BookingStatus::Draft->value)
-            ->groupBy('status')
-            ->pluck('total', 'status');
-
         $counts = [];
 
         foreach (BookingBucket::cases() as $bucket) {
-            $counts[$bucket->value] = (int) collect($bucket->statuses())->sum(fn (BookingStatus $status) => $byStatus[$status->value] ?? 0);
+            $counts[$bucket->value] = $bucket->apply(Booking::query())->count();
         }
 
         return $counts;

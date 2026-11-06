@@ -23,8 +23,13 @@ export type NotificationSettings = {
 };
 
 const EVENTS: Record<string, { label: string; audience: string }> = {
-    booking_received: { label: 'Booking received', audience: 'Renter' },
-    staff_new_booking: { label: 'New booking', audience: 'Staff' },
+    booking_received: { label: 'Request under review', audience: 'Renter' },
+    staff_new_booking: { label: 'New request', audience: 'Staff' },
+    booking_accepted: { label: 'Request approved', audience: 'Renter' },
+    booking_cancelled: {
+        label: 'Request declined or booking cancelled',
+        audience: 'Renter',
+    },
     payment_submitted: { label: 'Payment submitted', audience: 'Staff' },
     booking_confirmed: {
         label: 'Booking confirmed (voucher)',

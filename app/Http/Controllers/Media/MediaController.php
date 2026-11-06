@@ -38,7 +38,8 @@ class MediaController extends Controller
     }
 
     /**
-     * Public: redirect to the disk or CDN, cached for a year (paths never change).
+     * Public: redirect to the disk or CDN, cached for a year (paths never change). Visitors
+     * asking for a public image's original get its largest conversion instead.
      * Private: authorize, log, then redirect to a short-lived URL.
      */
     public function show(Request $request, Media $media, ?string $conversion = null): RedirectResponse|StreamedResponse
@@ -46,6 +47,10 @@ class MediaController extends Controller
         $this->authorizeAs('view', $media);
 
         if ($media->isPublic()) {
+            if ($conversion === null && $this->urls->hidesOriginal($media)) {
+                $conversion = 'full';
+            }
+
             if (config('media.serve_public_via') !== 'redirect') {
                 return $this->stream($media, $conversion, cache: true);
             }

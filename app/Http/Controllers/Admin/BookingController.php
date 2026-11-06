@@ -31,14 +31,30 @@ class BookingController extends Controller
 
     public function index(IndexBookingRequest $request): Response
     {
-        $filters = $request->validated();
-        $filters['bucket'] ??= BookingBucket::Upcoming->value;
+        return $this->desk('admin/bookings/index', $request, BookingBucket::bookings());
+    }
 
-        return Inertia::render('admin/bookings/index', [
+    public function requests(IndexBookingRequest $request): Response
+    {
+        return $this->desk('admin/bookings/requests', $request, BookingBucket::requests());
+    }
+
+    /**
+     * @param  list<BookingBucket>  $buckets  the screen's tabs; the first is its default
+     */
+    private function desk(string $page, IndexBookingRequest $request, array $buckets): Response
+    {
+        $filters = $request->validated();
+
+        if (! in_array(BookingBucket::tryFrom((string) ($filters['bucket'] ?? '')), $buckets, true)) {
+            $filters['bucket'] = $buckets[0]->value;
+        }
+
+        return Inertia::render($page, [
             'bookings' => BookingListResource::collection($this->desk->paginate($filters)),
             'filters' => $filters,
             'counts' => $this->desk->counts(),
-            'buckets' => array_map(fn (BookingBucket $bucket) => ['value' => $bucket->value, 'label' => $bucket->label()], BookingBucket::cases()),
+            'buckets' => array_map(fn (BookingBucket $bucket) => ['value' => $bucket->value, 'label' => $bucket->label()], $buckets),
             'cars' => Car::query()->orderBy('name')->get(['id', 'name'])->map(fn (Car $car) => ['value' => (string) $car->id, 'label' => $car->name]),
             'methods' => PaymentMethod::query()->ordered()->get()->map(fn (PaymentMethod $method) => ['value' => $method->code->value, 'label' => $method->name]),
         ]);

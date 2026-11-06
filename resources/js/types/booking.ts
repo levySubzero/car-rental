@@ -76,6 +76,7 @@ export type Booking = {
     // Set once staff verify the payment; a part payment leaves the rest on the balance.
     reservation_paid: Money | null;
     balance_due: Money | null;
+    voucher_sent: boolean;
     paid_at: string | null;
     driver?: BookingDriver | null;
     // Drafts only: the attached file per document.

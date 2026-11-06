@@ -2,7 +2,6 @@
 
 namespace App\Services\Booking;
 
-use App\Enums\BookingBucket;
 use App\Enums\BookingStatus;
 use App\Exceptions\Domain\BookingException;
 use App\Models\Booking;
@@ -103,7 +102,7 @@ class DeliveryAdjustmentService
         }
 
         // Until handover: after it the balance has been taken.
-        if (! in_array($booking->status, [...BookingBucket::Unpaid->statuses(), BookingStatus::Reserved], true)) {
+        if (! in_array($booking->status, [BookingStatus::Requested, BookingStatus::AwaitingPayment, BookingStatus::PaymentSubmitted, BookingStatus::AwaitingCash, BookingStatus::PaymentRejected, BookingStatus::Reserved], true)) {
             throw BookingException::deliveryLocked();
         }
     }

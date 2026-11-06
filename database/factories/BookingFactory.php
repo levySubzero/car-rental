@@ -48,6 +48,42 @@ class BookingFactory extends Factory
     }
 
     /**
+     * A website request as BookingService::submit() leaves it: the worked example's amounts
+     * with a quote snapshot, no hold, and lapsing at pick-up.
+     */
+    public function requested(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => BookingStatus::Requested,
+            'reference' => 'BE-'.now()->year.'-'.str_pad((string) fake()->unique()->numberBetween(1, 999999), 6, '0', STR_PAD_LEFT),
+            'current_step' => BookingStep::Review,
+            'total_minor' => 6_635_000,
+            'reservation_minor' => 1_658_800,
+            'balance_minor' => 4_976_200,
+            'security_deposit_minor' => 16_000_000,
+            'submitted_at' => now(),
+            'expires_at' => $attributes['pickup_at'],
+            'cancellation_tiers' => [],
+            'quote' => [
+                'days' => 3,
+                'mileage_km_per_day' => 300,
+                'lines' => [],
+                'requires_staff_quote' => false,
+                'total' => ['minor' => 6_635_000, 'currency' => 'KES'],
+                'reservation' => ['minor' => 1_658_800, 'currency' => 'KES'],
+                'balance' => ['minor' => 4_976_200, 'currency' => 'KES'],
+                'deposit' => ['minor' => 16_000_000, 'currency' => 'KES'],
+                'display' => [],
+                'settings' => ['reservation_percent_bp' => 2500, 'reservation_rounding' => 'ceil_major'],
+                'fx' => ['base' => 'KES', 'rates' => ['USD' => [
+                    'code' => 'USD', 'market' => '129.000000', 'margin' => '3.00', 'source' => 'api',
+                    'fetched_at' => now()->toIso8601String(), 'stale' => false,
+                ]]],
+            ],
+        ]);
+    }
+
+    /**
      * Submitted with the PRD worked example's amounts (66,350 / 16,588 / 49,762) and the car
      * held for two hours, as BookingService::submit() leaves it.
      */

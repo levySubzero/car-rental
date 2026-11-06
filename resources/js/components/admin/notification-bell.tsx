@@ -3,8 +3,10 @@ import type { LucideIcon } from 'lucide-react';
 import {
     Banknote,
     Bell,
+    CalendarCheck,
     CalendarPlus,
     CircleAlert,
+    FileText,
     Mail,
     MessageSquare,
 } from 'lucide-react';
@@ -23,6 +25,8 @@ import type { AdminAlert } from '@/types/admin';
 
 const ICONS: Record<string, LucideIcon> = {
     'calendar-plus': CalendarPlus,
+    'calendar-check': CalendarCheck,
+    'file-text': FileText,
     banknote: Banknote,
     mail: Mail,
     'message-square': MessageSquare,

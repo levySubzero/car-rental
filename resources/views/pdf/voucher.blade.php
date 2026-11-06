@@ -75,6 +75,11 @@
         </table>
     @endif
 
+    @if ($voucher['notes'])
+        <h2>Notes</h2>
+        <p>{!! nl2br(e($voucher['notes'])) !!}</p>
+    @endif
+
     <div class="footer">
         {{ $company->legal_name ?: $company->company_name }}<br>
         @if ($company->address) {{ $company->address }}<br> @endif

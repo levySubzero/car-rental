@@ -21,11 +21,12 @@ export type MediaGuidance = {
     tip?: string;
 };
 
-export type MediaConversion = 'thumb' | 'card' | 'full';
+export type MediaConversion = 'thumb' | 'card' | 'full' | 'og';
 
 /**
  * Mirrors App\Http\Resources\Media\MediaResource. Public files carry direct URLs per
  * conversion; private files only carry app routes that authorize and log each request.
+ * Website visitors get no original URL and an empty name for a public image.
  */
 export type MediaItem = {
     uuid: string;

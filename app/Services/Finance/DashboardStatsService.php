@@ -2,6 +2,7 @@
 
 namespace App\Services\Finance;
 
+use App\Enums\BookingSource;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\Car;
@@ -43,8 +44,8 @@ class DashboardStatsService
     }
 
     /**
-     * Bookings submitted this month so far, and last month to the same day. Holds that
-     * expired unpaid are left out.
+     * Bookings confirmed this month so far, by the day they were paid or entered by staff, and
+     * last month to the same day. A booking cancelled since is left out.
      *
      * @return array{this_month: int, last_month: int}
      */
@@ -54,8 +55,26 @@ class DashboardStatsService
             [$current, $previous] = $this->monthToDate();
 
             return [
-                'this_month' => $this->submitted($current)->count(),
-                'last_month' => $this->submitted($previous)->count(),
+                'this_month' => $this->confirmed($current)->count(),
+                'last_month' => $this->confirmed($previous)->count(),
+            ];
+        });
+    }
+
+    /**
+     * Website requests received this month so far, whatever became of them, and last month
+     * to the same day.
+     *
+     * @return array{this_month: int, last_month: int}
+     */
+    public function requests(): array
+    {
+        return $this->remember('requests', function () {
+            [$current, $previous] = $this->monthToDate();
+
+            return [
+                'this_month' => $this->received($current)->count(),
+                'last_month' => $this->received($previous)->count(),
             ];
         });
     }
@@ -95,7 +114,7 @@ class DashboardStatsService
     }
 
     /**
-     * Bookings submitted per day over the last 30 days.
+     * Bookings confirmed per day over the last 30 days.
      *
      * @return list<array{date: string, value: int}>
      */
@@ -103,14 +122,26 @@ class DashboardStatsService
     {
         return $this->remember('bookings-series', function () {
             $period = FinancePeriod::lastDays(self::WINDOW_DAYS);
-            $perDay = $this->submitted($period)
-                ->get(['id', 'submitted_at'])
-                ->countBy(fn (Booking $booking) => FinancePeriod::localDate($booking->submitted_at));
 
-            return array_map(
-                fn (string $date) => ['date' => $date, 'value' => (int) $perDay->get($date, 0)],
-                $period->dates(),
-            );
+            return $this->perDay($period, $this->confirmed($period)->get(['id', 'paid_at'])->countBy(
+                fn (Booking $booking) => FinancePeriod::localDate($booking->paid_at),
+            ));
+        });
+    }
+
+    /**
+     * Website requests received per day over the last 30 days.
+     *
+     * @return list<array{date: string, value: int}>
+     */
+    public function requestsSeries(): array
+    {
+        return $this->remember('requests-series', function () {
+            $period = FinancePeriod::lastDays(self::WINDOW_DAYS);
+
+            return $this->perDay($period, $this->received($period)->get(['id', 'submitted_at'])->countBy(
+                fn (Booking $booking) => FinancePeriod::localDate($booking->submitted_at),
+            ));
         });
     }
 
@@ -153,13 +184,35 @@ class DashboardStatsService
     }
 
     /**
+     * @param  Collection<string, int>  $counts  local date => count
+     * @return list<array{date: string, value: int}>
+     */
+    private function perDay(FinancePeriod $period, Collection $counts): array
+    {
+        return array_map(
+            fn (string $date) => ['date' => $date, 'value' => (int) $counts->get($date, 0)],
+            $period->dates(),
+        );
+    }
+
+    /**
      * @return Builder<Booking>
      */
-    private function submitted(FinancePeriod $period): Builder
+    private function confirmed(FinancePeriod $period): Builder
     {
         return Booking::query()
-            ->whereNotNull('submitted_at')
-            ->where('status', '!=', BookingStatus::Expired)
+            ->whereIn('status', [BookingStatus::Reserved, BookingStatus::Active, BookingStatus::Completed, BookingStatus::NoShow])
+            ->where('paid_at', '>=', $period->start)
+            ->where('paid_at', '<', $period->end);
+    }
+
+    /**
+     * @return Builder<Booking>
+     */
+    private function received(FinancePeriod $period): Builder
+    {
+        return Booking::query()
+            ->where('source', BookingSource::Website)
             ->where('submitted_at', '>=', $period->start)
             ->where('submitted_at', '<', $period->end);
     }

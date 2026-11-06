@@ -49,13 +49,17 @@ class ImageProcessor
     }
 
     /**
-     * One conversion from config media.conversions: scaled down to the width (never up).
+     * One conversion from config media.conversions: scaled down to the width (never up), or
+     * cropped to fill the exact size when the spec also has a height.
      *
-     * @param  array{width: int, format?: string, quality?: int}  $spec
+     * @param  array{width: int, height?: int, format?: string, quality?: int}  $spec
      */
     public function convert(string $contents, array $spec): ProcessedImage
     {
-        $image = $this->decode($contents, binary: true)->scaleDown(width: $spec['width']);
+        $image = $this->decode($contents, binary: true);
+        $image = isset($spec['height'])
+            ? $image->cover($spec['width'], $spec['height'])
+            : $image->scaleDown(width: $spec['width']);
         $quality = $spec['quality'] ?? 80;
 
         return match ($spec['format'] ?? 'webp') {

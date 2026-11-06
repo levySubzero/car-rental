@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\BookingBucket;
 use App\Enums\BookingRequestStatus;
 use App\Enums\ContactMessageStatus;
 use App\Enums\Permission;
@@ -63,9 +64,12 @@ class DashboardController extends Controller
                 'collected' => $canFinance ? $stats->collectedSeries() : null,
                 'bookings' => $canBookings ? $stats->bookings() : null,
                 'bookingsSeries' => $canBookings ? $stats->bookingsSeries() : null,
+                'requests' => $canBookings ? $stats->requests() : null,
+                'requestsSeries' => $canBookings ? $stats->requestsSeries() : null,
                 'utilisation' => $canBookings ? $stats->utilisation() : null,
                 'topCars' => $canBookings ? $stats->topCars() : null,
                 // Queues are counted live: staff act on them.
+                'requestsWaiting' => $canBookings ? BookingBucket::New->apply(Booking::query())->count() : null,
                 'paymentsWaiting' => $canPayments ? ($payments->counts()['pending'] ?? 0) : null,
                 'receiptsOpen' => $canPayments ? $receipts->openCount() : null,
                 'openRequests' => $user->can(Permission::BookingRequestsView)

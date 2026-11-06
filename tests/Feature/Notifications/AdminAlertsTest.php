@@ -46,17 +46,17 @@ it('sends an alert to staff holding its permissions and to super admins only', f
         ->and($payments->notifications()->first()->type)->toBe('payment_submitted');
 });
 
-it('alerts staff about new bookings and payments', function () {
-    $staff = staffWith([Permission::PaymentsView]);
+it('alerts staff who can accept about new requests', function () {
+    $staff = staffWith([Permission::BookingsAccept]);
     $booking = Booking::factory()->awaitingPayment()->create();
     BookingDriver::factory()->for($booking)->create(['first_name' => 'Amina', 'surname' => 'Otieno']);
 
     app(BookingNotifier::class)->submitted($booking, str_repeat('a', 64));
 
     $alert = $staff->notifications()->sole();
-    expect($alert->data['title'])->toBe("New booking {$booking->reference}")
+    expect($alert->data['title'])->toBe("New request {$booking->reference}")
         ->and($alert->data['body'])->toStartWith('Amina Otieno, ')
-        ->and($alert->data['url'])->toBe(route('admin.payments.index', ['search' => $booking->reference]));
+        ->and($alert->data['url'])->toBe(route('admin.bookings.show', $booking->reference));
 });
 
 it('shares the unread count and the latest alerts on admin pages', function () {

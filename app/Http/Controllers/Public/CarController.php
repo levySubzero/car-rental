@@ -7,6 +7,8 @@ use App\Http\Resources\Public\CarCardResource;
 use App\Http\Resources\Public\CarDetailResource;
 use App\Models\Car;
 use App\Settings\PricingSettings;
+use App\Support\Money;
+use App\Support\SharePreview;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,7 +31,22 @@ class CarController extends Controller
             'related' => CarCardResource::collection($this->related($car)),
             // "Pay 25% to reserve": basis points as a whole or decimal percentage.
             'reservation_percent' => $pricing->reservation_percent_bp / 100,
-        ]);
+        ])->withViewData('share', SharePreview::for(
+            $car->brand ? "{$car->name} rental in Nairobi" : $car->name,
+            $this->description($car),
+            $car->gallery->first() ?? $car->cover,
+        ));
+    }
+
+    /**
+     * The link preview's text; resources/js/pages/public/car.tsx uses the same wording.
+     */
+    private function description(Car $car): string
+    {
+        $rate = (new Money($car->daily_rate_minor))->format();
+        $transmission = strtolower($car->transmission->label());
+
+        return "Rent the {$car->name} in Nairobi from {$rate} per day. {$car->seats} seats, {$transmission}, {$car->effectiveMileageLimitKm()} km per day included.";
     }
 
     /**

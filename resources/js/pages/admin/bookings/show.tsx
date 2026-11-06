@@ -1,8 +1,10 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
+import BookingVoucherController from '@/actions/App/Http/Controllers/Admin/BookingVoucherController';
 import BookingController from '@/actions/App/Http/Controllers/Admin/BookingController';
 import {
+    AcceptBookingDialog,
     CloseBookingDialog,
     DeliveryCheckedButton,
     DeliveryDialog,
@@ -20,7 +22,7 @@ import {
     VerifyPaymentDialog,
 } from '@/components/admin/payments/payment-dialogs';
 import { SecureDocumentViewer } from '@/components/media/secure-document-viewer';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +65,7 @@ export default function BookingShow({
     const status = booking.status;
     const pendingPayment = booking.payments.find((p) => p.status === 'pending');
     const deliveryEditable = [
+        'requested',
         'awaiting_payment',
         'payment_submitted',
         'awaiting_cash',
@@ -87,6 +90,11 @@ export default function BookingShow({
                 />
 
                 <div className="flex flex-wrap gap-2">
+                    {status === 'requested' &&
+                        !booking.car_taken &&
+                        can('bookings.accept') && (
+                            <AcceptBookingDialog booking={booking} />
+                        )}
                     {pendingPayment && can('payments.verify') && (
                         <VerifyPaymentDialog payment={pendingPayment} />
                     )}
@@ -139,6 +147,51 @@ export default function BookingShow({
                             <MarkRefundedDialog booking={booking} />
                         )}
                 </div>
+
+                {booking.voucher_unsent && (
+                    <Alert variant="destructive">
+                        <AlertTriangle />
+                        <AlertTitle>Voucher not sent</AlertTitle>
+                        <AlertDescription>
+                            <p>
+                                The renter is waiting for their confirmation and
+                                voucher. Review it, then send it.
+                            </p>
+                            <Button asChild size="sm" className="mt-2">
+                                <Link
+                                    href={BookingVoucherController.show.url(
+                                        booking.reference,
+                                    )}
+                                >
+                                    Review voucher
+                                </Link>
+                            </Button>
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {booking.car_taken && (
+                    <Alert variant="destructive">
+                        <AlertTriangle />
+                        <AlertTitle>This car is no longer free</AlertTitle>
+                        <AlertDescription>
+                            Another booking has taken some of these dates, so
+                            this request cannot be accepted. Decline it and
+                            suggest another car in your reason.
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {booking.one_day && status === 'requested' && (
+                    <Alert>
+                        <AlertTriangle />
+                        <AlertTitle>One-day rental</AlertTitle>
+                        <AlertDescription>
+                            Check it meets the one-day policy. Set its price and
+                            security deposit when you accept it.
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 {booking.balance_outstanding && (
                     <Alert variant="destructive">
@@ -439,10 +492,11 @@ export default function BookingShow({
                                             ['Born', booking.driver.dob],
                                             [
                                                 'Nationality',
-                                                `${booking.driver.nationality}${booking.driver.is_kenyan_resident ? ', Kenyan resident' : ''}`,
+                                                booking.driver.nationality &&
+                                                    `${booking.driver.nationality}${booking.driver.is_kenyan_resident ? ', Kenyan resident' : ''}`,
                                             ],
                                             [
-                                                booking.driver.id_type,
+                                                booking.driver.id_type ?? 'ID',
                                                 booking.driver.id_number,
                                             ],
                                             ['KRA PIN', booking.driver.kra_pin],
@@ -503,11 +557,33 @@ export default function BookingShow({
                             )}
                             {booking.voucher && (
                                 <div className="mt-4 flex items-center justify-between gap-2 border-t pt-4 text-sm">
-                                    <span>Voucher</span>
-                                    <SecureDocumentViewer
-                                        media={booking.voucher}
-                                        label="Open"
-                                    />
+                                    <span>
+                                        Voucher
+                                        <span className="block text-xs text-muted-foreground">
+                                            {booking.voucher_sent_at
+                                                ? `Sent ${formatBookingTime(booking.voucher_sent_at)}`
+                                                : 'Not sent'}
+                                        </span>
+                                    </span>
+                                    {[
+                                        'reserved',
+                                        'active',
+                                        'completed',
+                                    ].includes(status) ? (
+                                        <Link
+                                            href={BookingVoucherController.show.url(
+                                                booking.reference,
+                                            )}
+                                            className="underline underline-offset-4"
+                                        >
+                                            Review
+                                        </Link>
+                                    ) : (
+                                        <SecureDocumentViewer
+                                            media={booking.voucher}
+                                            label="Open"
+                                        />
+                                    )}
                                 </div>
                             )}
                         </Section>

@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Admin;
 
 use App\Models\Booking;
+use App\Services\Booking\AvailabilityService;
 use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -35,6 +36,9 @@ class BookingListResource extends JsonResource
             'pickup_mode' => $this->pickup_mode->value,
             'return_mode' => $this->return_mode->value,
             'delivery_pending' => $this->deliveryPending(),
+            'one_day' => $this->isOneDay(),
+            'voucher_unsent' => $this->voucherUnsent(),
+            'car_taken' => app(AvailabilityService::class)->isTakenFromRequest($this->resource),
             'method' => $payment === null ? null : ($payment->method->name ?? $payment->payment_method_code->value),
             'total' => new Money((int) $this->total_minor),
             'balance' => new Money((int) $this->balance_minor),

@@ -55,10 +55,29 @@ export function Seo({
                     content={shareImage}
                 />
             )}
+            {shareImage?.endsWith('/og.jpg') && (
+                <>
+                    <meta
+                        head-key="og:image:width"
+                        property="og:image:width"
+                        content="1200"
+                    />
+                    <meta
+                        head-key="og:image:height"
+                        property="og:image:height"
+                        content="630"
+                    />
+                </>
+            )}
             <meta
                 head-key="twitter:card"
                 name="twitter:card"
                 content={shareImage ? 'summary_large_image' : 'summary'}
+            />
+            <meta
+                head-key="twitter:title"
+                name="twitter:title"
+                content={fullTitle}
             />
             {shareImage && (
                 <meta

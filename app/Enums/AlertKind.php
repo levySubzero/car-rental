@@ -14,6 +14,8 @@ enum AlertKind: string
     case ContactMessage = 'contact_message';
     case BookingRequest = 'booking_request';
     case PaymentNeedsReview = 'payment_needs_review';
+    case BookingUpdate = 'booking_update';
+    case VoucherReady = 'voucher_ready';
 
     /**
      * @return list<Permission>
@@ -21,11 +23,13 @@ enum AlertKind: string
     public function audience(): array
     {
         return match ($this) {
-            self::NewBooking => [Permission::BookingsView, Permission::PaymentsView],
+            self::NewBooking => [Permission::BookingsAccept],
             self::PaymentSubmitted => [Permission::PaymentsView],
             self::ContactMessage => [Permission::ContactMessagesView],
             self::BookingRequest => [Permission::BookingRequestsView],
             self::PaymentNeedsReview => [Permission::PaymentsVerify],
+            self::BookingUpdate => [Permission::BookingsView],
+            self::VoucherReady => [Permission::BookingsResendVoucher],
         };
     }
 
@@ -40,6 +44,8 @@ enum AlertKind: string
             self::ContactMessage => 'mail',
             self::BookingRequest => 'message-square',
             self::PaymentNeedsReview => 'circle-alert',
+            self::BookingUpdate => 'calendar-check',
+            self::VoucherReady => 'file-text',
         };
     }
 }

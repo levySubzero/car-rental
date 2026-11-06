@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BookingSource;
 use App\Enums\BookingStatus;
 use App\Enums\BookingStep;
 use App\Enums\HandoverMode;
@@ -63,6 +64,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable|null $submitted_at
  * @property CarbonImmutable|null $paid_at
+ * @property BookingSource $source
+ * @property array<string, string>|null $voucher_overrides
+ * @property CarbonImmutable|null $voucher_sent_at
  * @property CarbonImmutable|null $closed_at
  * @property bool $legal_hold
  * @property CarbonImmutable|null $kyc_purged_at
@@ -119,6 +123,9 @@ class Booking extends Model
             'return_mode' => HandoverMode::class,
             'extras' => 'array',
             'quote' => 'array',
+            'source' => BookingSource::class,
+            'voucher_overrides' => 'array',
+            'voucher_sent_at' => 'datetime',
             'cancellation_tiers' => 'array',
             'total_minor' => 'integer',
             'reservation_minor' => 'integer',
@@ -263,6 +270,25 @@ class Booking extends Model
     public function needsDeliveryZone(): bool
     {
         return $this->pickup_mode === HandoverMode::Address || $this->return_mode === HandoverMode::Address;
+    }
+
+    /**
+     * Confirmed and running, with the voucher still to send. A client staff entered with no
+     * email gets it by hand, so nothing is waiting.
+     */
+    public function voucherUnsent(): bool
+    {
+        return in_array($this->status, [BookingStatus::Reserved, BookingStatus::Active], true)
+            && $this->voucher_sent_at === null
+            && ($this->source !== BookingSource::Admin || filled($this->driver?->email));
+    }
+
+    /**
+     * One billable day: the policy's one-day rules apply, and staff set these by hand.
+     */
+    public function isOneDay(): bool
+    {
+        return (int) ($this->quote['days'] ?? 0) === 1;
     }
 
     /**

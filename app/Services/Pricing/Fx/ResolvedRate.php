@@ -10,7 +10,8 @@ use Carbon\CarbonImmutable;
  * The rate that applies to a currency right now (D28), with the display margin applied.
  *
  * `market` converts foreign charges into KES (PRD: chauffeur at the market rate).
- * `effective` = market − margin converts KES prices for display: amount ÷ effective.
+ * `effective` = market − margin converts KES prices for display: amount ÷ effective. A
+ * negative margin puts the display rate above the market rate; zero leaves it exact.
  */
 final readonly class ResolvedRate
 {

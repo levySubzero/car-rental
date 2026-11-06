@@ -45,7 +45,28 @@
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            {{-- Only without SSR: crawlers do not run the page's JavaScript, so link previews come from here. --}}
+            <title>{{ $share['title'] ?? config('app.name', 'Laravel') }}</title>
+            @isset($share)
+                @if ($share['description'])
+                    <meta name="description" content="{{ $share['description'] }}">
+                    <meta property="og:description" content="{{ $share['description'] }}">
+                @endif
+                <meta property="og:type" content="website">
+                <meta property="og:site_name" content="{{ $share['site_name'] }}">
+                <meta property="og:title" content="{{ $share['title'] }}">
+                <meta property="og:url" content="{{ $share['url'] }}">
+                <meta name="twitter:card" content="{{ $share['image'] ? 'summary_large_image' : 'summary' }}">
+                <meta name="twitter:title" content="{{ $share['title'] }}">
+                @if ($share['image'])
+                    <meta property="og:image" content="{{ $share['image'] }}">
+                    <meta name="twitter:image" content="{{ $share['image'] }}">
+                    @if (str_ends_with($share['image'], '/og.jpg'))
+                        <meta property="og:image:width" content="1200">
+                        <meta property="og:image:height" content="630">
+                    @endif
+                @endif
+            @endisset
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

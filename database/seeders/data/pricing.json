@@ -57,7 +57,7 @@
             "tax_inclusive": true
         },
         "licence_min_years_held": 3,
-        "availability_hold_minutes": 120,
+        "availability_hold_minutes": 1440,
         "flight_notice_days": 2,
         "amendment_phone_only_within_hours": 48
     },

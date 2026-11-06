@@ -329,12 +329,13 @@ function Review({
                             disabled={form.processing || !quote}
                             className="h-12 px-8 font-semibold"
                         >
-                            {form.processing ? 'Submitting…' : 'Submit booking'}
+                            {form.processing ? 'Sending…' : 'Send request'}
                         </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        We hold the car for you while you pay the reservation.
-                        Payment details follow on the next page.
+                        Our team reviews your request and emails you. There is
+                        nothing to pay until it is approved, and the car is held
+                        for you from then.
                     </p>
                 </form>
             </div>

@@ -11,7 +11,7 @@ class FxSettings extends Settings
 
     public int $refresh_minutes;
 
-    // Subtracted from the market KES rate for display prices (PRD §5: KES 3).
+    // Subtracted from the market KES rate for display prices: negative is above market, 0 exact.
     public int $margin_minor;
 
     public int $stale_after_hours;

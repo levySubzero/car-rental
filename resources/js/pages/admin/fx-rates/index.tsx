@@ -85,7 +85,7 @@ export default function FxRatesIndex({
             <AdminPage>
                 <PageHeader
                     title="Exchange rates"
-                    description={`${base} per unit of each currency. Display prices use the market rate minus the margin; foreign charges such as the chauffeur use the market rate.`}
+                    description={`${base} per unit of each currency. Display prices use the market rate with the offset from Exchange rate settings; foreign charges such as the chauffeur use the market rate.`}
                     actions={
                         editable && (
                             <div className="flex flex-wrap gap-2">

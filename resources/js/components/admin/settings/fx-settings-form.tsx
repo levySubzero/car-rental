@@ -25,6 +25,12 @@ export type FxSettingsContext = {
     hasApiKey: boolean;
 };
 
+const marginModes: Option[] = [
+    { value: 'below', label: 'Below the market rate' },
+    { value: 'above', label: 'Above the market rate' },
+    { value: 'exact', label: 'Exactly the market rate' },
+];
+
 export function FxSettingsForm({
     values,
     context,
@@ -35,8 +41,17 @@ export function FxSettingsForm({
     const form = useForm({
         provider: values.provider,
         refresh_minutes: String(values.refresh_minutes),
-        // Stored in cents; edited in KES.
-        margin: String(values.margin_minor / 100),
+        // Stored signed in cents (positive is below market); edited as a mode and KES amount.
+        margin_mode:
+            values.margin_minor === 0
+                ? 'exact'
+                : values.margin_minor > 0
+                  ? 'below'
+                  : 'above',
+        margin_amount:
+            values.margin_minor === 0
+                ? ''
+                : String(Math.abs(values.margin_minor) / 100),
         stale_after_hours: String(values.stale_after_hours),
         max_jump_percent: String(values.max_jump_percent),
     });
@@ -65,7 +80,7 @@ export function FxSettingsForm({
                     <CardTitle>Exchange rates</CardTitle>
                     <CardDescription>
                         Where rates come from and how display prices are worked
-                        out: KES amount ÷ (market rate − margin).
+                        out from the market rate and your offset.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -85,13 +100,26 @@ export function FxSettingsForm({
                             form.setData('provider', event.target.value)
                         }
                     />
-                    <TextField
-                        label="Margin (KES per unit)"
-                        inputMode="decimal"
-                        description="Subtracted from the market rate for display prices."
-                        {...number('margin')}
-                        type="text"
+                    <SelectField
+                        name="margin_mode"
+                        label="Display rate"
+                        options={marginModes}
+                        value={form.data.margin_mode}
+                        error={form.errors.margin_mode}
+                        description="Applies to prices shown in other currencies. Charges stay in KES."
+                        onChange={(event) =>
+                            form.setData('margin_mode', event.target.value)
+                        }
                     />
+                    {form.data.margin_mode !== 'exact' && (
+                        <TextField
+                            label="Amount (KES per unit)"
+                            inputMode="decimal"
+                            description={`E.g. 2 shows a market rate of 129 as ${form.data.margin_mode === 'below' ? '127' : '131'}.`}
+                            {...number('margin_amount')}
+                            type="text"
+                        />
+                    )}
                     <TextField
                         label="Fetch every (minutes)"
                         min={15}

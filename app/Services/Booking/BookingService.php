@@ -142,7 +142,8 @@ class BookingService
     }
 
     /**
-     * Re-check everything, hold the car and freeze the price (M8.15).
+     * Re-check everything and freeze the price (M8.15). A request holds no car: that waits for
+     * staff to accept it, and until then it only lapses when its pick-up time passes.
      *
      * @throws ValidationException
      */
@@ -177,7 +178,6 @@ class BookingService
             $this->ensureDraft($locked);
 
             $quote = $this->quote($booking);
-            $hold = $this->availability->lockAndHold($booking);
 
             $booking->forceFill([
                 'reference' => $this->references->next(),
@@ -192,11 +192,11 @@ class BookingService
                 'accepted_terms_ip' => $ip,
                 'accepted_privacy_at' => now(),
                 'submitted_at' => now(),
-                'expires_at' => $hold->expires_at,
+                'expires_at' => $booking->pickup_at,
                 'current_step' => BookingStep::Review,
             ])->save();
 
-            return $this->statuses->transition($booking, BookingStatus::AwaitingPayment, 'renter');
+            return $this->statuses->transition($booking, BookingStatus::Requested, 'renter');
         });
 
         $this->notifier->submitted($booking, $token);
@@ -205,7 +205,7 @@ class BookingService
     }
 
     /**
-     * Expire stale drafts and unpaid bookings (M8.17). Expiry frees the hold.
+     * Expire stale drafts, unanswered requests and unpaid bookings (M8.17). Expiry frees any hold.
      *
      * @return array{drafts: int, unpaid: int}
      */
@@ -215,10 +215,10 @@ class BookingService
 
         // A draft lapses that many hours after the renter last saved a step.
         $drafts = Booking::query()->where('status', BookingStatus::Draft)->where('updated_at', '<=', now()->subHours($draftHours));
-        // Unpaid: the hold ran out before a payment came, cash was not brought, or a rejected
+        // Unpaid: a request nobody answered, the hold ran out before a payment came, cash was not brought, or a rejected
         // payment was not retried (D38). A payment being checked never lapses.
         $unpaid = Booking::query()
-            ->whereIn('status', [BookingStatus::AwaitingPayment, BookingStatus::AwaitingCash, BookingStatus::PaymentRejected])
+            ->whereIn('status', [BookingStatus::Requested, BookingStatus::AwaitingPayment, BookingStatus::AwaitingCash, BookingStatus::PaymentRejected])
             ->where('expires_at', '<=', now());
 
         foreach (['drafts' => $drafts, 'unpaid' => $unpaid] as $kind => $query) {
@@ -274,7 +274,7 @@ class BookingService
      *
      * @return list<array{hours_before_pickup: int, refund_percent_bp: int, label: string|null}>
      */
-    private function cancellationTiers(): array
+    public function cancellationTiers(): array
     {
         return array_values(CancellationTier::query()->orderByDesc('hours_before_pickup')->get()
             ->map(fn (CancellationTier $tier) => [

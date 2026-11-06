@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Enums\BookingStatus;
+use App\Enums\PaymentMethodCode;
 use App\Enums\PaymentStatus;
 use App\Enums\Permission;
 use App\Exceptions\Domain\PaymentException;
@@ -156,6 +157,25 @@ class PaymentVerificationService
         });
     }
 
+    /**
+     * Money staff took themselves for a booking they entered, recorded
+     * as a verified payment so Finance counts it. Nothing taken yet means no payment at all,
+     * and the whole total stays due at handover.
+     */
+    public function recordOffline(Booking $booking, Money $amount, ?PaymentMethodCode $method, ?string $reference, User $actor): void
+    {
+        if ($amount->minor <= 0 || $method === null) {
+            $booking->forceFill(['reservation_paid_minor' => 0, 'balance_minor' => (int) $booking->total_minor, 'paid_at' => now()])->save();
+            $this->statuses->transition($booking, BookingStatus::Reserved, $actor, 'Entered by staff');
+
+            return;
+        }
+
+        $submission = $booking->payments()->create(['payment_method_code' => $method, 'transaction_message' => 'Taken by staff']);
+
+        $this->markVerified($submission, $booking, trim((string) $reference) ?: (string) $booking->reference, $amount->minor, $actor, null, 'Entered by staff');
+    }
+
     public function reject(PaymentSubmission $submission, string $reason, User $actor): PaymentSubmission
     {
         return DB::transaction(function () use ($submission, $reason, $actor) {
@@ -177,7 +197,9 @@ class PaymentVerificationService
             ])->save();
 
             $this->statuses->transition($booking, BookingStatus::PaymentRejected, $actor, $submission->rejection_reason);
-            $this->availability->extendHold($booking, now()->addMinutes($this->pricing->hold_minutes));
+            // A retry cannot run past pick-up.
+            $until = now()->addMinutes($this->pricing->hold_minutes);
+            $this->availability->extendHold($booking, $until->isAfter($booking->pickup_at) ? $booking->pickup_at : $until);
 
             activity(self::LOG_NAME)->performedOn($booking)->causedBy($actor)
                 ->withProperties(['submission' => $submission->id, 'reason' => $submission->rejection_reason])

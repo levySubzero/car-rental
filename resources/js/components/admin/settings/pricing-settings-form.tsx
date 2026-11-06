@@ -171,7 +171,7 @@ export function PricingSettingsForm({
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <TextField
-                        label="Hold while paying (minutes)"
+                        label="Payment window after accepting (minutes)"
                         type="number"
                         min={5}
                         required
