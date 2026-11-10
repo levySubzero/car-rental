@@ -1,5 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import IntegrationController from '@/actions/App/Http/Controllers/Admin/IntegrationController';
+import IntegrationTestMailController from '@/actions/App/Http/Controllers/Admin/IntegrationTestMailController';
 import { ToggleRow } from '@/components/admin/catalog/toggle-row';
 import { Field, SelectField, TextField } from '@/components/admin/form-field';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
@@ -96,6 +97,7 @@ export default function EditIntegration({
                         fields={fields}
                         disabled={unreadable}
                     />
+                    {integration.key === 'resend' && <TestMailCard />}
                 </div>
             </AdminPage>
         </>
@@ -287,5 +289,65 @@ function IntegrationInput({
             disabled={disabled}
             onChange={(event) => onChange(event.target.value)}
         />
+    );
+}
+
+/**
+ * Send to a real inbox with the saved settings (M12B.14): a plain message, or every booking
+ * email built from one booking. The booking is not changed, and links in them open nothing.
+ */
+function TestMailCard() {
+    const form = useForm({ email: '', reference: '' });
+
+    return (
+        <form
+            onSubmit={(event) => {
+                event.preventDefault();
+                form.post(IntegrationTestMailController.url(), {
+                    preserveScroll: true,
+                });
+            }}
+        >
+            <Card>
+                <CardHeader>
+                    <CardTitle>Send test emails</CardTitle>
+                    <CardDescription>
+                        Save the settings above first. Leave the booking empty
+                        for one plain message, or give a booking reference to
+                        receive every booking email built from it. The booking
+                        is not changed, and links in these emails do not open
+                        it.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                    <TextField
+                        name="email"
+                        label="Send to"
+                        type="email"
+                        required
+                        value={form.data.email}
+                        error={form.errors.email}
+                        onChange={(event) =>
+                            form.setData('email', event.target.value)
+                        }
+                    />
+                    <TextField
+                        name="reference"
+                        label="Booking reference (optional)"
+                        placeholder="BE-2026-000001"
+                        value={form.data.reference}
+                        error={form.errors.reference}
+                        onChange={(event) =>
+                            form.setData('reference', event.target.value)
+                        }
+                    />
+                </CardContent>
+                <CardFooter>
+                    <Button type="submit" disabled={form.processing}>
+                        {form.processing ? 'Sending…' : 'Send test emails'}
+                    </Button>
+                </CardFooter>
+            </Card>
+        </form>
     );
 }

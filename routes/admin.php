@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\FxRateController;
 use App\Http\Controllers\Admin\GatewayReceiptController;
 use App\Http\Controllers\Admin\IntegrationController;
+use App\Http\Controllers\Admin\IntegrationTestMailController;
 use App\Http\Controllers\Admin\MarkdownPreviewController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentMethodController;
@@ -200,6 +201,7 @@ Route::middleware(['can:integrations.manage', RequirePassword::class])->group(fu
     Route::get('integrations', [IntegrationController::class, 'index'])->name('integrations.index');
     Route::get('integrations/{integration}', [IntegrationController::class, 'edit'])->name('integrations.edit');
     Route::put('integrations/{integration}', [IntegrationController::class, 'update'])->name('integrations.update');
+    Route::post('integrations/resend/test', IntegrationTestMailController::class)->middleware('throttle:6,1')->name('integrations.test-mail');
 });
 
 // Audit
