@@ -204,8 +204,9 @@ it('builds the voucher from the snapshot only', function () {
         ->toContain('KES 160,000')
         ->toContain('Monday 2 November 2026')
         ->toContain('10:00')
-        ->toContain('72 hours or more before pick-up')
-        ->toContain('50%');
+        ->toContain('Within Kenya')
+        ->toContain('Security deposit is required upon vehicle handover')
+        ->not->toContain('72 hours or more before pick-up');
 
     // Later tier and price changes never reach an existing booking's voucher.
     CancellationTier::factory()->create(['hours_before_pickup' => 24, 'refund_percent_bp' => 1000, 'label' => 'Late']);

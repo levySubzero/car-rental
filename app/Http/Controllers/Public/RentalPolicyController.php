@@ -12,6 +12,7 @@ use App\Models\DeliveryZone;
 use App\Models\DepositBand;
 use App\Models\Policy;
 use App\Services\Cms\PageContent;
+use App\Settings\PricingSettings;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,7 +23,7 @@ use Inertia\Response;
  */
 class RentalPolicyController extends Controller
 {
-    public function __invoke(PageContent $pages): Response
+    public function __invoke(PageContent $pages, PricingSettings $pricing): Response
     {
         $page = $pages->for('rental-policy');
 
@@ -60,7 +61,7 @@ class RentalPolicyController extends Controller
                     'basis' => $charge->basis->label(),
                     'payable_at' => $charge->payable_at->label(),
                 ]),
-            'deposit_bands' => DepositBand::query()->active()->orderBy('min_age')->get()
+            'deposit_bands' => ! $pricing->security_deposit_enabled ? [] : DepositBand::query()->active()->orderBy('min_age')->get()
                 ->map(fn (DepositBand $band) => [
                     'ages' => $band->min_age === $band->max_age ? (string) $band->min_age : "{$band->min_age}–{$band->max_age}",
                     'percent' => $band->percent_bp / 100,

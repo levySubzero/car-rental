@@ -21,6 +21,7 @@ function pricingPayload(array $overrides = []): array
         'cash_hold_hours' => 24,
         'default_mileage_km' => 250,
         'unlimited_mileage_after_days' => 7,
+        'security_deposit_enabled' => true,
         ...$overrides,
     ];
 }

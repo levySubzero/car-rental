@@ -116,6 +116,8 @@ export type PublicQuote = {
     reservation: Money;
     balance: Money;
     deposit: Money | null;
+    // Before the driver's age is known: whether a deposit may be asked (no amount is shown).
+    deposit_may_apply?: boolean;
     mileage_km_per_day: number | null;
     requires_staff_quote: boolean;
     display: Record<

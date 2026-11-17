@@ -7,6 +7,7 @@ use App\Models\Car;
 use App\Models\Charge;
 use App\Models\DeliveryZone;
 use App\Models\DepositBand;
+use App\Services\Pricing\Quote\DepositRange;
 use App\Services\Pricing\Quote\Quote;
 use App\Services\Pricing\Quote\QuoteCalculator;
 use App\Services\Pricing\Quote\QuoteContext;
@@ -77,6 +78,18 @@ class QuoteService
             ->all());
     }
 
+    /**
+     * The car page's "deposit from … to …", before anyone gives an age. Null when deposits are off.
+     */
+    public function depositRange(Car $car): ?DepositRange
+    {
+        if (! app(PricingSettings::class)->security_deposit_enabled) {
+            return null;
+        }
+
+        return DepositRange::for($car->car_value_minor, DepositBand::query()->active()->get());
+    }
+
     public function context(): QuoteContext
     {
         return new QuoteContext(
@@ -84,6 +97,7 @@ class QuoteService
             fx: $this->fx->table(),
             charges: array_values(Charge::query()->active()->ordered()->get()->all()),
             bands: array_values(DepositBand::query()->active()->orderBy('min_age')->get()->all()),
+            depositsEnabled: app(PricingSettings::class)->security_deposit_enabled,
         );
     }
 }

@@ -44,6 +44,8 @@ class BookingConfirmed extends BookingNotification
             ->line("**Car:** {$fields['car']}")
             ->line("**Dates:** {$fields['pickup']['date']} at {$fields['pickup']['time']} to {$fields['return']['date']} at {$fields['return']['time']}")
             ->line("**Balance due at handover:** {$fields['balance']}")
+            ->when($fields['security_deposit'] !== null, fn (MailMessage $mail) => $mail
+                ->line("**Security deposit:** {$fields['security_deposit']}, paid at handover. It is fully refundable when the car comes back in the same condition as received, subject to normal wear and tear."))
             ->when($this->token !== null, fn (MailMessage $mail) => $mail->action('Open your booking', route('bookings.show', $this->token)));
 
         if ($voucher !== null) {

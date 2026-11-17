@@ -56,6 +56,7 @@ class BookingResource extends JsonResource
             'return_mode' => $this->return_mode->value,
             'return_mode_label' => $this->return_mode->label(true),
             'flight_number' => $this->flight_number,
+            'extras' => array_values($this->extras ?? []),
             'delivery' => $this->needsDeliveryZone() ? [
                 'zone' => $this->deliveryZone === null ? null : [
                     'id' => $this->deliveryZone->id,

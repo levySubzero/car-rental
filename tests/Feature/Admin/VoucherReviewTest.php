@@ -117,7 +117,7 @@ describe('editing', function () {
         $block = $this->booking->availabilityBlocks()->sole()->only(['type', 'starts_at', 'ends_at']);
 
         $this->actingAs($this->editor)
-            ->put(route('admin.bookings.voucher.update', $this->booking->reference), voucherEdits(['total' => 'KES 1.00', 'pickup_time' => '06:00', 'notes' => 'Driver meets you at <b>Arrivals</b>.']))
+            ->put(route('admin.bookings.voucher.update', $this->booking->reference), voucherEdits(['total' => 'KES 1.00', 'pickup_time' => '06:00', 'area_of_use' => 'Kenya and <b>Uganda</b>']))
             ->assertSessionHasNoErrors();
 
         $booking = $this->booking->fresh();
@@ -126,10 +126,10 @@ describe('editing', function () {
         expect($booking->only(array_keys($before)))->toEqual($before)
             ->and($booking->availabilityBlocks()->sole()->only(array_keys($block)))->toEqual($block)
             ->and($booking->voucher_sent_at)->toBeNull()
-            ->and($booking->voucher_overrides)->toBe(['pickup_time' => '06:00', 'total' => 'KES 1.00', 'notes' => 'Driver meets you at <b>Arrivals</b>.'])
+            ->and($booking->voucher_overrides)->toBe(['area_of_use' => 'Kenya and <b>Uganda</b>', 'pickup_time' => '06:00', 'total' => 'KES 1.00'])
             ->and($html)->toContain('KES 1.00')
-            ->and($html)->toContain('at 06:00')
-            ->and($html)->toContain('Driver meets you at &lt;b&gt;Arrivals&lt;/b&gt;.');
+            ->and($html)->toContain(', 06:00')
+            ->and($html)->toContain('Kenya and &lt;b&gt;Uganda&lt;/b&gt;');
     });
 
     it('goes back to the booking\'s own value when a field is emptied', function () {

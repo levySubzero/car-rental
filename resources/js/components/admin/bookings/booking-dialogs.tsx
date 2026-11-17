@@ -1,5 +1,6 @@
 import { Link, router, useForm } from '@inertiajs/react';
 import {
+    BadgeCheck,
     Ban,
     CarFront,
     CircleCheck,
@@ -15,6 +16,7 @@ import BookingAcceptanceController from '@/actions/App/Http/Controllers/Admin/Bo
 import BookingCancellationController from '@/actions/App/Http/Controllers/Admin/BookingCancellationController';
 import BookingDeliveryController from '@/actions/App/Http/Controllers/Admin/BookingDeliveryController';
 import BookingHandoverController from '@/actions/App/Http/Controllers/Admin/BookingHandoverController';
+import BookingPaymentController from '@/actions/App/Http/Controllers/Admin/BookingPaymentController';
 import BookingVoucherController from '@/actions/App/Http/Controllers/Admin/BookingVoucherController';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import {
@@ -24,6 +26,7 @@ import {
     TextField,
 } from '@/components/admin/form-field';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -33,6 +36,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { useCan } from '@/hooks/use-can';
 import { percentFromBp } from '@/lib/format';
 import type { AdminBooking, Option, RefundSuggestion } from '@/types';
 
@@ -675,5 +679,117 @@ export function VoucherActions({ booking }: { booking: AdminBooking }) {
                 }
             />
         </>
+    );
+}
+
+/**
+ * Mark paid: the renter paid outside the site (till, transfer, cash). The booking is
+ * reserved, the car firmly booked and, unless unticked, the voucher is emailed at once.
+ */
+export function MarkPaidDialog({
+    booking,
+    methods,
+}: {
+    booking: AdminBooking;
+    methods: Option[];
+}) {
+    const can = useCan();
+    const form = useForm({
+        amount: booking.reservation.major,
+        method: methods[0]?.value ?? 'mpesa',
+        reference: '',
+        note: '',
+        send_voucher: true,
+    });
+    const amount = Number(form.data.amount);
+    const partial =
+        form.data.amount !== '' &&
+        !Number.isNaN(amount) &&
+        amount < Number(booking.reservation.major);
+
+    return (
+        <ActionDialog
+            trigger={
+                <Button size="sm">
+                    <BadgeCheck /> Mark as paid
+                </Button>
+            }
+            title={`Mark ${booking.reference} paid`}
+            description="For a payment the renter made outside the site. The booking is reserved and the car firmly booked."
+            submitLabel="Mark as paid"
+            processing={form.processing}
+            onSubmit={(close) =>
+                form.post(
+                    BookingPaymentController.markPaid.url(booking.reference),
+                    {
+                        preserveScroll: true,
+                        onSuccess: close,
+                    },
+                )
+            }
+        >
+            <div className="grid gap-4 sm:grid-cols-2">
+                <MoneyField
+                    name="amount"
+                    label="Amount received"
+                    required
+                    value={form.data.amount}
+                    error={form.errors.amount}
+                    description={`Reservation due: ${booking.reservation.display}`}
+                    onChange={(e) => form.setData('amount', e.target.value)}
+                />
+                <SelectField
+                    name="method"
+                    label="Paid by"
+                    options={methods}
+                    value={form.data.method}
+                    error={form.errors.method}
+                    onChange={(e) => form.setData('method', e.target.value)}
+                />
+            </div>
+            <TextField
+                name="reference"
+                label="Transaction reference or receipt number"
+                autoComplete="off"
+                value={form.data.reference}
+                error={form.errors.reference}
+                description="Leave empty to use the booking reference."
+                onChange={(e) => form.setData('reference', e.target.value)}
+            />
+            {partial && (
+                <TextareaField
+                    name="note"
+                    label="Why accept a part payment?"
+                    required
+                    rows={3}
+                    value={form.data.note}
+                    error={form.errors.note}
+                    description={
+                        can('payments.accept-partial')
+                            ? 'The shortfall is added to the balance due at handover.'
+                            : 'You need the accept-partial permission to accept less than the reservation.'
+                    }
+                    onChange={(e) => form.setData('note', e.target.value)}
+                />
+            )}
+            <label className="flex items-start gap-3 rounded-md border p-3 text-sm">
+                <Checkbox
+                    checked={form.data.send_voucher}
+                    onCheckedChange={(checked) =>
+                        form.setData('send_voucher', checked === true)
+                    }
+                />
+                <span className="grid gap-0.5">
+                    <span className="font-medium">
+                        Send the voucher to the renter now
+                    </span>
+                    <span className="text-muted-foreground">
+                        {booking.driver?.email
+                            ? `Emailed to ${booking.driver.email} with the PDF attached.`
+                            : 'This client has no email address: download the voucher for them instead.'}
+                    </span>
+                </span>
+            </label>
+        </ActionDialog>
     );
 }

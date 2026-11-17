@@ -22,10 +22,12 @@ export default function Car({
     car,
     related,
     reservation_percent: reservation,
+    deposit_may_apply: depositMayApply,
 }: {
     car: CarDetail;
     related: CarCardData[];
     reservation_percent: number;
+    deposit_may_apply: boolean;
 }) {
     const { site, currency, whatsapp, telHref, phone } = useSite();
     const absolute = (src?: string) =>
@@ -215,8 +217,10 @@ export default function Car({
 
                             <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
                                 Once your request is approved, pay {reservation}
-                                % to reserve and the balance at handover, with a
-                                refundable security deposit.{' '}
+                                % to reserve and the balance at handover
+                                {depositMayApply
+                                    ? '. A refundable security deposit may apply, paid at handover.'
+                                    : '.'}{' '}
                                 <Link
                                     href={rentalPolicy()}
                                     className="text-gold underline underline-offset-4"

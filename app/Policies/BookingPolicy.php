@@ -79,6 +79,24 @@ class BookingPolicy
         return $this->desk($user, Permission::BookingsUpdateDelivery);
     }
 
+    /**
+     * Record a payment the renter made outside the site, from the booking page.
+     */
+    public function markPaid(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::PaymentsVerify);
+    }
+
+    public function edit(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsEdit);
+    }
+
+    public function extend(User $user, Booking $booking): bool
+    {
+        return $this->desk($user, Permission::BookingsExtend);
+    }
+
     public function legalHold(User $user, Booking $booking): bool
     {
         return $this->desk($user, Permission::BookingsLegalHold);

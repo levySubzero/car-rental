@@ -22,6 +22,6 @@ class UpdateVoucherRequest extends BookingActionRequest
     {
         $fields = array_fill_keys(array_keys(VoucherService::EDITABLE), ['nullable', 'string', 'max:255']);
 
-        return [...$fields, 'notes' => ['nullable', 'string', 'max:2000']];
+        return $fields;
     }
 }

@@ -34,6 +34,7 @@ class UpdateGeneralSettingsRequest extends UpdateSettingsRequest
             'map_embed_url' => ['nullable', 'url:https', 'max:2000'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'area_of_use' => ['nullable', 'string', 'max:255'],
             'socials' => ['present', 'array:'.implode(',', self::SOCIAL_PLATFORMS)],
             'socials.*' => ['nullable', 'url:https', 'max:500'],
             'opening_hours' => ['present', 'array', 'max:10'],
@@ -55,6 +56,7 @@ class UpdateGeneralSettingsRequest extends UpdateSettingsRequest
         $data['socials'] = array_filter($data['socials'], fn ($url) => filled($url));
         $data['latitude'] = isset($data['latitude']) ? (float) $data['latitude'] : null;
         $data['longitude'] = isset($data['longitude']) ? (float) $data['longitude'] : null;
+        $data['area_of_use'] = filled($data['area_of_use'] ?? null) ? $data['area_of_use'] : null;
 
         return $data;
     }

@@ -12,24 +12,22 @@ import BookingVoucherController from '@/actions/App/Http/Controllers/Admin/Booki
 import VoucherController from '@/actions/App/Http/Controllers/Admin/VoucherController';
 import { BookingStatusBadge } from '@/components/admin/bookings/booking-status-badge';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
-import { TextareaField, TextField } from '@/components/admin/form-field';
+import { TextField } from '@/components/admin/form-field';
 import { AdminPage, PageHeader } from '@/components/admin/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCan } from '@/hooks/use-can';
 import { formatBookingTime } from '@/lib/booking';
 import type { BookingStatus, MediaItem } from '@/types';
 
 type Fields = {
     renter: string;
+    phone: string;
+    email: string;
     car: string;
+    days: string;
+    area_of_use: string;
     pickup_date: string;
     pickup_time: string;
     pickup_point: string;
@@ -44,10 +42,14 @@ type Fields = {
 
 const GROUPS: { title: string; fields: [keyof Fields, string][] }[] = [
     {
-        title: 'Booking',
+        title: 'Client and car',
         fields: [
-            ['renter', 'Client'],
-            ['car', 'Car'],
+            ['renter', 'Client name'],
+            ['phone', 'Phone number'],
+            ['email', 'Email'],
+            ['car', 'Car type'],
+            ['days', 'Number of days'],
+            ['area_of_use', 'Area of use'],
         ],
     },
     {
@@ -55,24 +57,24 @@ const GROUPS: { title: string; fields: [keyof Fields, string][] }[] = [
         fields: [
             ['pickup_date', 'Date'],
             ['pickup_time', 'Time'],
-            ['pickup_point', 'Place'],
+            ['pickup_point', 'Zone or place'],
         ],
     },
     {
-        title: 'Return',
+        title: 'Drop-off',
         fields: [
             ['return_date', 'Date'],
             ['return_time', 'Time'],
-            ['return_point', 'Place'],
+            ['return_point', 'Zone or place'],
         ],
     },
     {
         title: 'Payment',
         fields: [
-            ['total', 'Total rental'],
-            ['reservation_paid', 'Reservation paid'],
+            ['total', 'Total rental amount'],
+            ['reservation_paid', 'Deposit paid'],
             ['balance', 'Balance due at handover'],
-            ['security_deposit', 'Security deposit'],
+            ['security_deposit', 'Security deposit (adds the NB)'],
         ],
     },
 ];
@@ -89,7 +91,6 @@ export default function BookingVoucher({
     voucher,
     fields,
     original,
-    notes,
 }: {
     booking: {
         reference: string;
@@ -104,11 +105,10 @@ export default function BookingVoucher({
     voucher: MediaItem | null;
     fields: Fields;
     original: Fields;
-    notes: string;
 }) {
     const can = useCan();
     const canEdit = can('bookings.resend-voucher') && manageable;
-    const form = useForm({ ...fields, notes });
+    const form = useForm({ ...fields });
     const reworded = GROUPS.flatMap((group) => group.fields).filter(
         ([key]) => fields[key] !== original[key],
     );
@@ -293,41 +293,20 @@ export default function BookingVoucher({
                             </CardContent>
                         </Card>
                     ))}
-                    <Card className="lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle>Notes</CardTitle>
-                            <CardDescription>
-                                Shown on the voucher, for anything else the
-                                client needs to know. Leave a field empty to go
-                                back to the booking's own value.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid gap-4">
-                            <TextareaField
-                                name="notes"
-                                label="Notes"
-                                rows={3}
-                                disabled={!canEdit}
-                                value={form.data.notes}
-                                error={form.errors.notes}
-                                onChange={(event) =>
-                                    form.setData('notes', event.target.value)
-                                }
-                            />
-                            {canEdit && (
-                                <div>
-                                    <Button
-                                        type="submit"
-                                        disabled={
-                                            form.processing || !form.isDirty
-                                        }
-                                    >
-                                        Save voucher
-                                    </Button>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                    {canEdit && (
+                        <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
+                            <Button
+                                type="submit"
+                                disabled={form.processing || !form.isDirty}
+                            >
+                                Save voucher
+                            </Button>
+                            <p className="text-sm text-muted-foreground">
+                                Leave a field empty to go back to the booking's
+                                own value.
+                            </p>
+                        </div>
+                    )}
                 </form>
             </AdminPage>
         </>

@@ -14,6 +14,7 @@ use App\Models\DeliveryZone;
 use App\Models\DepositBand;
 use App\Models\FxRate;
 use App\Models\GatewayTransaction;
+use App\Models\MailLog;
 use App\Models\Page;
 use App\Models\PaymentMethod;
 use App\Models\PaymentSubmission;
@@ -86,6 +87,7 @@ function sampleParameters(RoutingRoute $route): array
         'delivery_zone' => fn () => DeliveryZone::factory()->create()->id,
         'deposit_band' => fn () => DepositBand::factory()->create()->id,
         'cancellation_tier' => fn () => CancellationTier::factory()->create()->id,
+        'mailLog' => fn () => MailLog::query()->create(['to' => 'a@example.test', 'created_at' => now()])->id,
         'fx_rate' => function () {
             Currency::query()->firstWhere('code', 'USD') ?? Currency::factory()->code('USD')->create();
 

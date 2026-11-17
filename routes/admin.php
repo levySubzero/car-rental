@@ -5,10 +5,12 @@ use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BookingAcceptanceController;
 use App\Http\Controllers\Admin\BookingCancellationController;
+use App\Http\Controllers\Admin\BookingChangeController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\BookingCreateController;
 use App\Http\Controllers\Admin\BookingDeliveryController;
 use App\Http\Controllers\Admin\BookingHandoverController;
+use App\Http\Controllers\Admin\BookingPaymentController;
 use App\Http\Controllers\Admin\BookingRequestController;
 use App\Http\Controllers\Admin\BookingVoucherController;
 use App\Http\Controllers\Admin\BrandController;
@@ -28,6 +30,7 @@ use App\Http\Controllers\Admin\FxRateController;
 use App\Http\Controllers\Admin\GatewayReceiptController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\IntegrationTestMailController;
+use App\Http\Controllers\Admin\MailLogController;
 use App\Http\Controllers\Admin\MarkdownPreviewController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentMethodController;
@@ -173,6 +176,11 @@ Route::prefix('bookings/{booking:reference}')->name('bookings.')->group(function
     Route::post('voucher', [BookingVoucherController::class, 'resend'])->name('voucher.resend');
     Route::post('link', [BookingVoucherController::class, 'rotate'])->name('link.rotate');
     Route::put('legal-hold', [BookingController::class, 'legalHold'])->name('legal-hold');
+    Route::post('mark-paid', [BookingPaymentController::class, 'markPaid'])->name('mark-paid');
+    Route::post('extend/preview', [BookingChangeController::class, 'previewExtend'])->name('extend.preview');
+    Route::put('extend', [BookingChangeController::class, 'extend'])->name('extend');
+    Route::post('edit/preview', [BookingChangeController::class, 'previewEdit'])->name('edit.preview');
+    Route::put('edit', [BookingChangeController::class, 'edit'])->name('edit');
 });
 
 // Vouchers: every booking's voucher by where it stands; each opens on bookings.voucher.show.
@@ -206,3 +214,5 @@ Route::middleware(['can:integrations.manage', RequirePassword::class])->group(fu
 
 // Audit
 Route::get('activity', [ActivityLogController::class, 'index'])->name('activity.index');
+Route::get('mail-log', [MailLogController::class, 'index'])->name('mail-log.index');
+Route::get('mail-log/{mailLog}', [MailLogController::class, 'show'])->middleware('can:mail-log.view')->name('mail-log.show');

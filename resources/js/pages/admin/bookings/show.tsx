@@ -9,10 +9,15 @@ import {
     DeliveryCheckedButton,
     DeliveryDialog,
     HandoverDialog,
+    MarkPaidDialog,
     MarkRefundedDialog,
     ReturnDialog,
     VoucherActions,
 } from '@/components/admin/bookings/booking-dialogs';
+import {
+    EditBookingDialog,
+    ExtendBookingDialog,
+} from '@/components/admin/bookings/booking-change-dialogs';
 import { BookingStatusBadge } from '@/components/admin/bookings/booking-status-badge';
 import { QuoteResult } from '@/components/admin/bookings/quote-result';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
@@ -54,12 +59,18 @@ export default function BookingShow({
     refund,
     zones,
     fuelLevels,
+    methods,
+    cars,
+    extras,
 }: {
     booking: AdminBooking;
     timeline: BookingTimelineEntry[];
     refund: { cancel: RefundSuggestion; no_show: RefundSuggestion } | null;
     zones: (Option & { priced: boolean })[];
     fuelLevels: Option[];
+    methods: Option[];
+    cars: Option[];
+    extras: Option[];
 }) {
     const can = useCan();
     const status = booking.status;
@@ -98,6 +109,18 @@ export default function BookingShow({
                     {pendingPayment && can('payments.verify') && (
                         <VerifyPaymentDialog payment={pendingPayment} />
                     )}
+                    {!pendingPayment &&
+                        [
+                            'awaiting_payment',
+                            'awaiting_cash',
+                            'payment_rejected',
+                        ].includes(status) &&
+                        can('payments.verify') && (
+                            <MarkPaidDialog
+                                booking={booking}
+                                methods={methods}
+                            />
+                        )}
                     {pendingPayment &&
                         pendingPayment.method !== 'cash' &&
                         can('payments.reject') && (
@@ -114,6 +137,18 @@ export default function BookingShow({
                         <ReturnDialog
                             booking={booking}
                             fuelLevels={fuelLevels}
+                        />
+                    )}
+                    {['reserved', 'active'].includes(status) &&
+                        can('bookings.extend') && (
+                            <ExtendBookingDialog booking={booking} />
+                        )}
+                    {deliveryEditable && can('bookings.edit') && (
+                        <EditBookingDialog
+                            booking={booking}
+                            cars={cars}
+                            zones={zones}
+                            extras={extras}
                         />
                     )}
                     {can('bookings.resend-voucher') &&

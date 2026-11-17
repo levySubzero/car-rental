@@ -53,6 +53,8 @@ export const permissions = [
     'bookings.cancel',
     'bookings.update-delivery',
     'bookings.legal-hold',
+    'bookings.edit',
+    'bookings.extend',
     'payments.view',
     'payments.verify',
     'payments.reject',
@@ -96,6 +98,7 @@ export const permissions = [
     'media.upload',
     'media.view-private',
     'activity.view',
+    'mail-log.view',
     'system.horizon',
 ] as const;
 

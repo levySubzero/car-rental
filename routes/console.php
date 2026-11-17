@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Booking\KycPurgeService;
+use App\Services\Mail\MailLogService;
 use App\Services\Notifications\AdminAlerts;
 use App\Services\Ops\HealthCheck;
 use App\Services\Payments\Gateways\GatewayException;
@@ -47,6 +48,12 @@ Artisan::command('activity:prune', function (RetentionSettings $retention) {
     return $this->call('activitylog:clean', ['--days' => $days, '--force' => true]);
 })->purpose('Delete activity older than the retention setting');
 Schedule::command('activity:prune')->weekly()->onOneServer();
+
+// The Email log keeps RetentionSettings::mail_log_retention_days.
+Artisan::command('mail-log:prune', function (MailLogService $log) {
+    $this->info($log->prune().' logged emails deleted.');
+})->purpose('Delete Email log entries older than the retention setting');
+Schedule::command('mail-log:prune')->daily()->onOneServer();
 
 // Online payments (M11B.6): STK pushes and card payments the gateway never reported back on.
 Artisan::command('payments:reconcile', function (OnlinePaymentService $payments) {

@@ -38,6 +38,7 @@ class UpdatePricingSettingsRequest extends UpdateSettingsRequest
             'turnaround_minutes' => ['required', 'integer', 'between:0,1440'],
             'default_mileage_km' => ['required', 'integer', 'between:1,10000'],
             'unlimited_mileage_after_days' => ['nullable', 'integer', 'between:1,365'],
+            'security_deposit_enabled' => ['required', 'boolean'],
         ];
     }
 
@@ -73,6 +74,7 @@ class UpdatePricingSettingsRequest extends UpdateSettingsRequest
             'turnaround_minutes' => (int) $this->validated('turnaround_minutes'),
             'default_mileage_km' => (int) $this->validated('default_mileage_km'),
             'unlimited_mileage_after_days' => $unlimited === null ? null : (int) $unlimited,
+            'security_deposit_enabled' => $this->boolean('security_deposit_enabled'),
         ];
     }
 }

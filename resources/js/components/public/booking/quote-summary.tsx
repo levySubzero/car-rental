@@ -93,13 +93,18 @@ export function QuoteSummary({
                     label="Balance at handover"
                     value={shown?.balance.display}
                 />
-                {shown?.deposit && (
+                {shown?.deposit && shown.deposit.minor > 0 ? (
                     <Row
                         label="Refundable security deposit"
                         value={shown.deposit.display}
                     />
-                )}
+                ) : null}
             </dl>
+            {!quote.deposit && quote.deposit_may_apply && (
+                <p className="mt-3 text-xs text-gold">
+                    A refundable security deposit may apply, paid at handover.
+                </p>
+            )}
 
             {code !== 'KES' && (
                 <p className="mt-3 text-xs text-muted-foreground">

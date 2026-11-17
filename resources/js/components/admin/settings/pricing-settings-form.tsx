@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import SettingsController from '@/actions/App/Http/Controllers/Admin/SettingsController';
 import { SelectField, TextField } from '@/components/admin/form-field';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -10,6 +11,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import type { Option } from '@/types';
 
 export type PricingSettings = {
@@ -26,6 +29,7 @@ export type PricingSettings = {
     turnaround_minutes: number;
     default_mileage_km: number;
     unlimited_mileage_after_days: number | null;
+    security_deposit_enabled: boolean;
 };
 
 export type PricingSettingsContext = {
@@ -56,9 +60,12 @@ export function PricingSettingsForm({
             values.unlimited_mileage_after_days === null
                 ? ''
                 : String(values.unlimited_mileage_after_days),
+        security_deposit_enabled: values.security_deposit_enabled,
     });
 
-    const field = (key: keyof typeof form.data) => ({
+    const field = (
+        key: Exclude<keyof typeof form.data, 'security_deposit_enabled'>,
+    ) => ({
         name: key,
         value: form.data[key],
         error: form.errors[key],
@@ -158,6 +165,44 @@ export function PricingSettingsForm({
                         description="Leave empty to always apply the allowance."
                         {...field('unlimited_mileage_after_days')}
                     />
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Security deposit</CardTitle>
+                    <CardDescription>
+                        The amount comes from the deposit bands (a share of the
+                        car's value by driver age). Set a band to 0% to waive it
+                        for that age group.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="grid gap-1">
+                            <Label htmlFor="security_deposit_enabled">
+                                Ask for a refundable security deposit
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                                Off: no deposit is quoted or shown on vouchers.
+                                The bands still decide which driver ages are
+                                accepted.
+                            </p>
+                            <InputError
+                                message={form.errors.security_deposit_enabled}
+                            />
+                        </div>
+                        <Switch
+                            id="security_deposit_enabled"
+                            checked={form.data.security_deposit_enabled}
+                            onCheckedChange={(checked) =>
+                                form.setData(
+                                    'security_deposit_enabled',
+                                    checked,
+                                )
+                            }
+                        />
+                    </div>
                 </CardContent>
             </Card>
 

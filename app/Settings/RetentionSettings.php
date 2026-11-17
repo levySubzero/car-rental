@@ -12,6 +12,9 @@ class RetentionSettings extends Settings
 
     public int $activity_log_retention_months;
 
+    // The Email log (copies of sent emails, bodies included)
+    public int $mail_log_retention_days;
+
     public static function group(): string
     {
         return 'retention';

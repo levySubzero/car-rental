@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Public\CarCardResource;
 use App\Http\Resources\Public\CarDetailResource;
 use App\Models\Car;
+use App\Services\Pricing\QuoteService;
 use App\Settings\PricingSettings;
 use App\Support\Money;
 use App\Support\SharePreview;
@@ -20,7 +21,7 @@ class CarController extends Controller
 {
     private const RELATED = 4;
 
-    public function show(Car $car, PricingSettings $pricing): Response
+    public function show(Car $car, PricingSettings $pricing, QuoteService $quotes): Response
     {
         abort_unless($car->is_published, 404);
 
@@ -31,6 +32,8 @@ class CarController extends Controller
             'related' => CarCardResource::collection($this->related($car)),
             // "Pay 25% to reserve": basis points as a whole or decimal percentage.
             'reservation_percent' => $pricing->reservation_percent_bp / 100,
+            // Only whether a deposit may apply: no amounts before the booking's review step.
+            'deposit_may_apply' => $quotes->depositRange($car) !== null,
         ])->withViewData('share', SharePreview::for(
             $car->brand ? "{$car->name} rental in Nairobi" : $car->name,
             $this->description($car),

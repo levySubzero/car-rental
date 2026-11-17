@@ -616,6 +616,8 @@ export type AdminBooking = {
     return_mode: 'office' | 'address';
     return_mode_label: string;
     flight_number: string | null;
+    // Codes of the extras the renter picked.
+    extras: string[];
     delivery: {
         zone: { id: number; name: string; description: string | null } | null;
         pickup: BookingLeg;

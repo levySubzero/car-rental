@@ -20,5 +20,7 @@ final readonly class QuoteContext
         public FxTable $fx,
         public array $charges,
         public array $bands,
+        // The PricingSettings master switch. Off: the bands only check the driver's age.
+        public bool $depositsEnabled = true,
     ) {}
 }

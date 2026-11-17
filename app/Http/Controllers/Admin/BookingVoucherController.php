@@ -45,7 +45,6 @@ class BookingVoucherController extends Controller
             'voucher' => $voucher === null ? null : MediaResource::make($voucher),
             'fields' => $vouchers->editable($booking),
             'original' => $vouchers->editable($booking, withOverrides: false),
-            'notes' => $booking->voucher_overrides['notes'] ?? '',
         ]);
     }
 

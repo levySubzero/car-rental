@@ -264,6 +264,7 @@ class BookingController extends Controller
             'reservation' => $quote['reservation'],
             'balance' => $quote['balance'],
             'deposit' => $quote['deposit'],
+            'deposit_may_apply' => ($quote['deposit_range'] ?? null) !== null,
             'mileage_km_per_day' => $quote['mileage_km_per_day'],
             'requires_staff_quote' => $quote['requires_staff_quote'],
             'display' => $quote['display'],

@@ -44,6 +44,7 @@ import GatewayReceiptController from '@/actions/App/Http/Controllers/Admin/Gatew
 import FinanceController from '@/actions/App/Http/Controllers/Admin/FinanceController';
 import FxRateController from '@/actions/App/Http/Controllers/Admin/FxRateController';
 import IntegrationController from '@/actions/App/Http/Controllers/Admin/IntegrationController';
+import MailLogController from '@/actions/App/Http/Controllers/Admin/MailLogController';
 import PaymentSubmissionController from '@/actions/App/Http/Controllers/Admin/PaymentSubmissionController';
 import QuoteSandboxController from '@/actions/App/Http/Controllers/Admin/QuoteSandboxController';
 import RoleController from '@/actions/App/Http/Controllers/Admin/RoleController';
@@ -252,6 +253,12 @@ export const adminNav: NavGroup[] = [
                 href: ActivityLogController.index(),
                 icon: History,
                 permission: 'activity.view',
+            },
+            {
+                title: 'Email log',
+                href: MailLogController.index(),
+                icon: Inbox,
+                permission: 'mail-log.view',
             },
         ],
     },

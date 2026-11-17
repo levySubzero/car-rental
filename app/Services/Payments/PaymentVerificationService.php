@@ -176,6 +176,59 @@ class PaymentVerificationService
         $this->markVerified($submission, $booking, trim((string) $reference) ?: (string) $booking->reference, $amount->minor, $actor, null, 'Entered by staff');
     }
 
+    /**
+     * Staff mark a booking paid from the booking page when the renter paid outside the
+     * site (M-Pesa to the till, a transfer, cash at the office) and no submission is waiting.
+     * A pending one (cash at the office) is verified instead of adding another.
+     */
+    public function markPaidByStaff(Booking $booking, Money $amount, PaymentMethodCode $method, ?string $reference, User $actor, ?string $note = null): PaymentSubmission
+    {
+        if ($amount->minor <= 0) {
+            throw PaymentException::amountNotPositive();
+        }
+
+        $note = $note !== null && trim($note) !== '' ? trim($note) : null;
+
+        return DB::transaction(function () use ($booking, $amount, $method, $reference, $actor, $note) {
+            $booking = Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
+
+            if (! in_array($booking->status, [BookingStatus::AwaitingPayment, BookingStatus::AwaitingCash, BookingStatus::PaymentRejected], true)) {
+                throw PaymentException::notAwaitingPayment($booking);
+            }
+
+            $partial = $amount->minor < (int) $booking->reservation_minor;
+
+            if ($partial && ! $actor->can(Permission::PaymentsAcceptPartial)) {
+                throw PaymentException::partialNotAllowed();
+            }
+
+            if ($partial && $note === null) {
+                throw PaymentException::partialNeedsNote();
+            }
+
+            if (! $this->availability->isAvailable($booking->car, $booking->range(), $booking)) {
+                throw PaymentException::carNoLongerFree();
+            }
+
+            /** @var PaymentSubmission $submission */
+            $submission = $booking->payments()->where('status', PaymentStatus::Pending)->lockForUpdate()->latest('id')->first()
+                ?? $booking->payments()->create(['payment_method_code' => $method, 'transaction_message' => 'Marked paid by staff']);
+            $submission->forceFill(['payment_method_code' => $method])->save();
+
+            // Awaiting payment → Reserved is not a step of its own: it goes through Payment submitted.
+            if ($booking->status !== BookingStatus::AwaitingCash) {
+                $this->statuses->transition($booking, BookingStatus::PaymentSubmitted, $actor, 'Marked paid by staff');
+            }
+
+            $this->markVerified(
+                $submission, $booking, trim((string) $reference) ?: (string) $booking->reference, $amount->minor, $actor, $note,
+                $partial ? "Part payment: {$note}" : 'Marked paid by staff',
+            );
+
+            return $submission;
+        });
+    }
+
     public function reject(PaymentSubmission $submission, string $reason, User $actor): PaymentSubmission
     {
         return DB::transaction(function () use ($submission, $reason, $actor) {

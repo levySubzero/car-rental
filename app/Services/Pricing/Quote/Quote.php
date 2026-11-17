@@ -34,6 +34,8 @@ final readonly class Quote
         public array $display,
         public FxTable $fx,
         public QuoteSettings $settings,
+        // Before the driver's age is known: the lowest and highest deposit any band would ask.
+        public ?DepositRange $depositRange = null,
     ) {}
 
     /**
@@ -56,6 +58,7 @@ final readonly class Quote
                 'max_age' => $this->band->max_age,
                 'percent_bp' => $this->band->percent_bp,
             ],
+            'deposit_range' => $this->depositRange?->toArray(),
             'driver_age' => $this->driverAge,
             // Null means unlimited.
             'mileage_km_per_day' => $this->mileageKmPerDay,

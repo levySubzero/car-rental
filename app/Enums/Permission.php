@@ -90,6 +90,9 @@ enum Permission: string
     case BookingsUpdateDelivery = 'bookings.update-delivery';
     // Keep a booking's KYC files past the retention period (M11.11)
     case BookingsLegalHold = 'bookings.legal-hold';
+    // Change a booking's trip before handover, or move the return of a confirmed or running hire
+    case BookingsEdit = 'bookings.edit';
+    case BookingsExtend = 'bookings.extend';
 
     // Payments (M9): staff check each renter payment by hand. A partial reservation needs its own permission.
     case PaymentsView = 'payments.view';
@@ -156,6 +159,9 @@ enum Permission: string
 
     // Activity log
     case ActivityView = 'activity.view';
+
+    // The Email log: copies of sent emails, bodies included. No seeded role has it, so super admins only
+    case MailLogView = 'mail-log.view';
 
     // System
     case SystemHorizon = 'system.horizon';

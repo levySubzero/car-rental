@@ -88,6 +88,7 @@ final class QuoteCalculator
         return new Quote(
             $in->pickup, $in->return, $days, $lines, $rental, $total, $reservation, $balance,
             $deposit, $band, $age, $mileage, $requiresStaffQuote, $display, $context->fx, $settings,
+            $in->driverDob === null ? $this->depositRange($in, $context) : null,
         );
     }
 
@@ -153,9 +154,19 @@ final class QuoteCalculator
             throw QuoteException::driverAge($age);
         }
 
-        $deposit = $in->carValueMinor === null ? null : (new Money($in->carValueMinor))->percentBp($band->percent_bp, RoundingMode::Round);
+        $deposit = ! $context->depositsEnabled || $in->carValueMinor === null
+            ? null
+            : (new Money($in->carValueMinor))->percentBp($band->percent_bp, RoundingMode::Round);
 
         return [$age, $band, $deposit];
+    }
+
+    /**
+     * Shown before the renter gives a date of birth, so the deposit is no surprise at the end.
+     */
+    private function depositRange(QuoteInput $in, QuoteContext $context): ?DepositRange
+    {
+        return $context->depositsEnabled ? DepositRange::for($in->carValueMinor, $context->bands) : null;
     }
 
     /**

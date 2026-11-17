@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\BookingBucket;
+use App\Enums\ChargeApplies;
 use App\Enums\FuelLevel;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Booking\IndexBookingRequest;
@@ -11,6 +12,7 @@ use App\Http\Resources\Admin\BookingListResource;
 use App\Http\Resources\Admin\BookingResource;
 use App\Models\Booking;
 use App\Models\Car;
+use App\Models\Charge;
 use App\Models\DeliveryZone;
 use App\Models\PaymentMethod;
 use App\Services\Booking\BookingDeskService;
@@ -79,6 +81,10 @@ class BookingController extends Controller
                 'priced' => $zone->fee_minor !== null,
             ]),
             'fuelLevels' => array_map(fn (FuelLevel $level) => ['value' => $level->value, 'label' => $level->label()], FuelLevel::cases()),
+            'methods' => PaymentMethod::query()->ordered()->get()->map(fn (PaymentMethod $method) => ['value' => $method->code->value, 'label' => $method->name]),
+            // The Edit booking dialog's choices.
+            'cars' => Car::query()->orderBy('name')->get(['id', 'name'])->map(fn (Car $car) => ['value' => (string) $car->id, 'label' => $car->name]),
+            'extras' => Charge::query()->where('is_active', true)->where('applies', ChargeApplies::Extra)->get()->map(fn (Charge $charge) => ['value' => $charge->code, 'label' => $charge->name]),
         ]);
     }
 

@@ -21,6 +21,7 @@ class UpdateRetentionSettingsRequest extends UpdateSettingsRequest
             'kyc_retention_months' => ['required', 'integer', 'between:1,120'],
             'draft_retention_days' => ['required', 'integer', 'between:1,90'],
             'activity_log_retention_months' => ['required', 'integer', 'between:1,120'],
+            'mail_log_retention_days' => ['required', 'integer', 'between:1,365'],
         ];
     }
 

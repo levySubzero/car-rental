@@ -37,6 +37,8 @@ class QuoteResource extends JsonResource
             'reservation' => $quote->reservation,
             'balance' => $quote->balance,
             'deposit' => $quote->deposit,
+            // Before the age is known renters are only told a deposit may apply, never an amount.
+            'deposit_may_apply' => $quote->depositRange !== null,
             'mileage_km_per_day' => $quote->mileageKmPerDay,
             'requires_staff_quote' => $quote->requiresStaffQuote,
             'display' => $quote->display,

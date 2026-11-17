@@ -29,6 +29,9 @@ class GeneralSettings extends Settings
 
     public ?float $longitude;
 
+    // Where renters may drive, printed on the voucher (e.g. "Within Kenya"); staff can reword it per voucher.
+    public ?string $area_of_use;
+
     // Platform => URL
     /** @var array<string, string> */
     public array $socials;

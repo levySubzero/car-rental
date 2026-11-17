@@ -89,6 +89,7 @@ it('saves retention settings as integers', function () {
             'kyc_retention_months' => '18',
             'draft_retention_days' => '7',
             'activity_log_retention_months' => '24',
+            'mail_log_retention_days' => '30',
         ])
         ->assertSessionHasNoErrors();
 

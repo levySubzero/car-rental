@@ -24,6 +24,11 @@ class BookingException extends DomainException
         return new self('This booking has been submitted and can no longer be changed.');
     }
 
+    public static function cannotChange(BookingStatus $status, string $action): self
+    {
+        return new self("A booking that is {$status->label()} cannot be {$action}.");
+    }
+
     public static function carNotBookable(): self
     {
         return new self('This car is not taking bookings at the moment.', 'pickup_at');

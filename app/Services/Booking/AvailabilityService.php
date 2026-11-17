@@ -109,6 +109,19 @@ class AvailabilityService
             ->get();
     }
 
+    /**
+     * Move the booking's blocks to its car and dates after staff changed them. The caller has
+     * locked the car and checked it is free.
+     */
+    public function resize(Booking $booking): void
+    {
+        $booking->availabilityBlocks()->update([
+            'car_id' => $booking->car_id,
+            'starts_at' => $booking->pickup_at,
+            'ends_at' => $booking->return_at,
+        ]);
+    }
+
     public function release(Booking $booking): void
     {
         $booking->availabilityBlocks()->delete();

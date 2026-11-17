@@ -31,7 +31,11 @@ class VoucherService
     // What staff may edit, flat, => where it sits in fields().
     public const EDITABLE = [
         'renter' => 'renter',
+        'phone' => 'phone',
+        'email' => 'email',
         'car' => 'car',
+        'days' => 'days',
+        'area_of_use' => 'area_of_use',
         'pickup_date' => 'pickup.date',
         'pickup_time' => 'pickup.time',
         'pickup_point' => 'pickup.point',
@@ -104,7 +108,7 @@ class VoucherService
      * Save staff's edits and regenerate the PDF. Only what differs from the booking is kept,
      * so a later delivery change still reaches every figure nobody reworded.
      *
-     * @param  array<string, string|null>  $input  EDITABLE keys, plus notes
+     * @param  array<string, string|null>  $input  EDITABLE keys
      */
     public function update(Booking $booking, array $input, ?Model $actor = null): Media
     {
@@ -117,10 +121,6 @@ class VoucherService
             if ($value !== '' && $value !== $base[$key]) {
                 $overrides[$key] = $value;
             }
-        }
-
-        if (trim((string) ($input['notes'] ?? '')) !== '') {
-            $overrides['notes'] = trim((string) $input['notes']);
         }
 
         $booking->forceFill(['voucher_overrides' => $overrides === [] ? null : $overrides])->save();
@@ -147,20 +147,28 @@ class VoucherService
 
     public function html(Booking $booking): string
     {
+        $general = $this->general;
+
         return View::make('pdf.voucher', [
             'voucher' => $this->fields($booking),
-            'company' => $this->general,
+            'company' => $general,
+            'map' => $general->latitude !== null && $general->longitude !== null
+                ? "https://maps.google.com/?q={$general->latitude},{$general->longitude}"
+                : null,
         ])->render();
     }
 
     /**
-     * The P-6 fields, formatted for display.
+     * The P-6 fields (the client's list, 2026-11), formatted for display.
      *
      * @return array{
      *     reference: string|null,
      *     renter: string,
+     *     phone: string,
+     *     email: string,
      *     car: string,
-     *     days: int|null,
+     *     days: int|string|null,
+     *     area_of_use: string,
      *     total: string,
      *     reservation_paid: string,
      *     balance: string,
@@ -168,8 +176,6 @@ class VoucherService
      *     delivery_pending: bool,
      *     pickup: array{date: string, time: string, point: string},
      *     return: array{date: string, time: string, point: string},
-     *     tiers: list<array{label: string, refund: string}>,
-     *     notes: string|null,
      * }
      */
     public function fields(Booking $booking, bool $withOverrides = true): array
@@ -181,20 +187,19 @@ class VoucherService
         $fields = [
             'reference' => $booking->reference,
             'renter' => $driver === null ? '' : implode(' ', array_filter([$driver->first_name, $driver->second_name, $driver->surname])),
+            'phone' => (string) $driver?->phone,
+            'email' => (string) $driver?->email,
             'car' => $booking->car->name,
             'days' => isset($quote['days']) ? (int) $quote['days'] : null,
+            'area_of_use' => (string) $this->general->area_of_use,
             'total' => $this->money($booking->total_minor),
             'reservation_paid' => $this->money($booking->reservation_paid_minor),
             'balance' => $this->money($booking->balance_minor),
-            'security_deposit' => $booking->security_deposit_minor === null ? null : $this->money($booking->security_deposit_minor),
+            // None, or nothing to pay, leaves the deposit and its NB off the voucher.
+            'security_deposit' => (int) $booking->security_deposit_minor > 0 ? $this->money($booking->security_deposit_minor) : null,
             'delivery_pending' => (bool) ($quote['requires_staff_quote'] ?? false),
             'pickup' => $this->handover($booking->pickup_at, $booking->pickup_mode, $booking->delivery_address, $booking->delivery_landmark, $booking),
             'return' => $this->handover($booking->return_at, $booking->return_mode, $booking->return_address, $booking->return_landmark, $booking),
-            'tiers' => array_map(fn (array $tier) => [
-                'label' => $tier['label'] ?? "{$tier['hours_before_pickup']} hours or more before pick-up",
-                'refund' => rtrim(rtrim(number_format($tier['refund_percent_bp'] / 100, 2), '0'), '.').'%',
-            ], $booking->cancellation_tiers ?? []),
-            'notes' => null,
         ];
 
         if (! $withOverrides) {
@@ -202,7 +207,6 @@ class VoucherService
         }
 
         $overrides = $booking->voucher_overrides ?? [];
-        $fields['notes'] = $overrides['notes'] ?? null;
 
         foreach (self::EDITABLE as $key => $path) {
             if (isset($overrides[$key])) {

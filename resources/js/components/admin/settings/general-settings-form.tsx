@@ -26,6 +26,7 @@ export type GeneralSettings = {
     map_embed_url: string | null;
     latitude: number | null;
     longitude: number | null;
+    area_of_use: string | null;
     socials: Record<string, string>;
     opening_hours: { days: string; hours: string }[];
     whatsapp_templates: Record<string, string>;
@@ -57,6 +58,7 @@ export function GeneralSettingsForm({ values }: { values: GeneralSettings }) {
         map_embed_url: values.map_embed_url ?? '',
         latitude: values.latitude?.toString() ?? '',
         longitude: values.longitude?.toString() ?? '',
+        area_of_use: values.area_of_use ?? '',
         socials: Object.fromEntries(
             PLATFORMS.map((platform) => [
                 platform,
@@ -77,7 +79,8 @@ export function GeneralSettingsForm({ values }: { values: GeneralSettings }) {
             | 'address'
             | 'map_embed_url'
             | 'latitude'
-            | 'longitude',
+            | 'longitude'
+            | 'area_of_use',
     ) => ({
         name: key,
         value: form.data[key],
@@ -161,6 +164,13 @@ export function GeneralSettingsForm({ values }: { values: GeneralSettings }) {
                         label="Longitude"
                         inputMode="decimal"
                         {...text('longitude')}
+                    />
+                    <TextField
+                        label="Area of use"
+                        className="sm:col-span-2"
+                        placeholder="Within Kenya"
+                        description="Where renters may drive. Printed on every voucher; staff can reword it for one booking."
+                        {...text('area_of_use')}
                     />
                 </CardContent>
             </Card>

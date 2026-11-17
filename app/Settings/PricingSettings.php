@@ -37,6 +37,9 @@ class PricingSettings extends Settings
 
     public ?int $unlimited_mileage_after_days;
 
+    // Master switch for the security deposit. Off: no deposit is quoted, the age bands still decide who may drive.
+    public bool $security_deposit_enabled;
+
     public static function group(): string
     {
         return 'pricing';

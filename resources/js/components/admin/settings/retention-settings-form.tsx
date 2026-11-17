@@ -15,6 +15,7 @@ export type RetentionSettings = {
     kyc_retention_months: number;
     draft_retention_days: number;
     activity_log_retention_months: number;
+    mail_log_retention_days: number;
 };
 
 export function RetentionSettingsForm({
@@ -28,6 +29,7 @@ export function RetentionSettingsForm({
         activity_log_retention_months: String(
             values.activity_log_retention_months,
         ),
+        mail_log_retention_days: String(values.mail_log_retention_days),
     });
 
     const field = (key: keyof typeof form.data) => ({
@@ -58,7 +60,7 @@ export function RetentionSettingsForm({
                         Act 2019). Files on legal hold are never purged.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-3">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <TextField
                         label="Identity documents (months after completion)"
                         max={120}
@@ -73,6 +75,11 @@ export function RetentionSettingsForm({
                         label="Activity log (months)"
                         max={120}
                         {...field('activity_log_retention_months')}
+                    />
+                    <TextField
+                        label="Email log (days)"
+                        max={365}
+                        {...field('mail_log_retention_days')}
                     />
                 </CardContent>
                 <CardFooter>
