@@ -5,10 +5,14 @@ use App\Enums\PaymentStatus;
 use App\Exceptions\Domain\BookingException;
 use App\Models\AvailabilityBlock;
 use App\Models\Booking;
+use App\Models\BookingDriver;
 use App\Models\CancellationTier;
 use App\Models\PaymentSubmission;
+use App\Notifications\Booking\BookingCancelled;
 use App\Services\Booking\CancellationService;
 use App\Support\Money;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->service = app(CancellationService::class);
@@ -109,4 +113,48 @@ it('marks the refund paid back once', function () {
 it('refuses cancelling a booking on hire', function () {
     expect(fn () => $this->service->cancel(Booking::factory()->active()->create(), 'x', Money::zero(), null, $this->staff))
         ->toThrow(BookingException::class, 'from On hire to Cancelled');
+});
+
+describe('transaction costs', function () {
+    beforeEach(function () {
+        Notification::fake();
+    });
+
+    it('suggests the tier refund less the cost of sending it back by the method paid with', function () {
+        $booking = tieredBooking(72);
+        PaymentSubmission::factory()->for($booking)->verified()->create(['payment_method_code' => 'mpesa']);
+
+        $suggestion = $this->service->preview($booking);
+
+        // 100% of KES 16,588 back, less 1.5% for M-Pesa rounded up to the shilling.
+        expect($suggestion->amount->minor)->toBe(1_658_800)
+            ->and($suggestion->fee->minor)->toBe(24_900)
+            ->and($suggestion->net()->minor)->toBe(1_658_800 - 24_900);
+    });
+
+    it('takes no cost off by default for bank or cash', function () {
+        $booking = tieredBooking(72);
+        PaymentSubmission::factory()->for($booking)->verified()->create(['payment_method_code' => 'bank']);
+
+        expect($this->service->preview($booking)->fee->minor)->toBe(0);
+    });
+
+    it('records the cost and refunds the rest, and tells the client', function () {
+        $booking = tieredBooking(72);
+        BookingDriver::factory()->for($booking)->create(['email' => 'renter@example.test']);
+
+        $this->service->cancel($booking, 'Change of plans', new Money(1_658_800), null, $this->staff, new Money(24_900));
+
+        $booking->refresh();
+        expect($booking->refund_minor)->toBe(1_658_800 - 24_900)
+            ->and($booking->refund_fee_minor)->toBe(24_900)
+            ->and($booking->refund_suggested_minor)->toBe(1_658_800);
+
+        $mail = (new BookingCancelled($booking, 'Change of plans'))->toMail(new AnonymousNotifiable);
+        expect(implode(' ', $mail->introLines))->toContain('KES 16,339')->toContain('KES 249')->toContain('transaction costs');
+    });
+
+    it('refuses a cost above the refund', function () {
+        $this->service->cancel(tieredBooking(72), 'x', new Money(100_000), 'Goodwill', $this->staff, new Money(200_000));
+    })->throws(BookingException::class);
 });

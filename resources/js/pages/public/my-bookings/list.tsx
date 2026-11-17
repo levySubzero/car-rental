@@ -228,7 +228,7 @@ function RequestForm({
                 error={form.errors.message}
                 hint={
                     form.data.type === 'cancel'
-                        ? 'Refunds follow the cancellation terms on your booking. Our team will confirm the amount.'
+                        ? 'Refunds follow the cancellation terms on your booking, less transaction costs. Our team will confirm the amount.'
                         : 'Tell us what to change, such as dates, times or the delivery address.'
                 }
             >

@@ -25,6 +25,8 @@ use Tests\Support\PricingFixtures;
 beforeEach(function () {
     BookingFixtures::setUp();
     $this->seed(PricingSeeder::class);
+    // These tests set their own tiers.
+    CancellationTier::query()->delete();
     PricingFixtures::rates();
     $this->travelTo(now()->setDate(2026, 10, 25)->setTime(9, 0));
     $this->car = Car::factory()->published()->create(['daily_rate_minor' => 1_500_000, 'car_value_minor' => 800_000_000]);

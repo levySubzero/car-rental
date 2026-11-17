@@ -39,7 +39,8 @@ beforeEach(function () {
         DarajaClient::SANDBOX_URL.'/mpesa/stkpush/v1/processrequest' => Http::response(['MerchantRequestID' => 'm', 'CheckoutRequestID' => 'ws_CO_1', 'ResponseCode' => '0']),
         PaystackClient::URL.'/transaction/initialize' => Http::response(['status' => true, 'data' => ['access_code' => 'ac_1', 'authorization_url' => 'https://x', 'reference' => 'r']]),
         PaystackClient::URL.'/transaction/verify/*' => fn (Request $request) => Http::response(['status' => true, 'data' => [
-            'id' => 5, 'status' => 'success', 'reference' => basename($request->url()), 'amount' => 1_658_800, 'currency' => 'KES',
+            // The reservation plus the card transaction cost.
+            'id' => 5, 'status' => 'success', 'reference' => basename($request->url()), 'amount' => 1_707_000, 'currency' => 'KES',
         ]]),
     ]);
 });

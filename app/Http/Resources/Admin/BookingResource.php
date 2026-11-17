@@ -89,6 +89,8 @@ class BookingResource extends JsonResource
                 'tier' => $this->refund_tier,
                 'suggested' => new Money((int) $this->refund_suggested_minor),
                 'refund' => new Money((int) $this->refund_minor),
+                // The transaction cost taken off before the refund went back.
+                'refund_fee' => $this->refund_fee_minor === null ? null : new Money($this->refund_fee_minor),
                 'override_reason' => $this->refund_override_reason,
                 'reference' => $this->refund_reference,
                 'refunded_at' => $this->refunded_at?->toIso8601String(),

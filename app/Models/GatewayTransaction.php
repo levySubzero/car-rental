@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $booking_id
  * @property int|null $payment_submission_id
  * @property int $amount_minor
+ * @property int $fee_minor the transaction cost inside amount_minor, not credited to the booking
  * @property string|null $payer_phone
  * @property string|null $payer_name
  * @property GatewayTransactionStatus $status
@@ -43,19 +44,28 @@ class GatewayTransaction extends Model
     /** @use HasFactory<GatewayTransactionFactory> */
     use HasFactory;
 
-    protected $fillable = ['gateway', 'external_ref', 'receipt', 'booking_id', 'amount_minor', 'payer_phone', 'payer_name', 'status', 'payload'];
+    protected $fillable = ['gateway', 'external_ref', 'receipt', 'booking_id', 'amount_minor', 'fee_minor', 'payer_phone', 'payer_name', 'status', 'payload'];
 
     protected $hidden = ['payer_phone', 'payload'];
 
     /**
      * @return array<string, string>
      */
+    /**
+     * What the booking is credited: the charge less the transaction cost.
+     */
+    public function creditedMinor(): int
+    {
+        return $this->amount_minor - $this->fee_minor;
+    }
+
     protected function casts(): array
     {
         return [
             'gateway' => PaymentGateway::class,
             'status' => GatewayTransactionStatus::class,
             'amount_minor' => 'integer',
+            'fee_minor' => 'integer',
             'payer_phone' => 'encrypted',
             'payload' => 'array',
             'resolved_at' => 'datetime',

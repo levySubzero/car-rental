@@ -646,7 +646,12 @@ export default function BookingShow({
                                                 .display,
                                         ],
                                         [
-                                            'Refund',
+                                            'Transaction cost',
+                                            booking.cancellation.refund_fee
+                                                ?.display,
+                                        ],
+                                        [
+                                            'Refund to the client',
                                             booking.cancellation.refund.display,
                                         ],
                                         [

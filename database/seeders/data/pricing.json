@@ -59,7 +59,19 @@
         "licence_min_years_held": 3,
         "availability_hold_minutes": 1440,
         "flight_notice_days": 2,
-        "amendment_phone_only_within_hours": 48
+        "amendment_phone_only_within_hours": 48,
+        "cancellation_tiers": [
+            {
+                "hours_before_pickup": 48,
+                "refund_percent": 1.0,
+                "label": "48 hours or more before pick-up"
+            },
+            {
+                "hours_before_pickup": 0,
+                "refund_percent": 0.5,
+                "label": "Less than 48 hours before pick-up"
+            }
+        ]
     },
     "fx": {
         "margin_kes_per_unit": 3,

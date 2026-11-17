@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import type {
     MediaCollectionLimits,
     MediaItem,
+    Money,
     MpesaPayTo,
     OnlinePaymentAttempt,
     PublicPaymentMethod,
@@ -34,6 +35,7 @@ export function PaymentForm({
     phone,
     onlinePayment,
     mpesaPayTo,
+    onlineCharges,
 }: {
     token: string;
     reference: string | null;
@@ -43,6 +45,8 @@ export function PaymentForm({
     phone: string | null;
     onlinePayment: OnlinePaymentAttempt | null;
     mpesaPayTo: MpesaPayTo | null;
+    // Paying online adds the transaction cost, which the client pays.
+    onlineCharges: Record<string, { fee: Money; total: Money }> | null;
 }) {
     const [manual, setManual] = useState(false);
     const form = useForm<{
@@ -54,6 +58,9 @@ export function PaymentForm({
     const isCash = chosen?.code === 'cash';
     const online = chosen?.online === true;
     const showManual = chosen !== undefined && (!online || manual);
+    const charge = chosen ? onlineCharges?.[chosen.code] : undefined;
+    const onlineAmount =
+        charge && charge.fee.minor > 0 ? charge.total.display : amount;
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
@@ -107,11 +114,31 @@ export function PaymentForm({
 
             {chosen && online && (
                 <div className="grid gap-4 rounded-md border border-white/10 bg-ink/40 p-4">
+                    {charge && charge.fee.minor > 0 && (
+                        <dl className="grid gap-1 text-sm">
+                            <div className="flex justify-between gap-4 text-white/75">
+                                <dt>Reservation</dt>
+                                <dd className="tabular-nums">{amount}</dd>
+                            </div>
+                            <div className="flex justify-between gap-4 text-white/75">
+                                <dt>Transaction fee</dt>
+                                <dd className="tabular-nums">
+                                    {charge.fee.display}
+                                </dd>
+                            </div>
+                            <div className="flex justify-between gap-4 border-t border-white/10 pt-1 font-semibold text-foreground">
+                                <dt>You pay</dt>
+                                <dd className="tabular-nums">
+                                    {charge.total.display}
+                                </dd>
+                            </div>
+                        </dl>
+                    )}
                     {chosen.code === 'mpesa' &&
                     chosen.mpesa_provider !== 'paystack' ? (
                         <MpesaOnline
                             token={token}
-                            amount={amount}
+                            amount={onlineAmount}
                             phone={phone}
                             attempt={onlinePayment}
                             payTo={mpesaPayTo}
@@ -120,7 +147,7 @@ export function PaymentForm({
                         <PaystackOnline
                             channel={chosen.code === 'mpesa' ? 'mpesa' : 'card'}
                             token={token}
-                            amount={amount}
+                            amount={onlineAmount}
                             attempt={onlinePayment}
                         />
                     )}

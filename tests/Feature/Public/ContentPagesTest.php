@@ -88,6 +88,7 @@ it('shows the privacy notice once written', function () {
 
 it('shows the published policies by group with the current rates', function () {
     $this->seed(PricingSeeder::class);
+    CancellationTier::query()->delete();
     CancellationTier::create(['hours_before_pickup' => 48, 'refund_percent_bp' => 10000, 'label' => 'More than 48 hours before pick-up']);
     Charge::query()->where('applies', ChargeApplies::Listed)->first()?->update(['is_active' => false]);
     $draftOnly = Policy::factory()->create(['title' => 'Unpublished policy']);

@@ -20,6 +20,7 @@ use App\Services\Payments\Gateways\GatewayException;
 use App\Services\Payments\Gateways\PaystackClient;
 use App\Services\Payments\Gateways\StkQueryResult;
 use App\Settings\GatewaySettings;
+use App\Support\Money;
 use App\Support\PhoneNumber;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -63,6 +64,7 @@ class OnlinePaymentService
         private readonly AvailabilityService $availability,
         private readonly AdminAlerts $alerts,
         private readonly GatewaySettings $gatewaySettings,
+        private readonly TransactionFees $fees,
     ) {}
 
     /**
@@ -155,10 +157,12 @@ class OnlinePaymentService
             }
         });
 
+        $fee = $this->fees->on(new Money((int) $booking->reservation_minor), PaymentMethodCode::Mpesa);
+
         try {
             $push = $this->daraja->stkPush(
                 $msisdn,
-                (int) $booking->reservation_minor,
+                (int) $booking->reservation_minor + $fee->minor,
                 (string) $booking->compactReference(),
                 'Booking '.$booking->compactReference(),
                 $this->stkCallbackUrl(),
@@ -172,7 +176,8 @@ class OnlinePaymentService
         return $booking->gatewayTransactions()->create([
             'gateway' => PaymentGateway::MpesaStk,
             'external_ref' => $push->checkoutRequestId,
-            'amount_minor' => (int) $booking->reservation_minor,
+            'amount_minor' => (int) $booking->reservation_minor + $fee->minor,
+            'fee_minor' => $fee->minor,
             'payer_phone' => $msisdn,
             'status' => GatewayTransactionStatus::Initiated,
             'payload' => ['merchant_request_id' => $push->merchantRequestId],
@@ -215,10 +220,14 @@ class OnlinePaymentService
             throw PaymentException::noRenterEmail();
         }
 
+        // The client pays the transaction cost on top of the reservation.
+        $fee = $this->fees->on(new Money((int) $booking->reservation_minor), $gateway->method());
+        $charge = (int) $booking->reservation_minor + $fee->minor;
+
         $open = $booking->gatewayTransactions()
             ->where('gateway', $gateway)
             ->where('status', GatewayTransactionStatus::Initiated)
-            ->where('amount_minor', (int) $booking->reservation_minor)
+            ->where('amount_minor', $charge)
             ->where('created_at', '>', now()->subMinutes(self::CARD_REUSE_MINUTES))
             ->latest('id')
             ->first();
@@ -230,7 +239,7 @@ class OnlinePaymentService
         $reference = $booking->compactReference().'-'.Str::upper(Str::random(8));
 
         try {
-            $accessCode = $this->paystack->initialize($email, (int) $booking->reservation_minor, $reference, [
+            $accessCode = $this->paystack->initialize($email, $charge, $reference, [
                 'booking' => (string) $booking->reference,
             ], $channels);
         } catch (GatewayException $exception) {
@@ -242,7 +251,8 @@ class OnlinePaymentService
         $booking->gatewayTransactions()->create([
             'gateway' => $gateway,
             'external_ref' => $reference,
-            'amount_minor' => (int) $booking->reservation_minor,
+            'amount_minor' => $charge,
+            'fee_minor' => $fee->minor,
             'status' => GatewayTransactionStatus::Initiated,
             'payload' => ['access_code' => $accessCode],
         ]);
@@ -448,7 +458,7 @@ class OnlinePaymentService
             return 'Another payment for this booking is waiting to be checked.';
         }
 
-        if ($transaction->amount_minor < (int) $booking->reservation_minor) {
+        if ($transaction->creditedMinor() < (int) $booking->reservation_minor) {
             return 'Less than the reservation due was paid.';
         }
 

@@ -40,6 +40,12 @@ class PricingSettings extends Settings
     // Master switch for the security deposit. Off: no deposit is quoted, the age bands still decide who may drive.
     public bool $security_deposit_enabled;
 
+    // Transaction costs the client pays (2026-11): added to online payments, taken off refunds.
+    // Basis points of the amount; the defaults are Paystack's Kenya rates.
+    public int $mpesa_fee_bp;
+
+    public int $card_fee_bp;
+
     public static function group(): string
     {
         return 'pricing';

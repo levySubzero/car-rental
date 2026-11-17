@@ -34,7 +34,9 @@ class BookingCancelled extends BookingNotification
                 : "We could not go ahead with your request **{$booking->reference}** for the {$booking->car->name}.")
             ->line("**Reason:** {$this->reason}")
             ->when((int) $booking->refund_minor > 0, fn (MailMessage $mail) => $mail
-                ->line("**Refund:** {$this->money($booking->refund_minor)}, which we will send back to you."))
+                ->line((int) $booking->refund_fee_minor > 0
+                    ? "**Refund:** {$this->money($booking->refund_minor)}, which we will send back to you. That is {$this->money((int) $booking->refund_minor + (int) $booking->refund_fee_minor)} less {$this->money($booking->refund_fee_minor)} in transaction costs, which are paid by the client."
+                    : "**Refund:** {$this->money($booking->refund_minor)}, which we will send back to you."))
             ->when(! $paid, fn (MailMessage $mail) => $mail
                 ->line('You have not been charged. You are welcome to choose another car for your dates.')
                 ->action('View other cars', route('fleet', array_filter(['type' => $booking->car->carType?->slug]))));

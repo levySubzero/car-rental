@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Enums\BookingDocument;
 use App\Enums\GatewayTransactionStatus;
 use App\Enums\IdType;
+use App\Enums\PaymentMethodCode;
 use App\Exceptions\Domain\QuoteException;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\ResolveBookingToken;
@@ -27,9 +28,11 @@ use App\Services\Booking\BookingTokenResolver;
 use App\Services\Booking\DriverEligibilityService;
 use App\Services\Media\MediaCollectionRegistry;
 use App\Services\Payments\OnlinePaymentService;
+use App\Services\Payments\TransactionFees;
 use App\Services\Pricing\DisplayCurrencyService;
 use App\Settings\GeneralSettings;
 use App\Settings\PricingSettings;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -45,6 +48,7 @@ class BookingController extends Controller
     public function __construct(
         private readonly BookingService $bookings,
         private readonly OnlinePaymentService $onlinePayments,
+        private readonly TransactionFees $fees,
     ) {}
 
     public function create(Car $car, PricingSettings $pricing): Response
@@ -92,6 +96,7 @@ class BookingController extends Controller
                 'payment' => $this->latestPayment($booking),
                 'online_payment' => $this->onlinePayment($booking),
                 'mpesa_pay_to' => $booking->status->acceptsPayment() ? $this->onlinePayments->mpesaPayTo($booking) : null,
+                'online_charges' => $booking->status->acceptsPayment() ? $this->onlineCharges($booking) : null,
                 'proof_limits' => $collections->get(BookingTokenResolver::PAYMENT_PROOF)->toArray(),
             ]);
         }
@@ -204,6 +209,25 @@ class BookingController extends Controller
         } catch (QuoteException $exception) {
             return [null, $exception->getMessage()];
         }
+    }
+
+    /**
+     * What paying online costs by method: the reservation plus the transaction cost, which the
+     * client pays (2026-11).
+     *
+     * @return array<string, array{fee: Money, total: Money}>
+     */
+    private function onlineCharges(Booking $booking): array
+    {
+        $reservation = new Money((int) $booking->reservation_minor);
+        $charges = [];
+
+        foreach ([PaymentMethodCode::Mpesa, PaymentMethodCode::Card] as $method) {
+            $fee = $this->fees->on($reservation, $method);
+            $charges[$method->value] = ['fee' => $fee, 'total' => $reservation->add($fee)];
+        }
+
+        return $charges;
     }
 
     /**

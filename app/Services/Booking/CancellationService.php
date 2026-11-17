@@ -3,10 +3,12 @@
 namespace App\Services\Booking;
 
 use App\Enums\BookingStatus;
+use App\Enums\PaymentMethodCode;
 use App\Enums\PaymentStatus;
 use App\Exceptions\Domain\BookingException;
 use App\Models\Booking;
 use App\Models\User;
+use App\Services\Payments\TransactionFees;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
@@ -20,27 +22,39 @@ class CancellationService
     public function __construct(
         private readonly BookingStatusService $statuses,
         private readonly RefundCalculator $calculator,
+        private readonly TransactionFees $fees,
     ) {}
 
+    /**
+     * The tier's refund, less the transaction cost of sending it back by the method the client
+     * paid with (the client pays transaction costs, 2026-11).
+     */
     public function preview(Booking $booking, bool $noShow = false): RefundSuggestion
     {
-        return $this->calculator->suggest(
+        $suggestion = $this->calculator->suggest(
             $booking->cancellation_tiers ?? [],
             $booking->pickup_at,
             now(),
             new Money((int) $booking->reservation_paid_minor),
             $noShow,
         );
+
+        $method = $booking->payments()->where('status', PaymentStatus::Verified)->latest('id')->value('payment_method_code');
+
+        return $suggestion->withFee($this->fees->on($suggestion->amount, $method instanceof PaymentMethodCode ? $method : PaymentMethodCode::tryFrom((string) $method)));
     }
 
-    public function cancel(Booking $booking, string $reason, Money $refund, ?string $overrideReason, User $actor): Booking
+    /**
+     * $refund is before transaction costs; $fee comes off it and the rest goes back.
+     */
+    public function cancel(Booking $booking, string $reason, Money $refund, ?string $overrideReason, User $actor, ?Money $fee = null): Booking
     {
-        return $this->close($booking, BookingStatus::Cancelled, $reason, $refund, $overrideReason, $actor);
+        return $this->close($booking, BookingStatus::Cancelled, $reason, $refund, $fee ?? Money::zero(), $overrideReason, $actor);
     }
 
-    public function noShow(Booking $booking, string $reason, Money $refund, ?string $overrideReason, User $actor): Booking
+    public function noShow(Booking $booking, string $reason, Money $refund, ?string $overrideReason, User $actor, ?Money $fee = null): Booking
     {
-        return $this->close($booking, BookingStatus::NoShow, $reason, $refund, $overrideReason, $actor);
+        return $this->close($booking, BookingStatus::NoShow, $reason, $refund, $fee ?? Money::zero(), $overrideReason, $actor);
     }
 
     public function markRefunded(Booking $booking, string $reference, User $actor): Booking
@@ -67,12 +81,12 @@ class CancellationService
         });
     }
 
-    private function close(Booking $booking, BookingStatus $to, string $reason, Money $refund, ?string $overrideReason, User $actor): Booking
+    private function close(Booking $booking, BookingStatus $to, string $reason, Money $refund, Money $fee, ?string $overrideReason, User $actor): Booking
     {
         $reason = trim($reason);
         $overrideReason = $overrideReason !== null && trim($overrideReason) !== '' ? trim($overrideReason) : null;
 
-        return DB::transaction(function () use ($booking, $to, $reason, $refund, $overrideReason, $actor) {
+        return DB::transaction(function () use ($booking, $to, $reason, $refund, $fee, $overrideReason, $actor) {
             $booking = Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
 
             if (! $booking->status->canTransitionTo($to)) {
@@ -89,11 +103,17 @@ class CancellationService
                 throw BookingException::refundOverrideNeedsReason();
             }
 
+            if ($fee->minor < 0 || $fee->minor > $refund->minor) {
+                throw BookingException::refundFeeAboveRefund();
+            }
+
             $booking->forceFill([
                 'cancellation_reason' => $reason,
                 'refund_tier' => $suggestion->tier,
                 'refund_suggested_minor' => $suggestion->amount->minor,
-                'refund_minor' => $refund->minor,
+                // What goes back to the client: the refund less the transaction cost.
+                'refund_minor' => $refund->minor - $fee->minor,
+                'refund_fee_minor' => $refund->minor > 0 ? $fee->minor : null,
                 'refund_override_reason' => $refund->minor === $suggestion->amount->minor ? null : $overrideReason,
             ])->save();
 
@@ -112,7 +132,8 @@ class CancellationService
                     'notice_hours' => $suggestion->noticeHours,
                     'tier' => $suggestion->tier,
                     'suggested_minor' => $suggestion->amount->minor,
-                    'refund_minor' => $refund->minor,
+                    'refund_minor' => $refund->minor - $fee->minor,
+                    'refund_fee_minor' => $fee->minor,
                     'override_reason' => $booking->refund_override_reason,
                 ])
                 ->event($to === BookingStatus::NoShow ? 'no-show' : 'cancelled')

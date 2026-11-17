@@ -24,7 +24,13 @@ export function CancellationTerms({ tiers }: { tiers: CancellationTier[] }) {
                 </li>
             ))}
             <li className="text-muted-foreground">
-                Less notice, or not collecting the car: no refund.
+                {tiers.some((tier) => tier.hours_before_pickup === 0)
+                    ? 'Not collecting the car: no refund.'
+                    : 'Less notice, or not collecting the car: no refund.'}
+            </li>
+            <li className="text-muted-foreground">
+                Transaction costs are paid by the client and deducted from any
+                refund.
             </li>
         </ul>
     );

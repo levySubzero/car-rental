@@ -19,7 +19,7 @@ class BookingCancellationController extends Controller
 
     public function cancel(CancelBookingRequest $request, Booking $booking): RedirectResponse
     {
-        $this->cancellations->cancel($booking, (string) $request->validated('reason'), $request->money('refund'), $request->text('refund_override_reason'), $request->user());
+        $this->cancellations->cancel($booking, (string) $request->validated('reason'), $request->money('refund'), $request->text('refund_override_reason'), $request->user(), $request->refundFee());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$booking->reference} is cancelled and the car is free again."]);
 
@@ -28,7 +28,7 @@ class BookingCancellationController extends Controller
 
     public function noShow(CancelBookingRequest $request, Booking $booking): RedirectResponse
     {
-        $this->cancellations->noShow($booking, (string) $request->validated('reason'), $request->money('refund'), $request->text('refund_override_reason'), $request->user());
+        $this->cancellations->noShow($booking, (string) $request->validated('reason'), $request->money('refund'), $request->text('refund_override_reason'), $request->user(), $request->refundFee());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$booking->reference} is marked as a no-show."]);
 

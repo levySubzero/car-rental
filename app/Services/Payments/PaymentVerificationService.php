@@ -151,7 +151,8 @@ class PaymentVerificationService
             $submission->setRelation('gatewayTransaction', $transaction);
 
             $this->statuses->transition($booking, BookingStatus::PaymentSubmitted, $actor, "Paid online ({$label})");
-            $this->markVerified($submission, $booking, $reference, $transaction->amount_minor, $actor, null, null, $transaction->gateway->value);
+            // The transaction cost the client paid on top is not part of the reservation.
+            $this->markVerified($submission, $booking, $reference, $transaction->creditedMinor(), $actor, null, null, $transaction->gateway->value);
 
             return $submission;
         });

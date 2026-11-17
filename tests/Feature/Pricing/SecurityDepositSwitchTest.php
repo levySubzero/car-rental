@@ -101,6 +101,8 @@ it('lets staff switch deposits off from pricing settings', function () {
             'default_mileage_km' => 250,
             'unlimited_mileage_after_days' => null,
             'security_deposit_enabled' => false,
+            'mpesa_fee_percent' => '1.5',
+            'card_fee_percent' => '2.9',
         ])
         ->assertSessionHasNoErrors();
 

@@ -396,8 +396,13 @@ export function CloseBookingDialog({
             ? 'This car is no longer available for your dates.'
             : '',
         refund: suggestion.amount.major,
+        refund_fee: suggestion.fee.major,
         refund_override_reason: '',
     });
+    const receives = Math.max(
+        0,
+        (Number(form.data.refund) || 0) - (Number(form.data.refund_fee) || 0),
+    );
     const overridden =
         form.data.refund !== '' &&
         Number(form.data.refund) !== Number(suggestion.amount.major);
@@ -467,6 +472,8 @@ export function CloseBookingDialog({
                         Reservation paid: {paid?.display ?? 'nothing'} ·
                         suggested refund:{' '}
                         <strong>{suggestion.amount.display}</strong>
+                        {suggestion.fee.minor > 0 &&
+                            ` less ${suggestion.fee.display} transaction costs`}
                     </p>
                 </div>
             )}
@@ -486,14 +493,38 @@ export function CloseBookingDialog({
                 onChange={(e) => form.setData('reason', e.target.value)}
             />
             {!declining && (
-                <MoneyField
-                    name="refund"
-                    label="Refund"
-                    required
-                    value={form.data.refund}
-                    error={form.errors.refund}
-                    onChange={(e) => form.setData('refund', e.target.value)}
-                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <MoneyField
+                        name="refund"
+                        label="Refund, before costs"
+                        required
+                        value={form.data.refund}
+                        error={form.errors.refund}
+                        onChange={(e) => form.setData('refund', e.target.value)}
+                    />
+                    <MoneyField
+                        name="refund_fee"
+                        label="Transaction cost"
+                        description="Paid by the client, taken off the refund."
+                        value={form.data.refund_fee}
+                        error={form.errors.refund_fee}
+                        onChange={(e) =>
+                            form.setData('refund_fee', e.target.value)
+                        }
+                    />
+                    {Number(form.data.refund) > 0 && (
+                        <p className="text-sm sm:col-span-2">
+                            The client receives{' '}
+                            <strong>
+                                KES{' '}
+                                {receives.toLocaleString('en-KE', {
+                                    maximumFractionDigits: 2,
+                                })}
+                            </strong>
+                            .
+                        </p>
+                    )}
+                </div>
             )}
             {overridden && (
                 <TextareaField

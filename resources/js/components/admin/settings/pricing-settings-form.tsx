@@ -30,6 +30,8 @@ export type PricingSettings = {
     default_mileage_km: number;
     unlimited_mileage_after_days: number | null;
     security_deposit_enabled: boolean;
+    mpesa_fee_bp: number;
+    card_fee_bp: number;
 };
 
 export type PricingSettingsContext = {
@@ -61,6 +63,8 @@ export function PricingSettingsForm({
                 ? ''
                 : String(values.unlimited_mileage_after_days),
         security_deposit_enabled: values.security_deposit_enabled,
+        mpesa_fee_percent: String(values.mpesa_fee_bp / 100),
+        card_fee_percent: String(values.card_fee_bp / 100),
     });
 
     const field = (
@@ -203,6 +207,31 @@ export function PricingSettingsForm({
                             }
                         />
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Transaction costs</CardTitle>
+                    <CardDescription>
+                        Paid by the client: added on top of online payments and
+                        taken off refunds. Defaults are Paystack's Kenya rates.
+                        Set 0 to charge nothing.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                    <TextField
+                        label="M-Pesa (% of the amount)"
+                        inputMode="decimal"
+                        required
+                        {...field('mpesa_fee_percent')}
+                    />
+                    <TextField
+                        label="Card (% of the amount)"
+                        inputMode="decimal"
+                        required
+                        {...field('card_fee_percent')}
+                    />
                 </CardContent>
             </Card>
 

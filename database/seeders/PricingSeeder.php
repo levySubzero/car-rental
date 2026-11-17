@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\ChargeApplies;
 use App\Enums\ChargeBasis;
 use App\Enums\ChargePayableAt;
+use App\Models\CancellationTier;
 use App\Models\Charge;
 use App\Models\Currency;
 use App\Models\DeliveryZone;
@@ -32,6 +33,7 @@ class PricingSeeder extends Seeder
             $this->charges($pack['pricing']);
             $this->zones($pack['pricing']['delivery_fee_kes']);
             $this->bands($pack['pricing']['security_deposit_bands']);
+            $this->tiers($pack['pricing']['cancellation_tiers'] ?? []);
         });
     }
 
@@ -145,6 +147,31 @@ class PricingSeeder extends Seeder
         }
 
         $this->report('Deposit bands: '.count($rows).' created');
+    }
+
+    /**
+     * The client's cancellation rule (2026-11-17), only into an empty table: tiers staff set
+     * are kept. Bookings snapshot tiers when submitted, so earlier bookings keep theirs.
+     *
+     * @param  list<array{hours_before_pickup: int, refund_percent: float, label: string|null}>  $rows
+     */
+    private function tiers(array $rows): void
+    {
+        if (CancellationTier::query()->exists()) {
+            $this->report('Cancellation tiers: kept as they are');
+
+            return;
+        }
+
+        foreach ($rows as $row) {
+            CancellationTier::create([
+                'hours_before_pickup' => $row['hours_before_pickup'],
+                'refund_percent_bp' => Decimal::basisPoints(Decimal::mul(Decimal::of($row['refund_percent']), '100')),
+                'label' => $row['label'],
+            ]);
+        }
+
+        $this->report('Cancellation tiers: '.count($rows).' created');
     }
 
     private function report(string $message): void

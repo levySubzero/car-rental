@@ -39,6 +39,9 @@ class UpdatePricingSettingsRequest extends UpdateSettingsRequest
             'default_mileage_km' => ['required', 'integer', 'between:1,10000'],
             'unlimited_mileage_after_days' => ['nullable', 'integer', 'between:1,365'],
             'security_deposit_enabled' => ['required', 'boolean'],
+            // Typed as a percent ("1.5"), stored in basis points; 0 charges nothing.
+            'mpesa_fee_percent' => ['required', 'string', 'regex:/^\d{1,2}(\.\d{1,2})?$/'],
+            'card_fee_percent' => ['required', 'string', 'regex:/^\d{1,2}(\.\d{1,2})?$/'],
         ];
     }
 
@@ -51,6 +54,8 @@ class UpdatePricingSettingsRequest extends UpdateSettingsRequest
             'reservation_percent.regex' => 'Enter a percentage between 0 and 100, e.g. 25.',
             'reservation_percent.not_regex' => 'The reservation must be more than 0%.',
             'daytime_window_end.after' => 'The window must end after it starts.',
+            'mpesa_fee_percent.regex' => 'Enter a percentage below 100, e.g. 1.5.',
+            'card_fee_percent.regex' => 'Enter a percentage below 100, e.g. 2.9.',
         ];
     }
 
@@ -75,6 +80,8 @@ class UpdatePricingSettingsRequest extends UpdateSettingsRequest
             'default_mileage_km' => (int) $this->validated('default_mileage_km'),
             'unlimited_mileage_after_days' => $unlimited === null ? null : (int) $unlimited,
             'security_deposit_enabled' => $this->boolean('security_deposit_enabled'),
+            'mpesa_fee_bp' => Decimal::basisPoints((string) $this->validated('mpesa_fee_percent')),
+            'card_fee_bp' => Decimal::basisPoints((string) $this->validated('card_fee_percent')),
         ];
     }
 }

@@ -89,6 +89,11 @@ class BookingException extends DomainException
         return new self('The refund cannot be more than the reservation paid.', 'refund');
     }
 
+    public static function refundFeeAboveRefund(): self
+    {
+        return new self('The transaction cost cannot be more than the refund.', 'refund_fee');
+    }
+
     public static function refundOverrideNeedsReason(): self
     {
         return new self('Say why the refund differs from the suggested amount.', 'refund_override_reason');

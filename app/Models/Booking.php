@@ -73,7 +73,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $cancellation_reason
  * @property array{label: string|null, hours_before_pickup: int, refund_percent_bp: int}|null $refund_tier
  * @property int|null $refund_suggested_minor
- * @property int|null $refund_minor
+ * @property int|null $refund_minor what goes back to the client, after refund_fee_minor
+ * @property int|null $refund_fee_minor transaction cost taken off the refund
  * @property string|null $refund_override_reason
  * @property string|null $refund_reference
  * @property CarbonImmutable|null $refunded_at
@@ -146,6 +147,7 @@ class Booking extends Model
             'refund_tier' => 'array',
             'refund_suggested_minor' => 'integer',
             'refund_minor' => 'integer',
+            'refund_fee_minor' => 'integer',
             'refunded_at' => 'datetime',
         ];
     }

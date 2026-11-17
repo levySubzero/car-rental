@@ -210,6 +210,7 @@ export default function RentalPolicy({
                                 <RateTable
                                     title="Cancellation"
                                     head={['Cancelled', 'Refund']}
+                                    note="A share of the reservation paid. Transaction costs are paid by the client and deducted from any refund."
                                 >
                                     {tiers.map((tier) => (
                                         <tr key={tier.hours_before_pickup}>

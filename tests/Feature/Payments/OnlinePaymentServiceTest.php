@@ -22,6 +22,7 @@ use App\Services\Payments\Gateways\DarajaClient;
 use App\Services\Payments\Gateways\PaystackClient;
 use App\Services\Payments\OnlinePaymentService;
 use App\Settings\NotificationSettings;
+use App\Settings\PricingSettings;
 use Illuminate\Http\Client\Request;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Http;
@@ -97,13 +98,15 @@ it('pushes the reservation to the phone and records the attempt', function () {
     expect($transaction->gateway)->toBe(PaymentGateway::MpesaStk)
         ->and($transaction->status)->toBe(GatewayTransactionStatus::Initiated)
         ->and($transaction->external_ref)->toBe('ws_CO_1')
-        ->and($transaction->amount_minor)->toBe(1_658_800)
+        // The reservation plus the 1.5% M-Pesa transaction cost, rounded up to the shilling.
+        ->and($transaction->amount_minor)->toBe(1_683_700)
+        ->and($transaction->fee_minor)->toBe(24_900)
         ->and($transaction->payer_phone)->toBe('254712345678')
         ->and($this->booking->fresh()->status)->toBe(BookingStatus::AwaitingPayment);
 
     Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/processrequest')
         && $request['AccountReference'] === 'BE2026000123'
-        && $request['Amount'] === 16588
+        && $request['Amount'] === 16837
         && $request['CallBackURL'] === url('hooks/mobile/stk/cb-secret'));
 });
 
@@ -284,17 +287,33 @@ it('starts a card payment and reserves the booking once Paystack confirms it', f
         ->and($start['reference'])->toStartWith('BE2026000123-');
     Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/initialize')
         && $request['email'] === 'amina@example.test'
-        && $request['amount'] === 1_658_800
+        // The reservation plus the 2.9% card transaction cost.
+        && $request['amount'] === 1_707_000
         && $request['reference'] === $start['reference']);
 
-    Http::fake([PaystackClient::URL.'/transaction/verify/*' => Http::response(paystackVerified($start['reference']))]);
+    Http::fake([PaystackClient::URL.'/transaction/verify/*' => Http::response(paystackVerified($start['reference'], ['amount' => 1_707_000]))]);
 
     $transaction = $this->service->confirmCard($this->booking, $start['reference']);
 
     expect($transaction->status)->toBe(GatewayTransactionStatus::Matched)
         ->and($transaction->receipt)->toBe('99')
         ->and($this->booking->fresh()->status)->toBe(BookingStatus::Reserved)
+        // Only the reservation is credited: the transaction cost is the client's.
+        ->and($this->booking->fresh()->reservation_paid_minor)->toBe(1_658_800)
+        ->and($this->booking->payments()->sole()->amount_minor)->toBe(1_658_800)
         ->and($this->booking->payments()->sole()->payment_method_code)->toBe(PaymentMethodCode::Card);
+});
+
+it('charges the reservation alone when the transaction cost is set to 0', function () {
+    $pricing = app(PricingSettings::class);
+    $pricing->card_fee_bp = 0;
+    $pricing->save();
+    fakeGateways();
+
+    $this->service->startCard($this->booking);
+
+    Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/initialize') && $request['amount'] === 1_658_800);
+    expect($this->booking->gatewayTransactions()->sole()->fee_minor)->toBe(0);
 });
 
 it('sends a card charge for a different amount to staff', function () {

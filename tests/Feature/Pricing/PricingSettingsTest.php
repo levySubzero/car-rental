@@ -22,6 +22,8 @@ function pricingPayload(array $overrides = []): array
         'default_mileage_km' => 250,
         'unlimited_mileage_after_days' => 7,
         'security_deposit_enabled' => true,
+        'mpesa_fee_percent' => '1.5',
+        'card_fee_percent' => '2.9',
         ...$overrides,
     ];
 }

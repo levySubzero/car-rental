@@ -596,7 +596,11 @@ export type RefundSuggestion = {
     notice_hours: number;
     tier: RefundTier | null;
     percent_bp: number;
+    // The tier's refund, before transaction costs.
     amount: Money;
+    // Transaction cost taken off it (paid by the client), and what goes back.
+    fee: Money;
+    net: Money;
 };
 
 export type AdminBooking = {
@@ -661,7 +665,9 @@ export type AdminBooking = {
         reason: string;
         tier: RefundTier | null;
         suggested: Money;
+        // What goes back to the client, after refund_fee.
         refund: Money;
+        refund_fee: Money | null;
         override_reason: string | null;
         reference: string | null;
         refunded_at: string | null;

@@ -13,6 +13,7 @@ import type {
     BookingPayment,
     CancellationTier,
     MediaCollectionLimits,
+    Money,
     MpesaPayTo,
     OnlinePaymentAttempt,
     PublicPaymentMethod,
@@ -32,6 +33,7 @@ export default function BookingStatus({
     payment,
     online_payment: onlinePayment,
     mpesa_pay_to: mpesaPayTo,
+    online_charges: onlineCharges,
     proof_limits: proofLimits,
 }: {
     token: string;
@@ -42,6 +44,7 @@ export default function BookingStatus({
     payment: BookingPayment | null;
     online_payment: OnlinePaymentAttempt | null;
     mpesa_pay_to: MpesaPayTo | null;
+    online_charges: Record<string, { fee: Money; total: Money }> | null;
     proof_limits: MediaCollectionLimits;
 }) {
     usePollWhileWaiting(onlinePayment);
@@ -123,6 +126,7 @@ export default function BookingStatus({
                                     phone={booking.driver?.phone ?? null}
                                     onlinePayment={onlinePayment}
                                     mpesaPayTo={mpesaPayTo}
+                                    onlineCharges={onlineCharges}
                                 />
                             </div>
                         </section>
