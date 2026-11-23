@@ -547,6 +547,24 @@ export type AdminBookingRow = {
     method: string | null;
     total: Money;
     balance: Money;
+    /** When the car is due back: the return, or the last paid extension's (D50). */
+    chain_end: string;
+    is_extension: boolean;
+    extended: boolean;
+};
+
+/** An extension of a hire (D50), listed under the booking it extends. */
+export type BookingExtension = {
+    reference: string;
+    status: BookingStatus;
+    status_label: string;
+    from: string;
+    to: string;
+    days: number;
+    total: Money;
+    paid: Money | null;
+    awaiting_payment: boolean;
+    live: boolean;
 };
 
 export type AdminVoucherRow = {
@@ -680,6 +698,10 @@ export type AdminBooking = {
         staff_note: string | null;
         created_at: string | null;
     }[];
+    extension_of: { reference: string; status_label: string } | null;
+    chain_end: string;
+    extensions: BookingExtension[];
+    can_extend: boolean;
     legal_hold: boolean;
     kyc_purged_at: string | null;
     submitted_at: string | null;

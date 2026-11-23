@@ -25,6 +25,22 @@ class BookingAccepted extends BookingNotification
         $booking = $this->booking->loadMissing(['car', 'driver']);
         $deadline = $booking->expires_at?->setTimezone((string) config('baines.timezone'))->format('D j M Y, H:i');
 
+        if ($booking->isExtension()) {
+            $booking->loadMissing('root');
+
+            return (new MailMessage)
+                ->subject("Your extension {$booking->reference} is approved")
+                ->greeting('Hello '.($booking->driver->first_name ?? 'there').',')
+                ->line("You can keep the {$booking->car->name} longer: the extension of your booking **{$booking->root?->reference}** is approved and the car is held for you.")
+                ->line("**Extra time:** {$this->dates()}")
+                ->line("**To pay now:** {$this->money($booking->total_minor)}, the full price of the extension")
+                ->when($deadline !== null, fn (MailMessage $mail) => $mail
+                    ->line("Please pay by **{$deadline}**, or the extra days are released."))
+                ->when($this->token !== null, fn (MailMessage $mail) => $mail
+                    ->action('Pay for the extension', route('bookings.show', $this->token)))
+                ->line('Once your payment is confirmed, we will email your updated voucher.');
+        }
+
         return (new MailMessage)
             ->subject("Your booking request {$booking->reference} is approved")
             ->greeting('Hello '.($booking->driver->first_name ?? 'there').',')

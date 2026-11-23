@@ -72,6 +72,21 @@ it('saves general settings, drops empty socials and logs a diff', function () {
     $this->assertDatabaseHas('activity_log', ['log_name' => 'settings', 'causer_id' => $user->id, 'description' => 'General settings updated']);
 });
 
+it('saves the area of use and stores an empty one as null', function () {
+    $user = staffWith(['settings.general.update']);
+
+    $this->actingAs($user)->put(route('admin.settings.update', 'general'), generalPayload(['area_of_use' => 'Kenya and Uganda']))
+        ->assertSessionHasNoErrors();
+    expect(app(GeneralSettings::class)->area_of_use)->toBe('Kenya and Uganda');
+
+    $this->actingAs($user)->get(route('admin.settings.edit', 'general'))
+        ->assertInertia(fn ($page) => $page->where('values.area_of_use', 'Kenya and Uganda'));
+
+    $this->actingAs($user)->put(route('admin.settings.update', 'general'), generalPayload(['area_of_use' => '']))
+        ->assertSessionHasNoErrors();
+    expect(app(GeneralSettings::class)->refresh()->area_of_use)->toBeNull();
+});
+
 it('validates general settings', function () {
     $this->actingAs(staffWith(['settings.general.update']))
         ->put(route('admin.settings.update', 'general'), generalPayload([

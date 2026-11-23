@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Notifications\Booking\BookingAccepted;
 use App\Notifications\Booking\BookingCancelled;
 use App\Notifications\Booking\BookingConfirmed;
+use App\Notifications\Booking\BookingExtended;
 use App\Notifications\Booking\BookingReceived;
 use App\Notifications\Booking\DeliveryUpdated;
 use App\Notifications\Booking\PaymentRejected;
@@ -43,10 +44,10 @@ class BookingNotifier
         $this->renter($booking)?->notify(new BookingReceived($booking, $token));
         $this->staff()?->notify(new StaffNewBooking($booking));
 
-        $booking->loadMissing(['car', 'driver']);
+        $booking->loadMissing(['car', 'driver', 'root']);
         $this->alerts->send(
             AlertKind::NewBooking,
-            "New request {$booking->reference}",
+            $booking->isExtension() ? "Extension requested for {$booking->root?->reference}: {$booking->reference}" : "New request {$booking->reference}",
             trim(($booking->driver ? "{$booking->driver->first_name} {$booking->driver->surname}, " : '').$booking->car->name),
             $this->bookingUrl($booking),
         );
@@ -80,7 +81,13 @@ class BookingNotifier
 
         $this->renter($booking)?->notify(new BookingCancelled($booking, $reason));
 
+        // A paid extension gone: the root's voucher drops it.
+        if ($booking->isExtension() && $paid) {
+            $this->regenerateRootVoucher($booking);
+        }
+
         $title = match (true) {
+            $booking->isExtension() => "Extension closed: {$booking->reference} ({$to->label()})",
             $to === BookingStatus::Cancelled => $paid ? "Booking cancelled: {$booking->reference}" : "Request declined: {$booking->reference}",
             $from === BookingStatus::Requested => "Request expired: {$booking->reference}",
             default => "Unpaid booking expired: {$booking->reference}",
@@ -122,6 +129,12 @@ class BookingNotifier
      */
     public function confirmed(Booking $booking): void
     {
+        if ($booking->isExtension()) {
+            $this->extended($booking);
+
+            return;
+        }
+
         $this->vouchers->generate($booking);
 
         // Whoever entered a client's booking is already on its voucher page.
@@ -160,6 +173,58 @@ class BookingNotifier
         $this->alerts->send(AlertKind::BookingUpdate, "Voucher sent: {$booking->reference}", "Emailed to {$booking->driver?->email}.", $this->bookingUrl($booking));
 
         return true;
+    }
+
+    /**
+     * An extension is paid for (D50): it has no voucher of its own. The root's is made again
+     * with the extension on it, staff's rewording of the old return dropped, and sent to the
+     * renter straight away, since the hire is already confirmed and the renter is waiting on it.
+     */
+    public function extended(Booking $extension): void
+    {
+        $root = $this->regenerateRootVoucher($extension, clearReturn: true);
+
+        if ($root === null) {
+            return;
+        }
+
+        $mailed = $this->settings->enabled('booking_confirmed', 'mail') && filled($root->driver?->email);
+        $this->renter($root)?->notify(new BookingExtended($root, $extension, $mailed ? $this->freshToken($root, 'booking_confirmed') : null));
+
+        if ($mailed) {
+            $root->forceFill(['voucher_sent_at' => now()])->save();
+        }
+
+        $this->alerts->send(
+            AlertKind::BookingUpdate,
+            "Extension paid: {$extension->reference}",
+            "{$root->reference} now runs to ".$root->chainEnd()->setTimezone((string) config('baines.timezone'))->format('D j M, H:i').($mailed ? '. The updated voucher was emailed to the renter.' : '. Send the updated voucher to the renter.'),
+            $this->bookingUrl($root),
+        );
+    }
+
+    /**
+     * Make the root's voucher again after its extensions changed. The return staff may have
+     * reworded no longer holds once the hire is extended.
+     */
+    private function regenerateRootVoucher(Booking $extension, bool $clearReturn = false): ?Booking
+    {
+        $root = Booking::query()->with(['car', 'driver', 'extensions'])->find($extension->root_booking_id);
+
+        if ($root === null) {
+            return null;
+        }
+
+        if ($clearReturn && $root->voucher_overrides !== null) {
+            $overrides = array_diff_key($root->voucher_overrides, array_flip(['return_date', 'return_time', 'days']));
+            $root->forceFill(['voucher_overrides' => $overrides === [] ? null : $overrides])->save();
+        }
+
+        if ($this->vouchers->hasRecord($root)) {
+            $this->vouchers->generate($root);
+        }
+
+        return $root;
     }
 
     public function deliveryUpdated(Booking $booking): void

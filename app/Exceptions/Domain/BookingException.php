@@ -119,6 +119,41 @@ class BookingException extends DomainException
         return new self('This zone is quoted by staff. Enter the fee.', 'fee');
     }
 
+    public static function notExtendable(BookingStatus $status): self
+    {
+        return new self("A booking that is {$status->label()} cannot be extended.", 'return_at');
+    }
+
+    public static function extensionOfExtension(): self
+    {
+        return new self('Extend the original booking, not one of its extensions.', 'return_at');
+    }
+
+    public static function extensionPending(string $reference): self
+    {
+        return new self("Extension {$reference} is still waiting to be accepted or paid. Finish or cancel it first.", 'return_at');
+    }
+
+    public static function extensionTooShort(): self
+    {
+        return new self('The new return must be after the current one.', 'return_at');
+    }
+
+    public static function extensionsStillLive(): self
+    {
+        return new self('This booking has paid extensions. Cancel them first.');
+    }
+
+    public static function followsRoot(string $reference): self
+    {
+        return new self("This is an extension: hand-over and return are recorded on {$reference}.");
+    }
+
+    public static function changeHasExtensions(): self
+    {
+        return new self('This booking has extensions, so its trip can no longer be edited. Extend it again, or cancel the extensions first.');
+    }
+
     protected function errorField(): ?string
     {
         return $this->field;

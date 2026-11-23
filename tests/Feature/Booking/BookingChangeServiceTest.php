@@ -52,10 +52,10 @@ function newReturn(string $local): CarbonImmutable
     return CarbonImmutable::parse($local, 'Africa/Nairobi')->utc();
 }
 
-it('previews an extension without saving it', function () {
+it('previews an edit without saving it', function () {
     $before = $this->booking->only(['return_at', 'total_minor', 'balance_minor']);
 
-    $preview = $this->service->preview($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], extend: true);
+    $preview = $this->service->preview($this->booking, ['return_at' => newReturn('2026-12-15 11:30')]);
 
     expect($preview['after']['days'])->toBe($this->days + 2)
         ->and($preview['difference']->minor)->toBeGreaterThan(0)
@@ -63,35 +63,8 @@ it('previews an extension without saving it', function () {
         ->and($this->booking->fresh()->only(array_keys($before)))->toEqual($before);
 });
 
-it('extends a hire: new days and total, the payment kept, the difference on the balance', function () {
-    $old = $this->booking->fresh();
-
-    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], null, $this->staff, extend: true);
-
-    $booking = $this->booking->fresh();
-    $extra = $booking->total_minor - $old->total_minor;
-
-    expect($booking->quote['days'])->toBe($this->days + 2)
-        ->and($extra)->toBeGreaterThan(0)
-        ->and($booking->reservation_minor)->toBe($old->reservation_minor)
-        ->and($booking->reservation_paid_minor)->toBe($old->reservation_paid_minor)
-        ->and($booking->balance_minor)->toBe($old->balance_minor + $extra)
-        ->and($booking->security_deposit_minor)->toBe(4_400_000)
-        ->and($booking->availabilityBlocks()->sole()->ends_at->equalTo(newReturn('2026-12-15 11:30')))->toBeTrue();
-});
-
-it('extends a running hire, with the balance taken at handover still counted', function () {
-    $this->booking->forceFill(['status' => BookingStatus::Active])->save();
-    $this->booking->handover()->forceCreate(['type' => 'handover', 'odometer_km' => 1000, 'fuel_level' => 'full', 'balance_received_minor' => $this->booking->balance_minor, 'deposit_received_minor' => 0, 'recorded_by' => $this->staff->id, 'recorded_at' => now()]);
-
-    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-14 11:30')], null, $this->staff, extend: true);
-
-    $booking = $this->booking->fresh();
-    expect($booking->balanceOutstandingMinor())->toBe($booking->total_minor - $this->booking->total_minor);
-});
-
 it('takes a total staff typed in, keeping what was paid', function () {
-    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], Money::fromMajor('50000'), $this->staff, extend: true);
+    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], Money::fromMajor('50000'), $this->staff);
 
     $booking = $this->booking->fresh();
     expect($booking->total_minor)->toBe(5_000_000)
@@ -105,17 +78,22 @@ it('refuses dates another booking holds', function () {
         'ends_at' => newReturn('2026-12-16 08:00'),
     ]);
 
-    expect($this->service->preview($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], extend: true)['available'])->toBeFalse();
+    expect($this->service->preview($this->booking, ['return_at' => newReturn('2026-12-15 11:30')])['available'])->toBeFalse();
 
-    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], null, $this->staff, extend: true);
+    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], null, $this->staff);
 })->throws(BookingException::class);
 
-it('only extends confirmed or running hires, and only edits before handover', function () {
-    $this->booking->forceFill(['status' => BookingStatus::Completed])->save();
-    expect(fn () => $this->service->preview($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], extend: true))->toThrow(BookingException::class);
-
+it('only edits before handover', function () {
     $this->booking->forceFill(['status' => BookingStatus::Active])->save();
-    expect(fn () => $this->service->preview($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], extend: false))->toThrow(BookingException::class);
+
+    expect(fn () => $this->service->preview($this->booking, ['return_at' => newReturn('2026-12-15 11:30')]))->toThrow(BookingException::class);
+});
+
+it('no longer edits a booking once it has been extended', function () {
+    Booking::factory()->status(BookingStatus::Requested)->for($this->car)->create(['root_booking_id' => $this->booking->id]);
+
+    expect(fn () => $this->service->preview($this->booking, ['return_at' => newReturn('2026-12-15 11:30')]))
+        ->toThrow(BookingException::class, 'This booking has extensions');
 });
 
 it('edits the car and dates, moving the block to the new car', function () {
@@ -125,7 +103,7 @@ it('edits the car and dates, moving the block to the new car', function () {
         'car_id' => $other->id,
         'pickup_at' => newReturn('2026-12-06 09:00'),
         'return_at' => newReturn('2026-12-08 09:00'),
-    ], null, $this->staff, extend: false);
+    ], null, $this->staff);
 
     $booking = $this->booking->fresh();
     expect($booking->car_id)->toBe($other->id)
@@ -137,7 +115,7 @@ it('lets an unpaid booking\'s reservation follow the new total', function () {
     $this->booking->forceFill(['status' => BookingStatus::AwaitingPayment, 'reservation_paid_minor' => null, 'paid_at' => null])->save();
     $old = $this->booking->fresh();
 
-    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30'), 'pickup_at' => $old->pickup_at], null, $this->staff, extend: false);
+    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30'), 'pickup_at' => $old->pickup_at], null, $this->staff);
 
     $booking = $this->booking->fresh();
     expect($booking->reservation_minor)->toBeGreaterThan($old->reservation_minor)
@@ -147,37 +125,16 @@ it('lets an unpaid booking\'s reservation follow the new total', function () {
 it('makes the voucher again with the new figures', function () {
     app(VoucherService::class)->generate($this->booking);
 
-    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30')], null, $this->staff, extend: true);
+    $this->service->apply($this->booking, ['return_at' => newReturn('2026-12-15 11:30'), 'pickup_at' => $this->booking->pickup_at], null, $this->staff);
 
     expect(app(VoucherService::class)->html($this->booking->fresh()))->toContain('Tuesday 15 December 2026');
 });
 
 describe('over HTTP', function () {
-    it('needs the extend permission', function () {
+    it('needs the edit permission', function () {
         $this->actingAs(staffWith([Permission::BookingsView]))
-            ->put(route('admin.bookings.extend', $this->booking->reference), ['return_at' => '2026-12-15T11:30:00+03:00'])
+            ->put(route('admin.bookings.edit', $this->booking->reference), ['return_at' => '2026-12-15T11:30:00+03:00'])
             ->assertForbidden();
-    });
-
-    it('previews as JSON and saves', function () {
-        $this->actingAs($this->staff)
-            ->postJson(route('admin.bookings.extend.preview', $this->booking->reference), ['return_at' => '2026-12-15T11:30:00+03:00'])
-            ->assertOk()
-            ->assertJsonPath('after.days', $this->days + 2)
-            ->assertJsonPath('available', true);
-
-        $this->actingAs($this->staff)
-            ->put(route('admin.bookings.extend', $this->booking->reference), ['return_at' => '2026-12-15T11:30:00+03:00'])
-            ->assertSessionHasNoErrors()
-            ->assertRedirect();
-
-        expect($this->booking->fresh()->quote['days'])->toBe($this->days + 2);
-    });
-
-    it('refuses a return before the pickup', function () {
-        $this->actingAs($this->staff)
-            ->put(route('admin.bookings.extend', $this->booking->reference), ['return_at' => '2026-12-01T11:30:00+03:00'])
-            ->assertSessionHasErrors('return_at');
     });
 
     it('edits through the form', function () {

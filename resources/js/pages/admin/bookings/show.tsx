@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, CalendarClock, ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import BookingVoucherController from '@/actions/App/Http/Controllers/Admin/BookingVoucherController';
 import BookingController from '@/actions/App/Http/Controllers/Admin/BookingController';
@@ -95,7 +95,7 @@ export default function BookingShow({
                             <BookingStatusBadge booking={booking} />
                             {booking.car.name} ·{' '}
                             {formatBookingTime(booking.pickup_at)} to{' '}
-                            {formatBookingTime(booking.return_at)}
+                            {formatBookingTime(booking.chain_end)}
                         </span>
                     }
                 />
@@ -127,31 +127,40 @@ export default function BookingShow({
                             <RejectPaymentDialog payment={pendingPayment} />
                         )}
                     {status === 'reserved' &&
+                        !booking.extension_of &&
                         can('bookings.record-handover') && (
                             <HandoverDialog
                                 booking={booking}
                                 fuelLevels={fuelLevels}
                             />
                         )}
-                    {status === 'active' && can('bookings.record-return') && (
-                        <ReturnDialog
-                            booking={booking}
-                            fuelLevels={fuelLevels}
-                        />
-                    )}
-                    {['reserved', 'active'].includes(status) &&
-                        can('bookings.extend') && (
-                            <ExtendBookingDialog booking={booking} />
+                    {status === 'active' &&
+                        !booking.extension_of &&
+                        can('bookings.record-return') && (
+                            <ReturnDialog
+                                booking={booking}
+                                fuelLevels={fuelLevels}
+                            />
                         )}
-                    {deliveryEditable && can('bookings.edit') && (
-                        <EditBookingDialog
+                    {booking.can_extend && can('bookings.extend') && (
+                        <ExtendBookingDialog
                             booking={booking}
-                            cars={cars}
-                            zones={zones}
-                            extras={extras}
+                            methods={methods}
                         />
                     )}
+                    {deliveryEditable &&
+                        !booking.extension_of &&
+                        booking.extensions.length === 0 &&
+                        can('bookings.edit') && (
+                            <EditBookingDialog
+                                booking={booking}
+                                cars={cars}
+                                zones={zones}
+                                extras={extras}
+                            />
+                        )}
                     {can('bookings.resend-voucher') &&
+                        !booking.extension_of &&
                         ![
                             'completed',
                             'cancelled',
@@ -182,6 +191,38 @@ export default function BookingShow({
                             <MarkRefundedDialog booking={booking} />
                         )}
                 </div>
+
+                {booking.extension_of && (
+                    <Alert>
+                        <CalendarClock />
+                        <AlertTitle>
+                            Extension of {booking.extension_of.reference}
+                        </AlertTitle>
+                        <AlertDescription>
+                            <p>
+                                These extra days are paid in full up front. Once
+                                paid, they show on{' '}
+                                {booking.extension_of.reference}'s voucher and
+                                the renter is sent it again. Hand-over and
+                                return are recorded there.
+                            </p>
+                            <Button
+                                asChild
+                                size="sm"
+                                variant="outline"
+                                className="mt-2"
+                            >
+                                <Link
+                                    href={BookingController.show.url(
+                                        booking.extension_of.reference,
+                                    )}
+                                >
+                                    Open {booking.extension_of.reference}
+                                </Link>
+                            </Button>
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 {booking.voucher_unsent && (
                     <Alert variant="destructive">
@@ -283,6 +324,14 @@ export default function BookingShow({
                                         'Return',
                                         `${formatBookingTime(booking.return_at)} · ${booking.return_mode_label}`,
                                     ],
+                                    [
+                                        'Extended to',
+                                        booking.chain_end !== booking.return_at
+                                            ? formatBookingTime(
+                                                  booking.chain_end,
+                                              )
+                                            : null,
+                                    ],
                                     ['Flight', booking.flight_number],
                                     [
                                         'Submitted',
@@ -297,6 +346,17 @@ export default function BookingShow({
                                 ]}
                             />
                         </Section>
+
+                        {booking.extensions.length > 0 && (
+                            <Section
+                                title="Extensions"
+                                description="Extra days, each a booking of its own and paid in full. Paid ones are on this booking's voucher."
+                            >
+                                <ExtensionList
+                                    extensions={booking.extensions}
+                                />
+                            </Section>
+                        )}
 
                         {booking.delivery && (
                             <Section
@@ -787,6 +847,57 @@ function Section({
             </CardHeader>
             <CardContent>{children}</CardContent>
         </Card>
+    );
+}
+
+function ExtensionList({
+    extensions,
+}: {
+    extensions: AdminBooking['extensions'];
+}) {
+    return (
+        <ul className="divide-y text-sm">
+            {extensions.map((extension) => (
+                <li
+                    key={extension.reference}
+                    className="flex flex-wrap items-center justify-between gap-2 py-2"
+                >
+                    <div className="grid gap-0.5">
+                        <Link
+                            href={BookingController.show.url(
+                                extension.reference,
+                            )}
+                            className="font-medium underline-offset-4 hover:underline"
+                        >
+                            {extension.reference}
+                        </Link>
+                        <span className="text-muted-foreground">
+                            {formatBookingTime(extension.from)} →{' '}
+                            {formatBookingTime(extension.to)} · {extension.days}{' '}
+                            {extension.days === 1 ? 'day' : 'days'}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="tabular-nums">
+                            {extension.total.display}
+                            {extension.paid &&
+                                extension.paid.minor !==
+                                    extension.total.minor && (
+                                    <span className="text-muted-foreground">
+                                        {' '}
+                                        (paid {extension.paid.display})
+                                    </span>
+                                )}
+                        </span>
+                        <Badge
+                            variant={extension.live ? 'default' : 'secondary'}
+                        >
+                            {extension.status_label}
+                        </Badge>
+                    </div>
+                </li>
+            ))}
+        </ul>
     );
 }
 

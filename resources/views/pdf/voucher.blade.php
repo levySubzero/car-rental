@@ -83,6 +83,23 @@
         <p class="muted">The delivery fee for your area is quoted by our team and added to the balance at handover.</p>
     @endif
 
+    @if ($voucher['extensions'] !== [])
+        <h2>Extensions</h2>
+        <table class="money">
+            @foreach ($voucher['extensions'] as $extension)
+                <tr>
+                    <td>
+                        <div class="value">{{ $extension['reference'] }}</div>
+                        <div class="muted">{{ $extension['from'] }} to {{ $extension['to'] }} · {{ $extension['days'] }} {{ $extension['days'] === 1 ? 'day' : 'days' }}</div>
+                    </td>
+                    <td class="amount">{{ $extension['total'] }}<div class="muted">paid {{ $extension['paid'] }}</div></td>
+                </tr>
+            @endforeach
+            <tr class="balance"><td>Total including extensions</td><td class="amount">{{ $voucher['grand_total'] }}</td></tr>
+        </table>
+        <p class="muted">The drop-off above is the end of the last extension. Extensions are paid in full when they are confirmed.</p>
+    @endif
+
     @if ($voucher['security_deposit'] !== null)
         <div class="nb">
             <table>

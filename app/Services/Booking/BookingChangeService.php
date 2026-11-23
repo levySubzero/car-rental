@@ -15,9 +15,9 @@ use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Staff changing a booking's trip (edit, before handover) or moving its return (extend, a
- * confirmed or running hire). The whole trip is quoted again at today's rates; what was
- * already paid stays paid and the difference lands on the balance.
+ * Staff changing a booking's trip before handover. The whole trip is quoted again at today's
+ * rates; what was already paid stays paid and the difference lands on the balance. Extending
+ * a hire is a booking of its own (BookingExtensionService, D50).
  */
 class BookingChangeService
 {
@@ -25,8 +25,6 @@ class BookingChangeService
         BookingStatus::Requested, BookingStatus::AwaitingPayment, BookingStatus::PaymentSubmitted,
         BookingStatus::AwaitingCash, BookingStatus::PaymentRejected, BookingStatus::Reserved,
     ];
-
-    public const EXTENDABLE = [BookingStatus::Reserved, BookingStatus::Active];
 
     private const TRIP_FIELDS = [
         'car_id', 'pickup_at', 'return_at', 'pickup_mode', 'return_mode', 'delivery_zone_id',
@@ -48,15 +46,15 @@ class BookingChangeService
      * @param  array<string, mixed>  $trip
      * @return array{before: array<string, mixed>, after: array<string, mixed>, difference: Money, available: bool}
      */
-    public function preview(Booking $booking, array $trip, bool $extend): array
+    public function preview(Booking $booking, array $trip): array
     {
-        $this->ensureAllowed($booking, $extend);
+        $this->ensureAllowed($booking);
         $before = $this->figures($booking);
 
         $changed = $booking->replicate();
         $changed->id = $booking->id;
         $changed->setRelation('driver', $booking->driver);
-        $changed->fill($this->only($trip, $extend));
+        $changed->fill($this->only($trip));
         $this->reprice($changed, $booking, $this->quote($changed));
 
         return [
@@ -70,15 +68,15 @@ class BookingChangeService
     /**
      * @param  array<string, mixed>  $trip
      */
-    public function apply(Booking $booking, array $trip, ?Money $total, User $actor, bool $extend): Booking
+    public function apply(Booking $booking, array $trip, ?Money $total, User $actor): Booking
     {
-        $booking = DB::transaction(function () use ($booking, $trip, $total, $actor, $extend) {
+        $booking = DB::transaction(function () use ($booking, $trip, $total, $actor) {
             $booking = Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
-            $this->ensureAllowed($booking, $extend);
+            $this->ensureAllowed($booking);
 
             $original = clone $booking;
             $before = $this->figures($booking);
-            $booking->fill($this->only($trip, $extend));
+            $booking->fill($this->only($trip));
 
             // Lock the car (the new one, if it changed) so two staff cannot take the same dates.
             $car = Car::withTrashed()->whereKey($booking->car_id)->lockForUpdate()->firstOrFail();
@@ -101,8 +99,8 @@ class BookingChangeService
 
             activity(BookingDeskService::LOG_NAME)->performedOn($booking)->causedBy($actor)
                 ->withProperties(['before' => $before, 'after' => $this->figures($booking), 'override' => $total?->minor])
-                ->event($extend ? 'extended' : 'edited')
-                ->log($extend ? 'booking extended' : 'booking edited');
+                ->event('edited')
+                ->log('booking edited');
 
             return $booking;
         });
@@ -115,22 +113,25 @@ class BookingChangeService
         return $booking;
     }
 
-    public function ensureAllowed(Booking $booking, bool $extend): void
+    public function ensureAllowed(Booking $booking): void
     {
-        if (! in_array($booking->status, $extend ? self::EXTENDABLE : self::EDITABLE, true)) {
-            throw BookingException::cannotChange($booking->status, $extend ? 'extended' : 'edited');
+        if (! in_array($booking->status, self::EDITABLE, true)) {
+            throw BookingException::cannotChange($booking->status, 'edited');
+        }
+
+        // An extension's dates hang off its root's, and a root's off its extensions'.
+        if ($booking->isExtension() || $booking->extensions()->whereNotIn('status', [BookingStatus::Cancelled, BookingStatus::Expired])->exists()) {
+            throw BookingException::changeHasExtensions();
         }
     }
 
     /**
-     * An extension only moves the return.
-     *
      * @param  array<string, mixed>  $trip
      * @return array<string, mixed>
      */
-    private function only(array $trip, bool $extend): array
+    private function only(array $trip): array
     {
-        return array_intersect_key($trip, array_flip($extend ? ['return_at'] : self::TRIP_FIELDS));
+        return array_intersect_key($trip, array_flip(self::TRIP_FIELDS));
     }
 
     private function quote(Booking $booking): Quote

@@ -84,7 +84,8 @@ export default function BookingsIndex({
                 <div className="grid text-sm">
                     <span>{formatBookingTime(booking.pickup_at)}</span>
                     <span className="text-muted-foreground">
-                        to {formatBookingTime(booking.return_at)}
+                        to {formatBookingTime(booking.chain_end)}
+                        {booking.extended && ' (extended)'}
                     </span>
                     {(booking.pickup_mode === 'address' ||
                         booking.return_mode === 'address') && (
@@ -106,6 +107,9 @@ export default function BookingsIndex({
             cell: (booking) => (
                 <div className="flex flex-wrap gap-1">
                     <BookingStatusBadge booking={booking} />
+                    {booking.is_extension && (
+                        <Badge variant="outline">Extension</Badge>
+                    )}
                     {booking.one_day && (
                         <Badge variant="secondary">One day</Badge>
                     )}

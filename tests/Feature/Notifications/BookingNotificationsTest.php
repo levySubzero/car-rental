@@ -23,6 +23,7 @@ use App\Services\Notifications\WhatsApp\WhatsAppDriver;
 use App\Services\Notifications\WhatsApp\WhatsAppMessage;
 use App\Services\Payments\PaymentSubmissionService;
 use App\Services\Payments\PaymentVerificationService;
+use App\Settings\GeneralSettings;
 use App\Settings\NotificationSettings;
 use App\Support\Money;
 use Illuminate\Notifications\AnonymousNotifiable;
@@ -138,6 +139,38 @@ it('sends one email with the voucher and a fresh link when staff send it', funct
     expect($tokens->find($this->token))->toBeNull()
         ->and($tokens->find($newToken)?->is($this->booking))->toBeTrue()
         ->and($this->booking->fresh()->voucher_sent_at)->not->toBeNull();
+});
+
+it('states the area of use in the confirmation email and WhatsApp text, reworded when staff edited it', function () {
+    app(PaymentVerificationService::class)->verify($this->submission, 'REF1', Money::fromMajor('16588'), $this->staff);
+    $booking = $this->booking->fresh();
+
+    $lines = fn (Booking $booking) => implode("\n", (new BookingConfirmed($booking, null))->toMail(new AnonymousNotifiable)->introLines);
+
+    expect($lines($booking))->toContain('**Area of use:** Within Kenya');
+
+    app(VoucherService::class)->update($booking, ['area_of_use' => 'Kenya and Tanzania'], $this->staff);
+    $booking = $booking->fresh();
+
+    expect($lines($booking))->toContain('**Area of use:** Kenya and Tanzania')
+        ->and(app(VoucherService::class)->html($booking))->toContain('Kenya and Tanzania');
+
+    $settings = app(NotificationSettings::class);
+    $settings->voucher_whatsapp_text = 'Booking {reference}, use {area_of_use}.';
+    $settings->save();
+
+    expect(app(VoucherService::class)->whatsAppText($booking))->toBe("Booking {$booking->reference}, use Kenya and Tanzania.");
+});
+
+it('leaves the area of use line out of the email when none is set', function () {
+    $general = app(GeneralSettings::class);
+    $general->area_of_use = null;
+    $general->save();
+
+    app(PaymentVerificationService::class)->verify($this->submission, 'REF1', Money::fromMajor('16588'), $this->staff);
+    $mail = (new BookingConfirmed($this->booking->fresh(), null))->toMail(new AnonymousNotifiable);
+
+    expect(implode("\n", $mail->introLines))->not->toContain('Area of use');
 });
 
 it('makes the voucher afresh before sending it, so it matches the email', function () {

@@ -63,7 +63,8 @@ class BookingQuoteAdjuster
             throw BookingException::adjustedTotalTooLow();
         }
 
-        $reservation = $snapshotTotal->percentBp(
+        // An extension is paid in full up front (D50); anything else pays the reservation share.
+        $reservation = $booking->isExtension() ? $snapshotTotal : $snapshotTotal->percentBp(
             (int) $quote['settings']['reservation_percent_bp'],
             RoundingMode::from($quote['settings']['reservation_rounding']),
         );
@@ -84,10 +85,12 @@ class BookingQuoteAdjuster
     }
 
     /**
+     * The snapshot's figures in each display currency, at its own frozen rates.
+     *
      * @param  array<string, mixed>  $quote
      * @return array<string, array<string, Money|null>>
      */
-    private function display(array $quote): array
+    public function display(array $quote): array
     {
         $fx = FxTable::fromArray($quote['fx']);
         $figure = fn (mixed $money): ?Money => $money === null

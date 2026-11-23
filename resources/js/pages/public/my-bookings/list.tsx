@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Download, ExternalLink } from 'lucide-react';
+import { CalendarPlus, Download, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Field, inputClass } from '@/components/public/form-field';
@@ -8,13 +8,17 @@ import { formatBookingTime } from '@/lib/booking';
 import { cn } from '@/lib/utils';
 import { open, restart, voucher } from '@/routes/portal';
 import { store as storeRequest } from '@/routes/portal/requests';
-import type { Money } from '@/types';
+import type { BookingExtension, Money } from '@/types';
 
 type PortalBooking = {
     reference: string;
     car: string;
     pickup_at: string;
     return_at: string;
+    // Where the hire now ends, after any paid extensions (D50).
+    chain_end: string;
+    extensions: BookingExtension[];
+    can_extend: boolean;
     status: string;
     status_label: string;
     total: Money;
@@ -99,7 +103,9 @@ function BookingCard({ booking }: { booking: PortalBooking }) {
                     </h2>
                     <p className="mt-1 text-sm text-white/80">
                         {formatBookingTime(booking.pickup_at)} to{' '}
-                        {formatBookingTime(booking.return_at)}
+                        {formatBookingTime(booking.chain_end)}
+                        {booking.chain_end !== booking.return_at &&
+                            ' (extended)'}
                     </p>
                 </div>
                 <span className="rounded-full border border-gold/40 px-3 py-1 text-sm text-gold">
@@ -117,6 +123,27 @@ function BookingCard({ booking }: { booking: PortalBooking }) {
                     {booking.balance.display}
                 </dd>
             </dl>
+
+            {booking.extensions.length > 0 && (
+                <ul className="grid gap-1 text-sm text-white/70">
+                    {booking.extensions.map((extension) => (
+                        <li key={extension.reference}>
+                            Extension {extension.reference} to{' '}
+                            {formatBookingTime(extension.to)} (
+                            {extension.total.display}):{' '}
+                            <span
+                                className={cn(
+                                    extension.live
+                                        ? 'text-foreground'
+                                        : 'text-gold',
+                                )}
+                            >
+                                {extension.status_label.toLowerCase()}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
 
             {booking.requests.length > 0 && (
                 <ul className="grid gap-1 text-sm text-white/70">
@@ -146,6 +173,14 @@ function BookingCard({ booking }: { booking: PortalBooking }) {
                 >
                     <ExternalLink /> Open booking
                 </Button>
+                {booking.can_extend && (
+                    <Button
+                        variant="outline"
+                        onClick={() => router.post(open(booking.reference).url)}
+                    >
+                        <CalendarPlus /> Extend
+                    </Button>
+                )}
                 {booking.has_voucher && (
                     <Button variant="outline" asChild>
                         <a href={voucher(booking.reference).url}>

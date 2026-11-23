@@ -212,7 +212,7 @@ export function NotificationSettingsForm({
                     <TextareaField
                         name="voucher_whatsapp_text"
                         label="WhatsApp message"
-                        description="Prefilled when staff send the confirmation on WhatsApp. {reference}, {car} and {dates} are filled in."
+                        description="Prefilled when staff send the confirmation on WhatsApp. {reference}, {car}, {dates} and {area_of_use} are filled in."
                         rows={3}
                         required
                         value={form.data.voucher_whatsapp_text}

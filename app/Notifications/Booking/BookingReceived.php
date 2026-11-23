@@ -23,7 +23,19 @@ class BookingReceived extends BookingNotification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $booking = $this->booking->loadMissing(['car', 'driver']);
+        $booking = $this->booking->loadMissing(['car', 'driver', 'root']);
+
+        if ($booking->isExtension()) {
+            return (new MailMessage)
+                ->subject("Your extension request {$booking->reference} is under review")
+                ->greeting('Hello '.($booking->driver->first_name ?? 'there').',')
+                ->line("Thank you for asking to keep the {$booking->car->name} longer. This extends your booking **{$booking->root?->reference}**; the extension's reference is **{$booking->reference}**.")
+                ->line("**Extra time:** {$this->dates()}")
+                ->line("**Extension price:** {$this->money($booking->total_minor)}, paid in full once approved")
+                ->line('Our team is checking the car is free for these dates. We will email you whether it is approved. There is nothing to pay yet.')
+                ->action('Open your extension', route('bookings.show', $this->token))
+                ->line('Keep this email: the link above is private to your booking.');
+        }
 
         return (new MailMessage)
             ->subject("Your booking request {$booking->reference} is under review")

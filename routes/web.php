@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\DevLoginController;
 use App\Http\Controllers\Public\BookingController;
+use App\Http\Controllers\Public\BookingExtensionController;
 use App\Http\Controllers\Public\BookingPaymentController;
 use App\Http\Controllers\Public\BookingPortalController;
 use App\Http\Controllers\Public\CarController;
@@ -57,6 +58,11 @@ Route::middleware(['booking.token', 'throttle:booking-step'])->prefix('bookings/
     Route::put('driver', [BookingController::class, 'updateDriver'])->name('driver');
     Route::post('submit', [BookingController::class, 'submit'])->name('submit');
     Route::post('payment', [BookingPaymentController::class, 'store'])->name('payment');
+
+    // Extending the hire (D48): a live price, the request, and the way into an extension to pay.
+    Route::post('extend/preview', [BookingExtensionController::class, 'preview'])->name('extend.preview');
+    Route::post('extend', [BookingExtensionController::class, 'store'])->name('extend');
+    Route::post('extensions/{reference}/open', [BookingExtensionController::class, 'open'])->name('extensions.open');
 
     // Online payments (M11B.7).
     Route::middleware('throttle:online-payment')->prefix('payment')->name('payment.')->group(function () {

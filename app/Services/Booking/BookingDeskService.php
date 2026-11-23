@@ -38,7 +38,9 @@ class BookingDeskService
                 ->whereHas('latestPayment', fn (Builder $query) => $query->where('payment_method_code', $method)))
             ->when(
                 in_array($bucket, [BookingBucket::New, BookingBucket::Unpaid, BookingBucket::Upcoming, BookingBucket::OnHire], true),
-                fn (Builder $query) => $query->orderBy($bucket === BookingBucket::OnHire ? 'return_at' : 'pickup_at'),
+                fn (Builder $query) => $bucket === BookingBucket::OnHire
+                    ? $query->orderByRaw('coalesce(extended_until, return_at)')
+                    : $query->orderBy('pickup_at'),
                 fn (Builder $query) => $query->orderByDesc('pickup_at'),
             )
             ->orderBy('id')
@@ -101,13 +103,15 @@ class BookingDeskService
         $end = $start->addDay();
         $now = CarbonImmutable::now();
 
-        $query = fn () => Booking::query()->with(['car:id,name', 'driver:id,booking_id,first_name,surname,phone'])->limit(20);
+        // The car moves once each way per hire, on the root: extensions only push its return (D50).
+        $query = fn () => Booking::query()->whereNull('root_booking_id')->with(['car:id,name', 'driver:id,booking_id,first_name,surname,phone'])->limit(20);
+        $due = 'coalesce(extended_until, return_at)';
 
         return [
             'pickups' => $query()->where('status', BookingStatus::Reserved)->where('pickup_at', '>=', max($start, $now))->where('pickup_at', '<', $end)->orderBy('pickup_at')->get(),
-            'returns' => $query()->where('status', BookingStatus::Active)->where('return_at', '>=', max($start, $now))->where('return_at', '<', $end)->orderBy('return_at')->get(),
+            'returns' => $query()->where('status', BookingStatus::Active)->whereRaw("{$due} >= ?", [max($start, $now)])->whereRaw("{$due} < ?", [$end])->orderByRaw($due)->get(),
             'late_pickups' => $query()->where('status', BookingStatus::Reserved)->where('pickup_at', '<', $now)->orderBy('pickup_at')->get(),
-            'overdue_returns' => $query()->where('status', BookingStatus::Active)->where('return_at', '<', $now)->orderBy('return_at')->get(),
+            'overdue_returns' => $query()->where('status', BookingStatus::Active)->whereRaw("{$due} < ?", [$now])->orderByRaw($due)->get(),
         ];
     }
 

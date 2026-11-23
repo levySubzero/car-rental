@@ -201,7 +201,7 @@ class BookingPortalService
      */
     public function list(array $identity): Collection
     {
-        return $this->bookingsFor($identity)->with(['car', 'requests' => fn ($query) => $query->latest('id')])->get();
+        return $this->bookingsFor($identity)->with(['car', 'extensions', 'requests' => fn ($query) => $query->latest('id')])->get();
     }
 
     /**

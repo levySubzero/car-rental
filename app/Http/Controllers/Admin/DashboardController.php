@@ -47,7 +47,8 @@ class DashboardController extends Controller
             'renter' => $booking->driver?->fullName(),
             'phone' => $booking->driver?->phone,
             'pickup_at' => $booking->pickup_at->toIso8601String(),
-            'return_at' => $booking->return_at->toIso8601String(),
+            // Extended hires come back when their last extension ends (D50).
+            'return_at' => $booking->chainEnd()->toIso8601String(),
             'pickup_mode' => $booking->pickup_mode->value,
             'return_mode' => $booking->return_mode->value,
         ];

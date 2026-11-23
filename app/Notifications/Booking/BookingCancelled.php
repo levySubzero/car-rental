@@ -26,6 +26,21 @@ class BookingCancelled extends BookingNotification
         $booking = $this->booking->loadMissing(['car.carType', 'driver']);
         $paid = $booking->paid_at !== null;
 
+        if ($booking->isExtension()) {
+            $booking->loadMissing('root');
+
+            return (new MailMessage)
+                ->subject($paid ? "Your extension {$booking->reference} is cancelled" : "We could not extend your booking {$booking->root?->reference}")
+                ->greeting('Hello '.($booking->driver->first_name ?? 'there').',')
+                ->line($paid
+                    ? "The extension **{$booking->reference}** of your booking **{$booking->root?->reference}** is cancelled. The car is due back at the time on your booking."
+                    : "We could not go ahead with extending your booking **{$booking->root?->reference}** ({$booking->reference}). The car is due back at the time on your booking.")
+                ->line("**Reason:** {$this->reason}")
+                ->when((int) $booking->refund_minor > 0, fn (MailMessage $mail) => $mail
+                    ->line("**Refund:** {$this->money($booking->refund_minor)}, which we will send back to you."))
+                ->when(! $paid, fn (MailMessage $mail) => $mail->line('You have not been charged for it.'));
+        }
+
         return (new MailMessage)
             ->subject($paid ? "Your booking {$booking->reference} is cancelled" : "We could not go ahead with your request {$booking->reference}")
             ->greeting('Hello '.($booking->driver->first_name ?? 'there').',')

@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsurePortalSession;
 use App\Http\Requests\Public\Portal\SendPortalCodeRequest;
 use App\Http\Requests\Public\Portal\StoreBookingRequestRequest;
 use App\Http\Requests\Public\Portal\VerifyPortalCodeRequest;
+use App\Http\Resources\ExtensionResource;
 use App\Models\Booking;
 use App\Models\BookingRequest;
 use App\Services\Booking\BookingPortalService;
@@ -43,7 +44,11 @@ class BookingPortalController extends Controller
 
         return Inertia::render('public/my-bookings/list', [
             'identifier' => $identity['value'],
-            'bookings' => $this->portal->list($identity)->map(fn (Booking $booking) => $this->row($booking))->values(),
+            // Extensions (D50) show under the booking they extend, not as bookings of their own.
+            'bookings' => $this->portal->list($identity)
+                ->reject(fn (Booking $booking) => $booking->isExtension())
+                ->map(fn (Booking $booking) => $this->row($booking))
+                ->values(),
         ]);
     }
 
@@ -145,6 +150,9 @@ class BookingPortalController extends Controller
             'car' => $booking->car->name,
             'pickup_at' => $booking->pickup_at->toIso8601String(),
             'return_at' => $booking->return_at->toIso8601String(),
+            'chain_end' => $booking->chainEnd()->toIso8601String(),
+            'extensions' => ExtensionResource::collection($booking->extensions)->resolve(),
+            'can_extend' => $booking->canBeExtended(),
             'status' => $booking->status->value,
             'status_label' => $booking->status->label(),
             'total' => new Money((int) $booking->total_minor),

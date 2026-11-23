@@ -25,7 +25,7 @@ class VoucherDeskService
     {
         $bucket = VoucherBucket::tryFrom((string) ($filters['bucket'] ?? '')) ?? VoucherBucket::NotSent;
 
-        return $this->desk->filter($bucket->apply(Booking::query()), $filters)
+        return $this->desk->filter($bucket->apply(Booking::query()->whereNull('root_booking_id')), $filters)
             ->with(['car:id,name', 'driver:id,booking_id,first_name,surname,phone,email'])
             ->when(
                 $bucket->soonestFirst(),
@@ -45,7 +45,8 @@ class VoucherDeskService
         $counts = [];
 
         foreach (VoucherBucket::cases() as $bucket) {
-            $counts[$bucket->value] = $bucket->apply(Booking::query())->count();
+            // Extensions have no voucher of their own (D50).
+            $counts[$bucket->value] = $bucket->apply(Booking::query()->whereNull('root_booking_id'))->count();
         }
 
         return $counts;

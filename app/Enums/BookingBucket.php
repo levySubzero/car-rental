@@ -42,6 +42,12 @@ enum BookingBucket: string
      */
     public function apply(Builder $query): Builder
     {
+        // An extension waiting on staff or payment is a request like any other; once paid it
+        // is part of the hire it extends and shows there (D50).
+        if (in_array($this, self::bookings(), true)) {
+            $query->whereNull('root_booking_id');
+        }
+
         return match ($this) {
             self::New => $query->where('status', BookingStatus::Requested),
             self::Unpaid => $query->whereIn('status', [BookingStatus::AwaitingPayment, BookingStatus::PaymentSubmitted, BookingStatus::AwaitingCash, BookingStatus::PaymentRejected]),

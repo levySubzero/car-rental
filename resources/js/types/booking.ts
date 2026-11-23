@@ -1,5 +1,5 @@
 import type { MediaCollectionLimits, MediaItem } from './media';
-import type { CarCard, Money, Option } from './index';
+import type { BookingExtension, CarCard, Money, Option } from './index';
 
 // Online booking (M8). Mirrors Public\BookingController and Public\BookingResource.
 
@@ -78,6 +78,12 @@ export type Booking = {
     balance_due: Money | null;
     voucher_sent: boolean;
     paid_at: string | null;
+    // Extensions (D50): the hire's end, what was asked for, and whether more can be.
+    is_extension: boolean;
+    extension_of?: string | null;
+    chain_end: string;
+    extensions?: BookingExtension[];
+    can_extend?: boolean;
     driver?: BookingDriver | null;
     // Drafts only: the attached file per document.
     documents?: Record<string, MediaItem | null>;

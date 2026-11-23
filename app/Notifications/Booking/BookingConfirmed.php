@@ -42,6 +42,7 @@ class BookingConfirmed extends BookingNotification
             ->line(WhatsAppLinkBuilder::fill($settings->voucher_email_intro, ['reference' => $booking->reference]))
             ->line("**Reference:** {$booking->reference}")
             ->line("**Car:** {$fields['car']}")
+            ->when($fields['area_of_use'] !== '', fn (MailMessage $mail) => $mail->line("**Area of use:** {$fields['area_of_use']}"))
             ->line("**Dates:** {$fields['pickup']['date']} at {$fields['pickup']['time']} to {$fields['return']['date']} at {$fields['return']['time']}")
             ->line("**Balance due at handover:** {$fields['balance']}")
             ->when($fields['security_deposit'] !== null, fn (MailMessage $mail) => $mail

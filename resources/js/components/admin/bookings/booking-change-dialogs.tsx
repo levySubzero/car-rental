@@ -49,9 +49,13 @@ type Payload = Record<string, string | string[] | null>;
  * Asks the server what the change would cost (the server is the only quote engine, D31),
  * half a second after the last keystroke.
  */
-function usePreview(url: string, payload: Payload, enabled: boolean) {
-    const http = useHttp<Payload, Preview>(payload);
-    const [preview, setPreview] = useState<Preview | null>(null);
+function usePreview<T = Preview>(
+    url: string,
+    payload: Payload,
+    enabled: boolean,
+) {
+    const http = useHttp<Payload, T>(payload);
+    const [preview, setPreview] = useState<T | null>(null);
     const [error, setError] = useState<string | null>(null);
     const key = JSON.stringify(payload);
 
@@ -247,22 +251,46 @@ function ChangeDialog({
     );
 }
 
+type ExtensionPreview = {
+    quote: {
+        from: string;
+        to: string;
+        extra_days: number;
+        chain_days: number;
+        amount: Money;
+        lines: { code: string; label: string; amount: Money | null }[];
+    };
+    available: boolean;
+};
+
 /**
- * Extend (or shorten) a confirmed or running hire: pick the new return, see the new days and
- * what is added to the balance, then save.
+ * Extend a confirmed or running hire (D50). The extra days become an extension booking of
+ * their own, priced at the margin and paid in full: either the renter is sent a link to pay,
+ * or staff record a payment they took and it is confirmed straight away.
  */
-export function ExtendBookingDialog({ booking }: { booking: AdminBooking }) {
+export function ExtendBookingDialog({
+    booking,
+    methods,
+}: {
+    booking: AdminBooking;
+    methods: Option[];
+}) {
     const [open, setOpen] = useState(false);
     const form = useForm({
-        return_at: toLocalInput(booking.return_at),
+        return_at: '',
         total: '',
+        payment: 'link' as 'link' | 'paid',
+        paid: '',
+        method: '',
+        reference: '',
     });
     const payload = { return_at: fromLocalInput(form.data.return_at) };
-    const { preview, error, loading } = usePreview(
+    const { preview, error, loading } = usePreview<ExtensionPreview>(
         BookingChangeController.previewExtend.url(booking.reference),
         payload,
         open && form.data.return_at !== '',
     );
+    const recorded = form.data.payment === 'paid';
 
     return (
         <ChangeDialog
@@ -272,8 +300,8 @@ export function ExtendBookingDialog({ booking }: { booking: AdminBooking }) {
                 </Button>
             }
             title={`Extend ${booking.reference}`}
-            description={`Picked up ${formatBookingTime(booking.pickup_at)}. The whole hire is priced again at today's rates; what was paid stays paid.`}
-            submitLabel="Save new return"
+            description={`Due back ${formatBookingTime(booking.chain_end)}. The extra days become an extension of this booking, priced at today's rates and paid in full.`}
+            submitLabel={recorded ? 'Confirm extension' : 'Send link to pay'}
             processing={form.processing}
             disabled={!preview || !preview.available}
             onOpenChange={setOpen}
@@ -281,12 +309,21 @@ export function ExtendBookingDialog({ booking }: { booking: AdminBooking }) {
                 form.transform((data) => ({
                     return_at: fromLocalInput(data.return_at),
                     total: data.total || null,
+                    payment: data.payment,
+                    paid: data.payment === 'paid' ? data.paid || null : null,
+                    method:
+                        data.payment === 'paid' ? data.method || null : null,
+                    reference:
+                        data.payment === 'paid' ? data.reference || null : null,
                 }));
                 form.put(
                     BookingChangeController.extend.url(booking.reference),
                     {
                         preserveScroll: true,
-                        onSuccess: close,
+                        onSuccess: () => {
+                            form.reset();
+                            close();
+                        },
                     },
                 );
             }}
@@ -296,20 +333,147 @@ export function ExtendBookingDialog({ booking }: { booking: AdminBooking }) {
                 label="New return date and time"
                 type="datetime-local"
                 required
+                min={toLocalInput(booking.chain_end)}
                 value={form.data.return_at}
                 error={form.errors.return_at}
                 onChange={(e) => form.setData('return_at', e.target.value)}
             />
-            <PreviewPanel preview={preview} error={error} loading={loading} />
+            {form.data.return_at !== '' && (
+                <ExtensionPreviewPanel
+                    preview={preview}
+                    error={error}
+                    loading={loading}
+                />
+            )}
             <MoneyField
                 name="total"
-                label="Agreed total (optional)"
-                description="Only to charge something other than the new total above."
+                label="Agreed price (optional)"
+                description="Only to charge something other than the price above."
                 value={form.data.total}
                 error={form.errors.total}
                 onChange={(e) => form.setData('total', e.target.value)}
             />
+            <SelectField
+                name="payment"
+                label="Payment"
+                options={[
+                    {
+                        value: 'link',
+                        label: 'Email the renter a link to pay',
+                    },
+                    {
+                        value: 'paid',
+                        label: 'The renter has paid us: record it now',
+                    },
+                ]}
+                value={form.data.payment}
+                error={form.errors.payment}
+                onChange={(e) =>
+                    form.setData('payment', e.target.value as 'link' | 'paid')
+                }
+            />
+            {recorded && (
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <MoneyField
+                        name="paid"
+                        label="Amount taken"
+                        placeholder={preview?.quote.amount.major ?? ''}
+                        value={form.data.paid}
+                        error={form.errors.paid}
+                        onChange={(e) => form.setData('paid', e.target.value)}
+                    />
+                    <SelectField
+                        name="method"
+                        label="Method"
+                        placeholder="Choose…"
+                        options={methods}
+                        value={form.data.method}
+                        error={form.errors.method}
+                        onChange={(e) => form.setData('method', e.target.value)}
+                    />
+                    <TextField
+                        name="reference"
+                        label="Reference"
+                        value={form.data.reference}
+                        error={form.errors.reference}
+                        onChange={(e) =>
+                            form.setData('reference', e.target.value)
+                        }
+                    />
+                </div>
+            )}
         </ChangeDialog>
+    );
+}
+
+function ExtensionPreviewPanel({
+    preview,
+    error,
+    loading,
+}: {
+    preview: ExtensionPreview | null;
+    error: string | null;
+    loading: boolean;
+}) {
+    if (error) {
+        return (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+            </p>
+        );
+    }
+
+    if (!preview) {
+        return (
+            <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-3 text-sm text-muted-foreground">
+                {loading && <Spinner />} Working out the price…
+            </div>
+        );
+    }
+
+    const { quote } = preview;
+
+    return (
+        <div
+            className={cn(
+                'grid gap-2 rounded-md border p-3 text-sm',
+                loading && 'opacity-60',
+            )}
+        >
+            <p className="text-muted-foreground">
+                {formatBookingTime(quote.from)} → {formatBookingTime(quote.to)}{' '}
+                · {quote.extra_days} extra{' '}
+                {quote.extra_days === 1 ? 'day' : 'days'} ({quote.chain_days} in
+                all)
+            </p>
+            <table className="w-full">
+                <tbody>
+                    {quote.lines.map((line) => (
+                        <tr key={line.code}>
+                            <td className="py-1 text-muted-foreground">
+                                {line.label}
+                            </td>
+                            <td className="py-1 text-right tabular-nums">
+                                {line.amount?.display ?? '—'}
+                            </td>
+                        </tr>
+                    ))}
+                    <tr className="border-t">
+                        <td className="py-1 font-medium">To pay now</td>
+                        <td className="py-1 text-right font-medium text-gold tabular-nums">
+                            {quote.amount.display}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            {!preview.available && (
+                <p className="flex items-start gap-2 text-destructive">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                    The car is booked for some of these dates. Pick an earlier
+                    return.
+                </p>
+            )}
+        </div>
     );
 }
 

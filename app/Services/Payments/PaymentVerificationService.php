@@ -251,9 +251,9 @@ class PaymentVerificationService
             ])->save();
 
             $this->statuses->transition($booking, BookingStatus::PaymentRejected, $actor, $submission->rejection_reason);
-            // A retry cannot run past pick-up.
+            // A retry cannot run past pick-up; an extension's car is already out, so it gets the full window.
             $until = now()->addMinutes($this->pricing->hold_minutes);
-            $this->availability->extendHold($booking, $until->isAfter($booking->pickup_at) ? $booking->pickup_at : $until);
+            $this->availability->extendHold($booking, $until->isAfter($booking->pickup_at) && ! $booking->isExtension() ? $booking->pickup_at : $until);
 
             activity(self::LOG_NAME)->performedOn($booking)->causedBy($actor)
                 ->withProperties(['submission' => $submission->id, 'reason' => $submission->rejection_reason])

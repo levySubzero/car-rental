@@ -4,6 +4,7 @@ namespace App\Http\Resources\Admin;
 
 use App\Enums\BookingDocument;
 use App\Enums\Permission;
+use App\Http\Resources\ExtensionResource;
 use App\Http\Resources\Media\MediaResource;
 use App\Models\Booking;
 use App\Models\BookingRequest;
@@ -103,6 +104,11 @@ class BookingResource extends JsonResource
                 'staff_note' => $item->staff_note,
                 'created_at' => $item->created_at?->toIso8601String(),
             ])->all(),
+            // Extensions (D50): a root lists them; an extension names the hire it extends.
+            'extension_of' => $this->root === null ? null : ['reference' => $this->root->reference, 'status_label' => $this->root->status->label()],
+            'chain_end' => $this->chainEnd()->toIso8601String(),
+            'extensions' => ExtensionResource::collection($this->extensions)->resolve($request),
+            'can_extend' => $this->canBeExtended(),
             'legal_hold' => $this->legal_hold,
             'kyc_purged_at' => $this->kyc_purged_at?->toIso8601String(),
             'submitted_at' => $this->submitted_at?->toIso8601String(),

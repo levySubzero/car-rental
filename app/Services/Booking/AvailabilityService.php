@@ -133,13 +133,35 @@ class AvailabilityService
     private function conflicting(Car $car, DateRange $range, ?Booking $ignore): Builder
     {
         $buffer = $this->pricing->turnaround_minutes;
+        $ignored = $ignore === null ? [] : $this->chainIds($ignore);
 
         return AvailabilityBlock::query()
             ->where('car_id', $car->id)
             ->active()
             ->overlapping($range->pad($buffer, $buffer))
-            ->when($ignore !== null, fn (Builder $query) => $query->where(fn (Builder $query) => $query
+            ->when($ignored !== [], fn (Builder $query) => $query->where(fn (Builder $query) => $query
                 ->whereNull('booking_id')
-                ->orWhere('booking_id', '!=', $ignore?->id)));
+                ->orWhereNotIn('booking_id', $ignored)));
+    }
+
+    /**
+     * The booking and the rest of its chain (D50): a hire and its extensions are one stay of
+     * the car, so they never clash with each other, turnaround included.
+     *
+     * @return list<int>
+     */
+    public function chainIds(Booking $booking): array
+    {
+        if (! $booking->exists) {
+            return [];
+        }
+
+        $root = $booking->root_booking_id ?? $booking->id;
+
+        return array_values(array_unique([
+            (int) $booking->id,
+            (int) $root,
+            ...Booking::query()->where('root_booking_id', $root)->pluck('id')->map(fn ($id) => (int) $id)->all(),
+        ]));
     }
 }

@@ -2,6 +2,7 @@ import { Head, usePoll } from '@inertiajs/react';
 import { CheckCircle2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { CancellationTerms } from '@/components/public/booking/cancellation-terms';
+import { ExtendBooking } from '@/components/public/booking/extend-booking';
 import { PaymentForm } from '@/components/public/booking/payment-form';
 import { QuoteSummary } from '@/components/public/booking/quote-summary';
 import { BrandIcon } from '@/components/public/icons';
@@ -74,7 +75,9 @@ export default function BookingStatus({
             <section className="tone-charcoal">
                 <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
                     <p className="text-sm text-muted-foreground">
-                        Booking {booking.reference}
+                        {booking.is_extension
+                            ? `Extension ${booking.reference} of booking ${booking.extension_of ?? ''}`
+                            : `Booking ${booking.reference}`}
                     </p>
                     <h1 className="mt-1 font-display text-3xl text-foreground sm:text-4xl">
                         {booking.car.name}
@@ -93,7 +96,9 @@ export default function BookingStatus({
                             <h2 className="text-lg font-semibold text-foreground">
                                 {booking.status === 'payment_rejected'
                                     ? 'Please pay again'
-                                    : 'Next: pay the reservation'}
+                                    : booking.is_extension
+                                      ? 'Next: pay for your extension'
+                                      : 'Next: pay the reservation'}
                             </h2>
                             {booking.status === 'payment_rejected' &&
                                 payment?.rejection_reason && (
@@ -112,8 +117,9 @@ export default function BookingStatus({
                                         {quote.reservation.display}
                                     </strong>
                                 )}{' '}
-                                now to reserve the car; the rest is due at
-                                handover. We are holding the car for you
+                                {booking.is_extension
+                                    ? 'now, the full price of the extra days. We are holding them for you'
+                                    : 'now to reserve the car; the rest is due at handover. We are holding the car for you'}
                                 {until}.
                             </p>
                             <div className="mt-6">
@@ -132,14 +138,23 @@ export default function BookingStatus({
                         </section>
                     )}
 
-                    {booking.status === 'requested' && (
-                        <Notice title="Your request is under review">
-                            Thank you. Our team is reviewing your request and
-                            will email you whether it is approved. There is
-                            nothing to pay yet, and the car is held for you once
-                            it is approved.
+                    {booking.status === 'requested' && booking.is_extension && (
+                        <Notice title="Your extension is under review">
+                            Our team is checking the car is free for the extra
+                            days and will email you whether it is approved.
+                            There is nothing to pay yet.
                         </Notice>
                     )}
+
+                    {booking.status === 'requested' &&
+                        !booking.is_extension && (
+                            <Notice title="Your request is under review">
+                                Thank you. Our team is reviewing your request
+                                and will email you whether it is approved. There
+                                is nothing to pay yet, and the car is held for
+                                you once it is approved.
+                            </Notice>
+                        )}
 
                     {booking.status === 'payment_submitted' && (
                         <Notice title="We are checking your payment">
@@ -165,7 +180,20 @@ export default function BookingStatus({
                         </Notice>
                     )}
 
+                    {booking.is_extension &&
+                        ['reserved', 'active', 'completed'].includes(
+                            booking.status,
+                        ) && (
+                            <Notice title="Your extension is confirmed">
+                                Thank you: the car is yours until{' '}
+                                {formatBookingTime(booking.return_at)}. Your
+                                updated voucher is on its way by email, with
+                                booking {booking.extension_of}.
+                            </Notice>
+                        )}
+
                     {booking.status === 'reserved' &&
+                        !booking.is_extension &&
                         booking.reservation_paid && (
                             <Notice
                                 title={
@@ -208,35 +236,55 @@ export default function BookingStatus({
                             </p>
                         )}
 
-                    <section className="rounded-lg bg-surface p-6">
-                        <h2 className="text-lg font-semibold text-foreground">
-                            Trip
-                        </h2>
-                        <dl className="mt-4 grid gap-3 text-sm">
-                            <div className="grid gap-0.5 sm:grid-cols-3">
-                                <dt className="text-muted-foreground">
-                                    Pickup
-                                </dt>
-                                <dd className="text-white/85 sm:col-span-2">
-                                    {formatBookingTime(booking.pickup_at)},{' '}
-                                    {booking.pickup_mode === 'office'
-                                        ? 'at our office'
-                                        : booking.delivery_address}
-                                </dd>
-                            </div>
-                            <div className="grid gap-0.5 sm:grid-cols-3">
-                                <dt className="text-muted-foreground">
-                                    Return
-                                </dt>
-                                <dd className="text-white/85 sm:col-span-2">
-                                    {formatBookingTime(booking.return_at)},{' '}
-                                    {booking.return_mode === 'office'
-                                        ? 'at our office'
-                                        : booking.return_address}
-                                </dd>
-                            </div>
-                        </dl>
-                    </section>
+                    {booking.is_extension ? (
+                        <section className="rounded-lg bg-surface p-6">
+                            <h2 className="text-lg font-semibold text-foreground">
+                                Extra days
+                            </h2>
+                            <p className="mt-3 text-sm text-white/85">
+                                {formatBookingTime(booking.pickup_at)} to{' '}
+                                {formatBookingTime(booking.return_at)}. The car
+                                stays with you: there is no hand-over in
+                                between, and it comes back as agreed on booking{' '}
+                                {booking.extension_of}.
+                            </p>
+                        </section>
+                    ) : (
+                        <section className="rounded-lg bg-surface p-6">
+                            <h2 className="text-lg font-semibold text-foreground">
+                                Trip
+                            </h2>
+                            <dl className="mt-4 grid gap-3 text-sm">
+                                <div className="grid gap-0.5 sm:grid-cols-3">
+                                    <dt className="text-muted-foreground">
+                                        Pickup
+                                    </dt>
+                                    <dd className="text-white/85 sm:col-span-2">
+                                        {formatBookingTime(booking.pickup_at)},{' '}
+                                        {booking.pickup_mode === 'office'
+                                            ? 'at our office'
+                                            : booking.delivery_address}
+                                    </dd>
+                                </div>
+                                <div className="grid gap-0.5 sm:grid-cols-3">
+                                    <dt className="text-muted-foreground">
+                                        Return
+                                    </dt>
+                                    <dd className="text-white/85 sm:col-span-2">
+                                        {formatBookingTime(booking.chain_end)},{' '}
+                                        {booking.return_mode === 'office'
+                                            ? 'at our office'
+                                            : booking.return_address}
+                                        {booking.chain_end !==
+                                            booking.return_at &&
+                                            ` (extended from ${formatBookingTime(booking.return_at)})`}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </section>
+                    )}
+
+                    <ExtendBooking token={token} booking={booking} />
 
                     <section>
                         <h2 className="text-lg font-semibold text-foreground">

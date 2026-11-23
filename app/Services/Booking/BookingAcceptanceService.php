@@ -32,7 +32,8 @@ class BookingAcceptanceService
                 throw BookingException::invalidTransition($booking->status, BookingStatus::AwaitingPayment);
             }
 
-            if ($booking->pickup_at->isPast()) {
+            // An extension starts with the car already out, so its start may well have passed.
+            if ($booking->pickup_at->isPast() && ! $booking->isExtension()) {
                 throw BookingException::pickupPassed();
             }
 
@@ -41,7 +42,7 @@ class BookingAcceptanceService
             }
 
             $until = now()->addMinutes($this->pricing->hold_minutes);
-            $until = $until->isAfter($booking->pickup_at) ? $booking->pickup_at : $until;
+            $until = $until->isAfter($booking->pickup_at) && ! $booking->isExtension() ? $booking->pickup_at : $until;
 
             // The car row is locked here, so a second request for these dates waits and then fails.
             $hold = $this->availability->lockAndHold($booking, $until);

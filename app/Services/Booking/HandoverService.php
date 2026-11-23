@@ -105,7 +105,18 @@ class HandoverService
             return 0;
         }
 
-        return max(0, $drivenKm - (int) $perDay * (int) ($booking->quote['days'] ?? 0));
+        return max(0, $drivenKm - (int) $perDay * $this->billedDays($booking));
+    }
+
+    /**
+     * The days the whole stay was billed for: the root's, or, once extended (D50), the longer
+     * stay its last paid extension was priced as.
+     */
+    private function billedDays(Booking $booking): int
+    {
+        $last = $booking->extensions()->whereIn('status', Booking::LIVE_EXTENSION)->reorder()->latest('return_at')->first();
+
+        return (int) ($last?->quote['chain_days'] ?? $booking->quote['days'] ?? 0);
     }
 
     /**
@@ -114,6 +125,11 @@ class HandoverService
     private function lock(Booking $booking, BookingStatus $to): Booking
     {
         $locked = Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
+
+        // The car goes out and comes back once, on the root; its extensions follow it.
+        if ($locked->isExtension()) {
+            throw BookingException::followsRoot((string) $locked->root?->reference);
+        }
 
         if (! $locked->status->canTransitionTo($to)) {
             throw BookingException::invalidTransition($locked->status, $to);

@@ -81,7 +81,7 @@ class BookingController extends Controller
 
     public function show(Request $request, DriverEligibilityService $eligibility, MediaCollectionRegistry $collections): Response
     {
-        $booking = ResolveBookingToken::booking($request)->load(['car.brand', 'car.carType', 'car.cover', 'driver', 'deliveryZone', 'latestPayment.method']);
+        $booking = ResolveBookingToken::booking($request)->load(['car.brand', 'car.carType', 'car.cover', 'driver', 'deliveryZone', 'latestPayment.method', 'root', 'extensions']);
         $token = (string) $request->route('token');
 
         if (! $booking->isDraft()) {

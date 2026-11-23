@@ -11,6 +11,7 @@ use App\Models\Concerns\HasMedia;
 use App\Support\DateRange;
 use Carbon\CarbonImmutable;
 use Database\Factories\BookingFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,12 +25,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * BookingStatusService and are logged as `booking-status` activity (D36).
  *
  * @property int $id
+ * @property int|null $root_booking_id the booking this one extends (D50); null on a root
  * @property string|null $reference
  * @property string $access_token_hash
  * @property int $car_id
  * @property BookingStatus $status
  * @property CarbonImmutable $pickup_at
  * @property CarbonImmutable $return_at
+ * @property CarbonImmutable|null $extended_until on a root: where its confirmed extensions end
  * @property HandoverMode $pickup_mode
  * @property HandoverMode $return_mode
  * @property int|null $delivery_zone_id
@@ -88,11 +91,22 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read PaymentSubmission|null $latestPayment
  * @property-read HandoverRecord|null $handover
  * @property-read HandoverRecord|null $returnRecord
+ * @property-read Booking|null $root
+ * @property-read Collection<int, Booking> $extensions
  */
 class Booking extends Model
 {
     /** @use HasFactory<BookingFactory> */
     use HasFactory, HasMedia;
+
+    // An extension that is paid for: it counts towards where the hire ends.
+    public const LIVE_EXTENSION = [BookingStatus::Reserved, BookingStatus::Active, BookingStatus::Completed];
+
+    // An extension still on its way: asked for, accepted or being paid.
+    public const PENDING_EXTENSION = [
+        BookingStatus::Requested, BookingStatus::AwaitingPayment, BookingStatus::PaymentSubmitted,
+        BookingStatus::AwaitingCash, BookingStatus::PaymentRejected,
+    ];
 
     protected $fillable = [
         'car_id', 'pickup_at', 'return_at', 'pickup_mode', 'return_mode', 'delivery_zone_id',
@@ -120,6 +134,7 @@ class Booking extends Model
             'status' => BookingStatus::class,
             'pickup_at' => 'datetime',
             'return_at' => 'datetime',
+            'extended_until' => 'datetime',
             'pickup_mode' => HandoverMode::class,
             'return_mode' => HandoverMode::class,
             'extras' => 'array',
@@ -257,6 +272,75 @@ class Booking extends Model
     public function returnRecord(): HasOne
     {
         return $this->hasOne(HandoverRecord::class)->where('type', HandoverType::Return->value);
+    }
+
+    /**
+     * The booking this one extends. Every extension points at the root, never at another
+     * extension, so a chain is one level deep.
+     *
+     * @return BelongsTo<Booking, $this>
+     */
+    public function root(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'root_booking_id');
+    }
+
+    /**
+     * @return HasMany<Booking, $this>
+     */
+    public function extensions(): HasMany
+    {
+        return $this->hasMany(self::class, 'root_booking_id')->orderBy('pickup_at')->orderBy('id');
+    }
+
+    public function isExtension(): bool
+    {
+        return $this->root_booking_id !== null;
+    }
+
+    /**
+     * The root of the chain this booking belongs to: itself unless it is an extension.
+     */
+    public function chainRoot(): self
+    {
+        return $this->isExtension() ? ($this->root ?? $this) : $this;
+    }
+
+    /**
+     * Paid extensions, in order.
+     *
+     * @return Collection<int, Booking>
+     */
+    public function liveExtensions(): Collection
+    {
+        return $this->extensions->filter(fn (self $extension) => in_array($extension->status, self::LIVE_EXTENSION, true))->values();
+    }
+
+    /**
+     * The extension asked for but not yet paid, if any: there is at most one at a time.
+     */
+    public function pendingExtension(): ?self
+    {
+        return $this->extensions->first(fn (self $extension) => in_array($extension->status, self::PENDING_EXTENSION, true));
+    }
+
+    /**
+     * Whether more days can be asked for now: a confirmed or running hire with no extension
+     * already on its way.
+     */
+    public function canBeExtended(): bool
+    {
+        return ! $this->isExtension()
+            && in_array($this->status, [BookingStatus::Reserved, BookingStatus::Active], true)
+            && $this->pendingExtension() === null;
+    }
+
+    /**
+     * When the car is due back: the root's own return, or its last paid extension's.
+     */
+    public function chainEnd(): CarbonImmutable
+    {
+        return $this->extended_until ?? $this->return_at;
     }
 
     public function range(): DateRange

@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Public;
 
 use App\Enums\BookingDocument;
+use App\Http\Resources\ExtensionResource;
 use App\Http\Resources\Media\MediaResource;
 use App\Models\Booking;
 use App\Models\BookingDriver;
@@ -54,6 +55,12 @@ class BookingResource extends JsonResource
             'voucher_sent' => $this->voucher_sent_at !== null,
             'balance_due' => $this->balance_minor === null ? null : new Money($this->balance_minor),
             'paid_at' => $this->paid_at?->toIso8601String(),
+            // Extensions (D50): a root lists them and can take another; an extension names its root.
+            'is_extension' => $this->isExtension(),
+            'extension_of' => $this->whenLoaded('root', fn () => $this->root?->reference),
+            'chain_end' => $this->chainEnd()->toIso8601String(),
+            'extensions' => $this->whenLoaded('extensions', fn () => ExtensionResource::collection($this->extensions)),
+            'can_extend' => $this->whenLoaded('extensions', fn () => $this->canBeExtended()),
             'driver' => $this->whenLoaded('driver', fn () => $this->driver ? $this->driverData($this->driver) : null),
             'documents' => $this->when($this->isDraft(), fn () => $this->documents()),
         ];
